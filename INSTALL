@@ -1,0 +1,10 @@
+To install the kernel code, from the directory containing the 'ds' directory:
+
+cp -r ds $INFERNOROOT/os
+cp $INFERNOROOT/os/ds/dsinit.b $INFERNOROOT/os/init
+cd $INFERNOROOT/os/ds; mk
+
+also inferno for the ds requires the devkitpro utilities ndstool(to build a .nds file usuable with normal ds flashcards) and dsbuild(for making .nds.gba kernel files, loadable using a gba flashcard and a passme). Devkitpro is available from http://www.devkitpro.org/.
+
+Please note that this code does not use any nintendo intellectual property.
+

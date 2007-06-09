@@ -1,0 +1,3 @@
+This is a preliminary release of a DS port. Most of the code will be in thumb eventually.
+
+Right now it's useless, it gets you to the shell and then dies because UART support is not implemented. 
