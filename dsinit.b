@@ -1,8 +1,7 @@
 #
-# ipaq
+# ds
 #
-# TO DO: read params from params flash
-#
+# TO DO: rtc, touch screen, fat fs
 
 implement Init;
 
@@ -36,16 +35,7 @@ ethername := "ether0";
 
 # standard Inferno flash partitions
 
-flashparts := array[] of {
-	# bootstrap at 0x0 to 0x40000, don't touch
-	"add params 0x40000 0x80000",
-	"add kernel 0x80000 0x140000",
-	"add fs 0x140000 end",
-};
 
-#
-# initialise flash translation
-# mount flash file system
 # add devices
 # start a shell or window manager
 #
@@ -60,96 +50,32 @@ init()
 
 	sys->bind("/", "/", Sys->MREPL);
 
-	lightup();
 
-	localok := 0;
-	if(lfs() >= 0){
-		# let's just take a closer look
-		sys->bind("/n/local/nvfs", "/nvfs", Sys->MREPL|Sys->MCREATE);
-		(rc, nil) := sys->stat("/n/local/dis/sh.dis");
-		if(rc >= 0)
-			localok = 1;
-		else
-			err("local file system unusable");
-	}
-	netok := sys->bind("#l", "/net", Sys->MREPL) >= 0;
-	if(!netok){
-		netok = sys->bind("#l1", "/net", Sys->MREPL) >= 0;
-		if(netok)
-			ethername = "ether1";
-	}
-	if(netok)
-		configether();
-
-	dobind("#I", "/net", sys->MAFTER);	# IP
+#	dobind("#I", "/net", sys->MAFTER);	# IP
 	dobind("#p", "/prog", sys->MREPL);	# prog
 	dobind("#c", "/dev", sys->MREPL); 	# console
 	sys->bind("#d", "/fd", Sys->MREPL);
-	dobind("#t", "/dev", sys->MAFTER);	# serial line
 	dobind("#i", "/dev", sys->MAFTER); 	# draw
-	dobind("#m", "/dev", Sys->MAFTER);	# pointer
+#	dobind("#m", "/dev", Sys->MAFTER);	# pointer
 	sys->bind("#e", "/env", sys->MREPL|sys->MCREATE);	# environment
 	sys->bind("#A", "/dev", Sys->MAFTER);	# optional audio
-	dobind("#T","/dev",sys->MAFTER);	# touch screen and other ipaq devices
+#	dobind("#T","/dev",sys->MAFTER);	# touch screen and other ipaq devices
 
-	timefile: string;
-	rootsource: string;
-	cfd := sys->open("/dev/consctl", Sys->OWRITE);
-	if(cfd != nil)
-		sys->fprint(cfd, "rawon");
-	for(;;){
-		(rootsource, timefile) = askrootsource(localok, netok);
-		if(rootsource == nil)
-			break;	# internal
-		(rc, nil) := sys->stat(rootsource+"/dis/sh.dis");
-		if(rc < 0)
-			err("%s has no shell");
-		else if(sys->bind(rootsource, "/", Sys->MAFTER) < 0)
-			sys->print("can't bind %s on /: %r\n", rootsource);
-		else{
-			sys->bind(rootsource+"/dis", "/dis", Sys->MBEFORE|Sys->MCREATE);
-			break;
-		}
-	}
-	cfd = nil;
 
-	setsysname("ipaq");			# set system name
+	setsysname("ds");			# set system name
 
-	now := getclock(timefile, rootsource);
-	setclock("/dev/time", now);
-	if(timefile != "#r/rtc")
-		setclock("#r/rtc", now/big 1000000);
+
 
 	sys->chdir("/");
-	if(netok){
-		start("ndb/dns", nil);
-		start("ndb/cs", nil);
-	}
-	calibrate();
-	startup := "/nvfs/startup";
-	if(sys->open(startup, Sys->OREAD) != nil){
-		shell := load Command Sh->PATH;
-		if(shell != nil){
-			sys->print("Running %s\n", startup);
-			shell->init(nil, "sh" :: startup :: nil);
-		}
-	}
+
 	user := rdenv("user", "inferno");
-	(ok, nil) := sys->stat("/dis/wm/wm.dis");
-	if(ok >= 0)
-		(ok, nil) = sys->stat("/dis/wm/logon.dis");
+	(ok, nil) := sys->stat("/dis/wm/sh.dis");
 	if(ok >= 0 && userok(user)){
-		wm := load Command "/dis/wm/wm.dis";
+		wm := load Command "/dis/wm/sh.dis";
 		if(wm != nil){
-			fd := sys->open("/nvfs/user", Sys->OWRITE);
-			if(fd != nil){
-				sys->fprint(fd, "%s", user);
-				fd = nil;
-			}
-			spawn wm->init(nil, list of {"wm/wm", "wm/logon", "-l", "-n", "lib/ipaqns", "-u", user});
+			spawn wm->init(nil, list of {"wm/sh.dis" });
 			exit;
 		}
-		sys->print("init: can't load wm/logon: %r");
 	}
 	sh := load Command Sh->PATH;
 	if(sh == nil){
@@ -194,9 +120,7 @@ lightup()
 setsysname(def: string)
 {
 	v := array of byte def;
-	fd := sys->open("/nvfs/ID", sys->OREAD);
-	if(fd == nil)
-		fd = sys->open("/env/sysname", sys->OREAD);
+	fd := sys->open("/env/sysname", sys->OREAD);
 	if(fd != nil){
 		buf := array[Sys->NAMEMAX] of byte;
 		nr := sys->read(fd, buf, len buf);
@@ -253,7 +177,7 @@ setclock(timefile: string, now: big)
 	if (sys->write(fd, b, len b) != len b)
 		sys->print("init: can't write to %s: %r", timefile);
 }
-
+# do this with the wireless driver.
 srv()
 {
 	sys->print("remote debug srv...");
@@ -396,16 +320,16 @@ append(v: string, l: list of string): list of string
 #
 lfs(): int
 {
-	if(!flashpart("#F/flash/flashctl", flashparts))
-		return -1;
-	if(!ftlinit("#F/flash/fs"))
-		return -1;
-	if(iskfs("#X/ftldata"))
-		return lkfs("#X/ftldata");
-	c := chan of string;
-	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: "#X/ftldata" :: "-m" :: "/n/local" :: nil, nil);
-	if(<-c != nil)
-		return -1;
+#	if(!flashpart("#F/flash/flashctl", flashparts))
+#		return -1;
+#	if(!ftlinit("#F/flash/fs"))
+#		return -1;
+#	if(iskfs("#X/ftldata"))
+#		return lkfs("#X/ftldata");
+#	c := chan of string;
+#	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: "#X/ftldata" :: "-m" :: "/n/local" :: nil, nil);
+#	if(<-c != nil)
+#		return -1;
 	return 0;
 }
 
@@ -676,7 +600,6 @@ rdenv(name: string, def: string): string
 	s := rf("#e/"+name, nil);
 	if(s != nil)
 		return s;
-	s = rf("/nvfs/"+name, def);
 	while(s != nil && ((c := s[len s-1]) == '\n' || c == '\r'))
 		s = s[0: len s-1];
 	if(s != nil)
