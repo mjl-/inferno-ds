@@ -91,7 +91,7 @@ typedef struct Ipc Ipc;
 struct Ipc {
 	ulong cr;
 	
-}
+};
 void _halt(void);
 void _reset(void);
 void _waitvblank(void);
