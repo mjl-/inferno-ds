@@ -6,19 +6,24 @@ CONF=ds				#default configuration
 CONFLIST=ds
 
 SYSTARG=$OSTARG
+#SYSTARG=Inferno
 OBJTYPE=arm
+#OBJTYPE=thumb
 INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is installed
 #end configurable parameters
 
 <$ROOT/mkfiles/mkfile-$SYSTARG-$OBJTYPE	#set vars based on target system
 
-BIN=$ROOT/MacOSX/power/bin
+BIN=$ROOT/MacOSX/386/bin
 
 CC=$BIN/5c
-# CC=$BIN/tc
 AS=$BIN/5a
-# AS=$BIN/5a -t
 LD=$BIN/5l
+
+#CC=$BIN/tc
+#AS=$BIN/5a -t
+#LD=$BIN/5l -t
+
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
 KTZERO=0x02008010
@@ -80,8 +85,9 @@ trap.5: trap.c
 
 
 i$CONF.rom: i$CONF
-	ndstool -g INFR -9 ids -7 ids7 -e9 $KTZERO -c ids.nds
-	dsbuild ids.nds -o ids.nds.gba
+	ndstool -g INFR NE  INFERNODS 0.1 -9 ids -7 ids7 -e9 $KTZERO -e7  0x03800000 -c ids.nds
+#	dsbuild ids.nds -o ids.nds.gba
+	open ids.nds
 #	scp ids.nds noah-e@rayserv44:~/
 	
 size: $OBJ $CONF.c $CONF.root.h $LIBNAMES

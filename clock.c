@@ -28,7 +28,7 @@ addclock0link(void (*clock)(void), int)
 		print("addclock0link: too many links\n");
 		return nil;
 	}	
-	print("clocklink key: 0x%lux", clock0lock.key);	
+//	print("clocklink key: 0x%lux", clock0lock.key);	
 	ilock(&clock0lock);
 	lp->clock = clock;
 	lp->link = clock0link;

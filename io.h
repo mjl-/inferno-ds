@@ -48,18 +48,50 @@ struct TimerReg {
 /* 59.73 hz */
 
 #define LCDREG		((LcdReg*)LCD)
+#define SUBLCDREG		((LcdReg*)SUBLCD)
 typedef struct LcdReg LcdReg;
 struct LcdReg {
-	ushort lccr;	/* control */
-	ushort lcsr;	/* status */
+	ulong lccr;	/* control */
+	ulong lcsr;	/* status */
+};
+
+#define VRAMREG	((VramReg*)VRAM)
+typedef struct VramReg VramReg;
+struct VramReg {
+	ulong acr;
+	ulong bcr;
+	ulong ccr;
+	ulong dcr;
+	ulong ecr;
+	ulong fcr;
+	ulong gcr;
+	ulong hcr;
+	ulong icr;
+};
+
+#define POWERREG ((PowerReg*)POWER)
+typedef struct PowerReg PowerReg;
+struct PowerReg {
+	ushort pcr;
+};
+
+#define SPIREG ((PowerReg*)SPI)
+typedef struct SpiReg SpiReg;
+struct SpiReg {
+	ushort spicr;
+	ushort spidat;
 };
 
 #define PAL	((ushort*)PALMEM)
 
-#define VIDMEMHI	((ushort*)VRAMZERO)
+#define VIDMEMHI	((ushort*)VRAMTOP)
 #define VIDMEMLO	((ushort*)VRAMZERO)
 
-
+typedef struct Ipc Ipc;
+struct Ipc {
+	ulong cr;
+	
+}
 void _halt(void);
 void _reset(void);
 void _waitvblank(void);

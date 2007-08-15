@@ -78,18 +78,11 @@ static Cursor arrow = {
 	},
 };
 
-static	ushort	palette16[256];
-static	void	(*flushpixels)(Rectangle, ulong*, int, ulong*, int);
-static	void	flush8to4(Rectangle, ulong*, int, ulong*, int);
-static	void	flush8to4r(Rectangle, ulong*, int, ulong*, int);
-static	void	flush8to16(Rectangle, ulong*, int, ulong*, int);
-static	void	flush8to16r(Rectangle, ulong*, int, ulong*, int);
+static	void	(*flushpixels)(Rectangle, uchar*, int, uchar*, int);
 
-/*
-lccr0=000000b9 lccr1=0b100930 lccr2=0a0108ef lccr3=00300010
-	---
-vd->wid=320 bwid=640 gscreen->width=60 fb=d0b7cb80 data=d0ba25c0
- */
+//static	void	flush2fb(Rectangle, uchar*, int, uchar*, int);
+
+
 
 int
 setcolor(ulong p, ulong r, ulong g, ulong b)
@@ -101,7 +94,6 @@ setcolor(ulong p, ulong r, ulong g, ulong b)
 	vd->colormap[p][0] = r;
 	vd->colormap[p][1] = g;
 	vd->colormap[p][2] = b;
-	palette16[p] = ((r>>(32-4))<<12)|((g>>(32-4))<<7)|((b>>(32-4))<<1);
 	lcd_setcolor(p, r, g, b);
 	return ~0;
 }
@@ -196,33 +188,30 @@ setscreen(LCDmode *mode)
 
 
 
-/*	gscreen = &xgscreen;
+	gscreen = &xgscreen;
 	xgdata.ref = 1;
 
 
-		gscreen->r = Rect(0, 0, vd->y, vd->x);
+	gscreen->r = Rect(0, 0, vd->x, vd->y);
 	gscreen->clipr = gscreen->r;
-	gscreen->depth = 8;
-	gscreen->width = wordsperline(gscreen->r, gscreen->depth);
-
-
+	gscreen->depth = 16;
+	gscreen->width = vd->x >>1;
+	
+	xgdata.bdata = (uchar*)vd->fb; 
+	
 	memimageinit();
 	memdefont = getmemdefont();
-
-	memsetchan(gscreen, CMAP8);	/* TO DO: could now use RGB16 */
-/*	back = memwhite;
+	memsetchan(gscreen, RGB15);	
+	back = memwhite;
 	conscol = memblack;
 	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
-
 	DPRINT("vd->wid=%d bwid=%d gscreen->width=%ld fb=%p data=%p\n",
 		vd->x, vd->bwid, gscreen->width, vd->fb, xgdata.bdata);
 	graphicscmap(0);
 	h = memdefont->height;
 	window = insetrect(gscreen->r, 4);
 	window.max.y = window.min.y+(Dy(window)/h)*h;
-	screenclear(); */
-
-//	swc = swcurs_create(gscreendata.data, gscreen.width, gscreen.ldepth, gscreen.r, 1);
+	screenclear(); 
 
 }
 
@@ -235,10 +224,10 @@ screeninit(void)
 	if(archlcdmode(&lcd) < 0)
 		return;
 	setscreen(&lcd);
-//	screenputs = lcdscreenputs;
-//	if(printbufpos)
-//		screenputs("", 0);
-//	blanktime = 3;	/* minutes */
+	screenputs = lcdscreenputs;
+	if(printbufpos)
+		screenputs("", 0);
+	blanktime = 3;	/* minutes */
 }
 
 uchar*
@@ -258,129 +247,16 @@ detachscreen(void)
 {
 }
 
-static void
-flush8to4(Rectangle r, ulong *s, int sw, ulong *d, int dw)
-{
-	int i, h, w;
 
-/*
-	print("1) s=%ux sw=%d d=%ux dw=%d r=(%d,%d)(%d,%d)\n",
-		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
-*/
-
-	r.min.x &= ~7;
-	r.max.x = (r.max.x + 7) & ~7;
-	s += (r.min.y*sw)+(r.min.x>>2);
-	d += (r.min.y*dw)+(r.min.x>>3);
-	h = Dy(r);
-	w = Dx(r) >> 3;
-	sw -= w*2;
-	dw -= w;
-
-	while(h--) {
-		for(i=w; i; i--) {
-			ulong v1 = *s++;
-			ulong v2 = *s++;
-			*d++ = 	 (lum[v2>>24]<<28)
-				|(lum[(v2>>16)&0xff]<<24)
-				|(lum[(v2>>8)&0xff]<<20)
-				|(lum[v2&0xff]<<16)
-				|(lum[v1>>24]<<12)
-				|(lum[(v1>>16)&0xff]<<8)
-				|(lum[(v1>>8)&0xff]<<4)
-				|(lum[v1&0xff])
-				;
-		}
-		s += sw;
-		d += dw;
-	}
-}
-
-static void
-flush8to16(Rectangle r, ulong *s, int sw, ulong *d, int dw)
-{
-	int i, h, w;
-	ushort *p;
-
-	if(0)
-		iprint("1) s=%p sw=%d d=%p dw=%d r=[%d,%d, %d,%d]\n",
-		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
-
-	r.min.x &= ~3;
-	r.max.x = (r.max.x + 3) & ~3;	/* nearest ulong */
-	s += (r.min.y*sw)+(r.min.x>>2);
-	d += (r.min.y*dw)+(r.min.x>>1);
-	h = Dy(r);
-	w = Dx(r) >> 2;	/* also ulong */
-	sw -= w;
-	dw -= w*2;
-	if(0)
-		iprint("h=%d w=%d sw=%d dw=%d\n", h, w, sw, dw);
-
-	p = palette16;
-	while(--h >= 0){
-		for(i=w; --i>=0;){
-			ulong v = *s++;
-			*d++ = (p[(v>>8)&0xFF]<<16) | p[v & 0xFF];
-			*d++ = (p[v>>24]<<16) | p[(v>>16)&0xFF];
-		}
-		s += sw;
-		d += dw;
-	}
-}
-
-static void
-flush8to4r(Rectangle r, ulong *s, int sw, ulong *d, int dw)
-{
-	flush8to4(r, s, sw, d, dw);	/* rotation not implemented */
-}
-
-static void
-flush8to16r(Rectangle r, ulong *s, int sw, ulong *d, int dw)
-{
-	int x, y, w, dws;
-	ushort *p;
-	ushort *ds;
-
-	if(0)
-		iprint("1) s=%p sw=%d d=%p dw=%d r=[%d,%d, %d,%d]\n",
-		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
-
-	r.min.y &= ~3;
-	r.max.y = (r.max.y+3) & ~3;
-	r.min.x &= ~7;
-	r.max.x = (r.max.x + 7) & ~7;
-	s += (r.min.y*sw)+(r.min.x>>2);
-//	d += (r.min.y*dw)+(r.min.x>>1);
-	w = Dx(r) >> 2;	/* also ulong */
-	sw -= w;
-	dws = dw*2;
-	if(0)
-		iprint("h=%d w=%d sw=%d dw=%d x,y=%d,%d %d\n", Dy(r), w, sw, dw, r.min.x,r.min.y, dws);
-
-	p = palette16;
-	for(y=r.min.y; y<r.max.y; y++){
-		for(x=r.min.x; x<r.max.x; x+=4){
-			ulong v = *s++;
-			ds = (ushort*)(d + x*dw) + (gscreen->r.max.y-(y+1));
-			ds[0] = p[v & 0xFF];
-			ds[dws] = p[(v>>8)&0xFF];
-			ds[dws*2] = p[(v>>16)&0xFF];
-			ds[dws*3] = p[(v>>24)&0xFF];
-		}
-		s += sw;
-	}
-}
 
 void
 flushmemscreen(Rectangle r)
 {
+
 	if(rectclip(&r, gscreen->r) == 0)
-		return;
+		return; 
 	if(r.min.x >= r.max.x || r.min.y >= r.max.y)
-		return;
-	if(flushpixels != nil)
-		flushpixels(r, (ulong*)gscreen->data->bdata, gscreen->width, (ulong*)vd->fb, vd->bwid >> 2);
+		return; 
 	lcd_flush();
 }
 

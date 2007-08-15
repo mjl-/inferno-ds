@@ -23,7 +23,6 @@ archconsole(void)
 {
 //	uartspecial(0, 57600, 'n', &kbdq, &printq, kbdcr2nl);
 }
-
 void
 archpowerdown(void)
 {
@@ -47,17 +46,18 @@ archconfinit(void)
 void
 kbdinit(void)
 {
+	kbdq = qopen(4*1024, 0, nil, nil);
 	addclock0link(kbdclock, MS2HZ);
 }
 
-static LCDmode lcd240x160x16tft =
+static LCDmode lcd256x192x8tft =
 {
 //	.x = 240, .y = 160, .depth = 16, .hz = 60,
 //	.hsync_wid = 4-2, .sol_wait = 12-1, .eol_wait = 17-1,
 //	.vsync_hgt = 3-1, .soft_wait = 10, .eof_wait = 1,
 //	.lines_per_int = 0,  .acbias_lines = 0,
 //	.vsynclow = 1, .hsynclow = 1,
-	240, 160, 8, 60,
+	256, 192, 8, 60,
 	4-2, 12-1, 17-1,
 	3-1, 10, 1,
 	0, 0,
@@ -67,7 +67,7 @@ static LCDmode lcd240x160x16tft =
 int
 archlcdmode(LCDmode *m)
 {
-	*m = lcd240x160x16tft;
+	*m =  lcd256x192x8tft;
 	return 0;
 }
 

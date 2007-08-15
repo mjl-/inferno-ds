@@ -32,8 +32,8 @@
  */
  
 #define CLOCKFREQ	1678000
-#define MS2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000))
-#define US2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000000))
+#define MS2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000)) 
+#define US2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000000))  
 
 /*
  *  Address spaces
@@ -62,9 +62,14 @@
 #define	IWRAMZERO	0x03000000
 #define	IWRAMTOP	0x03007FFF
 #define 	LCD			0x04000000	/* LCD controller */
+#define	SPI			0x040001C0	/* serial peripheral interface controller */
+#define	VRAM		0x04000240	/* Vram bank controller */
+#define	POWER		0x04000304	/* Power controller */
+#define	SUBLCD		0x04001000	/* sub LCD controller */
+#define	WIFI			0x04800000
 #define	PALMEM		0x05000000
 #define	VRAMZERO	0x06000000
-#define	VRAMTOP		0x06017FFF
+#define	VRAMTOP		0x06800000
 #define	VRAMLO		0x06000000
 #define	VRAMHI		0x0600A000
 #define	INTHAND		0x03007FFC

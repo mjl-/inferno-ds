@@ -1,16 +1,14 @@
 dev
 	root
 	cons archds lcd
-#	kbd
+	env
 #	gpio
 	mnt
-#	pipe
+	pipe
 	prog
-#	srv
-#	draw screen
-	uart
-#	sapcm
-#	flash
+#	rtc
+	srv
+	draw screen
 #	touch
 #	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
 #	ether netif netaux ethermedium
@@ -28,21 +26,21 @@ ip
 
 lib
 	interp
-#	tk
-#	draw
-#	memlayer
-#	memdraw
-#	keyring
+	tk
+	draw
+	memlayer
+	memdraw
+	keyring
 	sec
-#	mp
+	mp
 	math
 	kern
 
 mod
 	sys
-#	draw
-#	tk
-#	keyring
+	draw
+	tk
+	keyring
 
 port
 	alarm
@@ -59,7 +57,6 @@ port
 	latin1
 	nocache
 	nodynld
-	noenv
 	parse
 	pgrp
 	print
@@ -78,38 +75,282 @@ link
 #	pppmedium ppp compress
 
 code
-	int main_pool_pcnt = 60;
-	int heap_pool_pcnt = 40;
-	int image_pool_pcnt = 0;
+	int main_pool_pcnt = 30;
+	int heap_pool_pcnt = 30;
+	int image_pool_pcnt = 40;
 	int cflag = 0;
 
 	int consoleprint = 1;
 	int redirectconsole = 1;
 	char debug_keys = 1;
 	int panicreset = 0;
-	void pseudoRandomBytes(uchar *a, int n){memset(a, 0, n);}
-	int srvf2c(){return -1;}	/* dummy */
-	Type *Trdchan;
-	Type *Twrchan;
-
+	char *tkfont = "/fonts/lucidasans/unicode.7.font";
+	int	tkstylus = 1;
+	
 init
 	dsinit
 
 root
-	/chan
-	/dev
+	/chan	/
+	/dev	/
 	/dis
-#	/usr/jrf/limbo/cb.dis
-#	/usr/jrf/work/dl/test/test.dis
-#	/o/abc.o
-	/dis/sh.dis
-	/dis/ls.dis
-	/dis/lib/filepat.dis
-	/dis/lib/string.dis
-	/dis/lib/bufio.dis
-#	/module/sh.m
-	/net
-	/prog
+	/env	/
+	/fd	/
+	/net	/
+	/net.alt	/
+	/nvfs /
+	/prog	/
 	/osinit.dis
 	/n/remote
-
+	/usr/inferno
+	/usr/inferno/charon
+	/usr/inferno/keyring
+	/usr/inferno/lib
+	/usr/inferno/lib/plumbing
+	/usr/inferno/namespace
+	/fonts/lucidasans/lsr.12
+	/fonts/lucidasans/unicode.7.font
+	/fonts/pelm/unicode.8.font
+	/fonts/pelm/latin1.8
+	/fonts/misc/latin1.6x13.font
+	/fonts/misc/latin1.6x13
+	/dis/ar.dis
+	/dis/archfs.dis
+	/dis/auhdr.dis
+	/dis/auplay.dis
+	/dis/auth
+	/dis/auth/aescbc.dis
+	/dis/B.dis
+	/dis/basename.dis
+	/dis/bind.dis
+	/dis/cat.dis
+	/dis/cd.dis
+	/dis/cp.dis
+	/dis/date.dis
+	/dis/echo.dis
+	/dis/ed.dis
+	/dis/env.dis
+	/dis/ftest.dis
+	/dis/kill.dis
+	/dis/lib
+	/dis/lib/acmewin.dis
+	/dis/lib/arg.dis
+	/dis/lib/bufio.dis
+	/dis/lib/chanfill.dis
+	/dis/lib/env.dis
+	/dis/lib/filepat.dis
+	/dis/lib/format.dis
+	/dis/lib/fsfilter.dis
+	/dis/lib/fslib.dis
+	/dis/lib/fsproto.dis
+	/dis/lib/libc.dis
+	/dis/lib/libc0.dis
+	/dis/lib/login.dis
+	/dis/lib/memfs.dis
+	/dis/lib/menuhit.dis
+	/dis/lib/newns.dis
+	/dis/lib/rand.dis
+	/dis/lib/random.dis
+	/dis/lib/readdir.dis
+	/dis/lib/regex.dis
+	/dis/lib/regexutils.dis
+	/dis/lib/registries.dis
+	/dis/lib/selectfile.dis
+	/dis/lib/sort.dis
+	/dis/lib/string.dis
+	/dis/lib/strinttab.dis
+	/dis/lib/styx.dis
+	/dis/lib/styxconv
+	/dis/lib/styxconv/ostyx.dis
+	/dis/lib/styxconv/styxconv.dis
+	/dis/lib/styxlib.dis
+	/dis/lib/styxpersist.dis
+	/dis/lib/styxservers.dis
+	/dis/lib/tables.dis
+	/dis/lib/tabs.dis
+	/dis/lib/tcl_calc.dis
+	/dis/lib/tcl_core.dis
+	/dis/lib/tcl_inthash.dis
+	/dis/lib/tcl_io.dis
+	/dis/lib/tcl_list.dis
+	/dis/lib/tcl_modhash.dis
+	/dis/lib/tcl_stack.dis
+	/dis/lib/tcl_strhash.dis
+	/dis/lib/tcl_string.dis
+	/dis/lib/tcl_symhash.dis
+	/dis/lib/tcl_tk.dis
+	/dis/lib/tcl_utils.dis
+	/dis/lib/tftp.dis
+	/dis/lib/timers.dis
+	/dis/lib/titlebar.dis
+	/dis/lib/tkclient.dis
+	/dis/lib/translate.dis
+	/dis/lib/ubfa.dis
+	/dis/lib/url.dis
+	/dis/lib/wait.dis
+	/dis/lib/winplace.dis
+	/dis/lib/wmclient.dis
+	/dis/lib/wmlib.dis
+	/dis/lib/wmsrv.dis
+	/dis/lib/workdir.dis
+	/dis/lib/writegif.dis
+	/dis/limbo.dis
+	/dis/listen.dis
+	/dis/mntgen.dis
+	/dis/mount.dis
+	/dis/mouse.dis
+	/dis/mprof.dis
+	/dis/ns.dis
+	/dis/nsbuild.dis
+	/dis/os.dis
+	/dis/p.dis
+	/dis/pause.dis
+	/dis/pipefile.dis
+	/dis/plumb.dis
+	/dis/plumber.dis
+	/dis/prof.dis
+	/dis/ps.dis
+	/dis/puttar.dis
+	/dis/pwd.dis
+	/dis/read.dis
+	/dis/sh/alphabet.dis
+	/dis/sh/arg.dis
+	/dis/sh/csv.dis
+	/dis/sh/echo.dis
+	/dis/sh/expr.dis
+	/dis/sh/file2chan.dis
+	/dis/sh/mk.dis
+	/dis/sh/regex.dis
+	/dis/sh/sexprs.dis
+	/dis/sh/sh.dis
+	/dis/sh/shmk.dis
+	/dis/sh/std.dis
+	/dis/sh/string.dis
+	/dis/sh/test.dis
+	/dis/sh/tk.dis
+	/dis/sh.dis
+	/dis/sha1sum.dis
+	/dis/styxlisten.dis
+	/dis/styxmon.dis
+	/dis/tclsh.dis
+	/dis/tkcmd.dis
+	/dis/tokenize.dis
+	/dis/touch.dis
+	/dis/wm
+	/dis/wm/about.dis
+	/dis/wm/avi.dis
+	/dis/wm/bounce.dis
+	/dis/wm/brutus
+	/dis/wm/brutus/excerpt.dis
+	/dis/wm/brutus/image.dis
+	/dis/wm/brutus/mod.dis
+	/dis/wm/brutus/table.dis
+	/dis/wm/brutus.dis
+	/dis/wm/c4.dis
+	/dis/wm/calendar.dis
+	/dis/wm/cprof.dis
+	/dis/wm/date.dis
+	/dis/wm/dir.dis
+	/dis/wm/dmview.dis
+	/dis/wm/dmwm.dis
+	/dis/wm/edit.dis
+	/dis/wm/filename.dis
+	/dis/wm/ftree.dis
+	/dis/wm/getauthinfo.dis
+	/dis/wm/keyboard.dis
+	/dis/wm/logon.dis
+	/dis/wm/logwindow.dis
+	/dis/wm/man.dis
+	/dis/wm/mand.dis
+	/dis/wm/mash.dis
+	/dis/wm/memory.dis
+	/dis/wm/pen.dis
+	/dis/wm/sh.dis
+	/dis/wm/smenu.dis
+	/dis/wm/task.dis
+	/dis/wm/toolbar.dis
+	/dis/wm/view.dis
+	/dis/wm/vt.dis
+	/dis/wm/wm.dis
+	/dis/wm/wmplay.dis
+	/dis/wmexport.dis
+	/dis/wmimport.dis
+	/dis/xargs.dis
+	/dis/xd.dis
+	/dis/zeros.dis
+	/module
+	/module/arg.m
+	/module/bufio.m
+	/module/cfg.m
+	/module/cfgfile.m
+	/module/complete.m
+	/module/convcs.m
+	/module/crc.m
+	/module/daytime.m
+	/module/devpointer.m
+	/module/dialog.m
+	/module/dict.m
+	/module/dis.m
+	/module/dividers.m
+	/module/draw.m
+	/module/emio.m
+	/module/encoding.m
+	/module/env.m
+	/module/filepat.m
+	/module/filter.m
+	/module/keyboard.m
+	/module/keyring.m
+	/module/keyset.m
+	/module/libc.m
+	/module/libc0.m
+	/module/lists.m
+	/module/loader.m
+	/module/lock.m
+	/module/man.m
+	/module/math.m
+	/module/memfs.m
+	/module/multistyx.m
+	/module/names.m
+	/module/newns.m
+	/module/palm.m
+	/module/palmfile.m
+	/module/print.m
+	/module/profile.m
+	/module/pslib.m
+	/module/quicktime.m
+	/module/rand.m
+	/module/readdir.m
+	/module/regex.m
+	/module/regexutils.m
+	/module/registries.m
+	/module/sh.m
+	/module/sort.m
+	/module/srv.m
+	/module/srvrunt.b
+	/module/string.m
+	/module/strinttab.m
+	/module/strokes.m
+	/module/styx.m
+	/module/styxconv.m
+	/module/styxlib.m
+	/module/styxpersist.m
+	/module/styxservers.m
+	/module/sys.m
+	/module/tables.m
+	/module/tabs.m
+	/module/tcllib.m
+	/module/tftp.m
+	/module/timers.m
+	/module/titlebar.m
+	/module/tk.m
+	/module/tkclient.m
+	/module/winplace.m
+	/module/wmclient.m
+	/module/wmlib.m
+	/module/wmsrv.m
+	/lib/wmsetup
+	/icons/tk/vitasmall.bit
+	/icons/tk/task.bit
+	/icons/tk/maxf.bit
+	/icons/tk/exit.bit
+	/dis/lib/auth.dis

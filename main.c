@@ -74,8 +74,6 @@ confinit(void)
 	conf.npage = conf.npage0 + conf.npage1;
 	conf.ialloc = (((conf.npage*(main_pool_pcnt))/100)/2)*BY2PG;
 
-
-//	conf.nproc = 20;
 	conf.nproc = 100 + ((conf.npage*BY2PG)/MB)*5;
 	conf.nmach = 1;
 }
@@ -125,18 +123,18 @@ main(void)
 	printinit();
 	m = (Mach*)MACHADDR;
 
-//	screeninit();
+	screeninit();
+	print("worked\n");
+
 	procinit();
 
 	chandevreset();
 
 	eve = strdup("inferno");
 	archconsole();
-//	else
-//		kbdinit();
+	kbdinit();
 
 	print("\nInferno %s\n", VERSION);
-
 	print("conf %s (%lud) jit %d\n\n", conffile, kerndate, cflag);
 	userinit();
 	schedinit();
