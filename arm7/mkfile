@@ -1,0 +1,29 @@
+<../../../mkconfig
+
+TARG=ids7\
+
+OFILES=	l.$O\
+		div.$O\
+		defaultARM7.$O\
+		ipc.$O\
+		spi.$O\
+		clock.$O\
+		system.$O\
+		serial.$O\
+		touch.$O\
+		microphone.$O\
+		interrupts.$O\
+
+
+HFILES=
+LIBS=9
+CC=5c
+AS=5a
+LD=5l
+CFLAGS=-wFV -I ../../../Inferno/arm/include -r
+LDFLAGS=-H4 -R0 -T0x03800000
+BIN=$ROOT/$OBJDIR/bin
+
+#syms: 
+
+<$ROOT/mkfiles/mkone-$SHELLTYPE

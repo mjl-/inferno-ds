@@ -1,0 +1,69 @@
+
+// Card bus
+#define CARD_CR1       (*(vuint16*)0x040001A0)
+#define CARD_CR1H      (*(vuint8*)0x040001A1)
+#define CARD_EEPDATA   (*(vuint8*)0x040001A2)
+#define CARD_CR2       (*(vuint32*)0x040001A4)
+#define CARD_COMMAND   ((vuint8*)0x040001A8)
+
+#define CARD_DATA_RD   (*(vuint32*)0x04100010)
+
+#define CARD_1B0       (*(vuint32*)0x040001B0)
+#define CARD_1B4       (*(vuint32*)0x040001B4)
+#define CARD_1B8       (*(vuint16*)0x040001B8)
+#define CARD_1BA       (*(vuint16*)0x040001BA)
+
+
+#define CARD_CR1_ENABLE  0x80   in byte 1, i.e. 0x8000
+#define CARD_CR1_IRQ     0x40   in byte 1, i.e. 0x4000
+
+
+// CARD_CR2 register:
+
+#define CARD_ACTIVATE   (1<<31)  // when writing, get the ball rolling
+// 1<<30
+#define CARD_nRESET     (1<<29) //  value on the /reset pin (1 = high out, not a reset state, 0 = low out = in reset)
+#define CARD_28         (1<<28)   //when writing
+#define CARD_27         (1<<27)  // when writing
+#define CARD_26         (1<<26)
+#define CARD_22         (1<<22)
+#define CARD_19         (1<<19)
+#define CARD_ENCRYPTED  (1<<14)   //when writing, this cmd should be encrypted
+#define CARD_13         (1<<13)   //when writing
+#define CARD_4          (1<<4)    //when writing
+#define CARD_BUSY       (1<<31)  // when reading, still expecting incomming data?
+#define CARD_DATA_READY (1<<23)  // when reading, CARD_DATA_RD or CARD_DATA has another word of data and is good to go
+
+
+
+
+void cardWriteCommand(const uint8 * cmd);
+
+void cardPolledTransfer(uint32 flags, uint32 * destination, uint32 length, const uint8 * cmd);
+void cardStartTransfer(const uint8 * cmd, uint32 * destination, int channel, uint32 flags);
+uint32 cardWriteAndRead(const uint8 * cmd, uint32 flags);
+
+void cardRead00(uint32 address, uint32 * destination, uint32 length, uint32 flags);
+void cardReadHeader(uint8 * header);
+int cardReadID(uint32 flags);
+void cardReadEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype);
+void cardWriteEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype);
+
+uint8 cardEepromReadID(uint8 i); 
+uint8 cardEepromCommand(uint8 cmd, uint32 address); 
+
+/*
+ * -1:no card or no EEPROM
+ *  0:unknown                 PassMe?
+ *  1:TYPE 1  4Kbit(512Byte)  EEPROM
+ *  2:TYPE 2 64Kbit(8KByte)or 512kbit(64Kbyte)   EEPROM
+ *  3:TYPE 3  2Mbit(256KByte) FLASH MEMORY (some rare 4Mbit and 8Mbit chips also)
+ */
+int cardEepromGetType(void);
+
+uint32 cardEepromGetSize();
+
+void cardEepromChipErase(void);
+
+void cardEepromSectorErase(uint32 address);
+
