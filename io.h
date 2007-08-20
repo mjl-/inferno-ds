@@ -20,15 +20,16 @@
   * Interrupt controller
   */
 
-#define INTbase	(SFRbase + 0x4000)
+#define INTbase	(SFRbase + 0x208)
 #define INTREG	((IntReg *)INTbase)
 
 typedef struct IntReg IntReg;
 struct IntReg {
-	ulong	msk;			
+	ushort	master;
+	ulong	pad1;
+	ulong	msk;
+	ulong	pad2[4];
 	ulong	pnd;
-	ulong	wait;
-	ulong	mie;	
 };
 
 
@@ -90,7 +91,6 @@ struct SpiReg {
 typedef struct Ipc Ipc;
 struct Ipc {
 	ulong cr;
-	
 };
 void _halt(void);
 void _reset(void);

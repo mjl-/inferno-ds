@@ -9,10 +9,12 @@ dev
 #	rtc
 	srv
 	draw screen
+	pointer
 #	touch
 #	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
 #	ether netif netaux ethermedium
 #	ata
+	nds
 
 ip
 #	il
@@ -84,7 +86,7 @@ code
 	int redirectconsole = 1;
 	char debug_keys = 1;
 	int panicreset = 0;
-	char *tkfont = "/fonts/lucidasans/unicode.7.font";
+	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
 	
 init
@@ -114,6 +116,8 @@ root
 	/fonts/pelm/latin1.8
 	/fonts/misc/latin1.6x13.font
 	/fonts/misc/latin1.6x13
+	/dis/ls.dis
+	/dis/lib/daytime.dis
 	/dis/ar.dis
 	/dis/archfs.dis
 	/dis/auhdr.dis
@@ -196,6 +200,7 @@ root
 	/dis/lib/writegif.dis
 	/dis/limbo.dis
 	/dis/listen.dis
+	/dis/touchcal.dis
 	/dis/mntgen.dis
 	/dis/mount.dis
 	/dis/mouse.dis

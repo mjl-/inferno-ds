@@ -72,6 +72,9 @@ install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $IN
 i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES # -t 
+#	$LD -o o.out    -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES # -t 
+#	./mksymtab o.out && rm o.out
+	cd arm7; mk
 #	$CC $CFLAGS arm7/arm7.c
 #	$LD -o ids7  -H4 -R0 -T$ARM7ZERO   7.c  arm7.$O # -t 
 			
@@ -85,9 +88,9 @@ trap.5: trap.c
 
 
 i$CONF.rom: i$CONF
-	ndstool -g INFR NE  INFERNODS 0.1 -9 ids -7 ids7 -e9 $KTZERO -e7  0x03800000 -c ids.nds
+	ndstool -g INFR NE  INFERNODS 0.1 -9 ids -7 arm7/o.out -e9 $KTZERO -e7  0x03800000 -c ids.nds
 #	dsbuild ids.nds -o ids.nds.gba
-	open ids.nds
+#	open ids.nds
 #	scp ids.nds noah-e@rayserv44:~/
 	
 size: $OBJ $CONF.c $CONF.root.h $LIBNAMES
@@ -123,3 +126,7 @@ devbench.$O: bench.h benchmod.h
 
 devuart.$O:	devuart.c
 	$CC $CFLAGS devuart.c
+	
+syms:   $OBJ $CONF.c $CONF.root.h $LIBNAMES
+	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE $CONF.c >syms
+	cd arm7; mk syms

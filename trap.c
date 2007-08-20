@@ -70,7 +70,7 @@ intrclear(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrclear: irq source %d out of range\n", v);
-	INTREG->pnd = (1 << v);
+	INTREG->pnd &= ~(1 << v);
 }
 
 void
@@ -86,7 +86,7 @@ intrenable(int v, void (*f)(Ureg*, void*), void* a, int tbdf)
 
 	x = splfhi();
 	/* Enable the interrupt by clearing the mask bit */
-	INTREG->msk &= ~(1 << v);
+	INTREG->msk |= 1 << v;
 	splx(x);
 }
 
@@ -113,10 +113,10 @@ trapv(int off, void (*f)(void))
 {
 	ulong *vloc;
 	int offset;
-
-	vloc = (ulong *)off;
+	vloc = (ulong *)(off+0xFFFF0000);
 	offset = (((ulong *) f) - vloc)-2;
 	*vloc = (0xea << 24) | offset;
+	*((ulong*)0xFFFF0000)=0xdeadbeef;
 }
 
 static void
@@ -131,10 +131,21 @@ trapinit(void)
 {
 	int v;
 	IntReg *intr = INTREG;
-	ulong **intrhand = (ulong**)INTHAND;
+	ulong **intrhand;
+	int i;
+//	writedtcmctl(0x00800000+0xa);
+//	intrhand = (ulong**)((getdtcm()&0xfffff000)+0x3ffc);
+	INTREG->master=1;
+//	INTREG->msk=1;
+//	INTREG->pnd=0xff;
+//	*((ulong*)0x04000214)=0xdeadbeef;
+	/* set up stacks for various exceptions */
+	setr13(PsrMfiq, fiqstack+nelem(fiqstack));
+	setr13(PsrMirq, irqstack+nelem(irqstack));
+	setr13(PsrMabt, abtstack+nelem(abtstack));
+	setr13(PsrMund, undstack+nelem(undstack)); 
 
-	
-	*intrhand = (ulong*)trap; /* the GBA hardware handles interrupts */
+//	*intrhand = (ulong*)_virqcall; /* the GBA hardware handles interrupts */
 
 	for (v = 0; v < nelem(Irq); v++) {
 		Irq[v].r = safeintr;
@@ -218,7 +229,6 @@ trap(Ureg* ureg)
 		ureg->pc -= 4;
 	ureg->sp = (ulong)(ureg+1);
 	if (itype == PsrMirq || itype == PsrMfiq) {	/* Interrupt Request */
-
 		Proc *saveup;
 		int t;
 
@@ -396,7 +406,6 @@ void
 dumpregs(Ureg* ureg)
 {
 	Proc *p;
-
 	print("TRAP: %s", trap_str(ureg->type));
 	if ((ureg->psr & PsrMask) != PsrMsvc)
 		print(" in %s", trap_str(ureg->psr));

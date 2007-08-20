@@ -6,6 +6,8 @@
 #include "fns.h"
 #include "../port/error.h"
 #include "version.h"
+#include "arm7/jtypes.h"
+#include "arm7/ipc.h"
 
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
@@ -96,7 +98,12 @@ serputc()
 {
 	// dummy routine
 }
-
+void
+testintr()
+{
+	print("vblank intr\n");
+	
+}
 void
 main(void)
 {
@@ -124,7 +131,21 @@ main(void)
 	m = (Mach*)MACHADDR;
 
 	screeninit();
-	print("worked\n");
+
+	i=getdtcm();
+	intrenable(0, testintr, 0, 0);
+//	*((ulong*)0x04000004)|=1<<3;
+	spllo();
+	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
+//	print("%lux\n",writedtcmctl(0xdeadbeef));
+	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
+	for(;;)
+		waitvblank();
+	loop();
+/*	for(;;);
+	for(;;) {
+		print("%d %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
+	} */
 
 	procinit();
 
@@ -280,3 +301,12 @@ va2pa(void *v)
 }
 
 
+
+static  void IPC_SendSync(unsigned int sync) {
+	REG_IPC_SYNC = (REG_IPC_SYNC & 0xf0ff) | (((sync) & 0x0f) << 8) | IPC_SYNC_IRQ_REQUEST;
+}
+
+
+static  int IPC_GetSync() {
+	return REG_IPC_SYNC & 0x0f;
+}

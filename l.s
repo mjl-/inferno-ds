@@ -9,6 +9,7 @@ TEXT _startup(SB), $-4
 	MOVW		$setR12(SB), R12 	/* static base (SB) */
 	MOVW		$Mach0(SB), R13
 	ADD		$(KSTACK-4), R13	/* leave 4 bytes for link */
+	
 
 	MOVW		$(PsrDirq|PsrDfiq|PsrMsvc), R1	/* Switch to SVC mode */
 	MOVW		R1, CPSR
@@ -219,6 +220,21 @@ TEXT	_clearregs(SB), $-4
 TEXT _stop(SB), $-4
 	MOVW $0xEAEAEA,R0
 
-TEXT	_waitvblank(SB), $-4
-	SWI 0x05
-	
+TEXT	waitvblank(SB), $-4
+	SWI 0x050000
+
+TEXT getdtcm(SB), $-4
+	MRC		15,0,R0,C9,C1,0
+	RET
+
+TEXT getdtcmctl(SB), $-4
+	MRC		15,0,R0,C9,C1,0
+	RET
+
+TEXT writedtcmctl(SB), $-4
+	MCR		15,0,R0,C9,C1,0
+	RET
+TEXT loop(SB), $-4
+wait:
+	B wait
+	RET

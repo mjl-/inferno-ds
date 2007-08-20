@@ -47,7 +47,7 @@ enum {
 	REGPC = 15,
 };
 
-int	fpemudebug = 0;
+int	fpemudebug = 1;
 
 #undef OFR
 #define	OFR(X)	((ulong)&((Ureg*)0)->X)
