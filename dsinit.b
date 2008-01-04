@@ -50,39 +50,27 @@ init()
 
 	sys->bind("/", "/", Sys->MREPL);
 
-
 #	dobind("#I", "/net", sys->MAFTER);	# IP
 	dobind("#p", "/prog", sys->MREPL);	# prog
 	dobind("#c", "/dev", sys->MREPL); 	# console
 	sys->bind("#d", "/fd", Sys->MREPL);
-	dobind("#i", "/dev", sys->MAFTER); 	# draw
-#	dobind("#m", "/dev", Sys->MAFTER);	# pointer
-	sys->bind("#e", "/env", sys->MREPL|sys->MCREATE);	# environment
-	sys->bind("#A", "/dev", Sys->MAFTER);	# optional audio
-#	dobind("#T","/dev",sys->MAFTER);	# touch screen and other ipaq devices
-
+	dobind("#i", "/dev", sys->MAFTER);	# draw
+	dobind("#m", "/dev", Sys->MAFTER);	# pointer
+	dobind("#e", "/env", sys->MREPL|sys->MCREATE);	# environment
+#	dobind("#A", "/dev", Sys->MAFTER);	# optional audio
+	dobind("#T","/dev",sys->MAFTER);	# touch screen and other ipaq devices
 
 	setsysname("ds");			# set system name
-
-
 
 	sys->chdir("/");
 
 	user := rdenv("user", "inferno");
-	(ok, nil) := sys->stat("/dis/wm/sh.dis");
-	if(ok >= 0 && userok(user)){
-		wm := load Command "/dis/wm/sh.dis";
-		if(wm != nil){
-			spawn wm->init(nil, list of {"wm/sh.dis" });
-			exit;
-		}
+	sys->print("user %s init()\n", user);
+	if(userok(user)){
+		start("wm/wm", nil);
+		exit;
 	}
-	sh := load Command Sh->PATH;
-	if(sh == nil){
-		err(sys->sprint("can't load %s: %r", Sh->PATH));
-		hang();
-	}
-	spawn sh->init(nil, "sh" :: nil);
+	start("sh", nil);
 }
 
 start(cmd: string, args: list of string)

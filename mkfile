@@ -4,6 +4,7 @@
 
 CONF=ds				#default configuration
 CONFLIST=ds
+CLEANCONFLIST=ds sds
 
 SYSTARG=$OSTARG
 #SYSTARG=Inferno
@@ -14,24 +15,13 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 
 <$ROOT/mkfiles/mkfile-$SYSTARG-$OBJTYPE	#set vars based on target system
 
-BIN=$ROOT/MacOSX/386/bin
-
-CC=$BIN/5c
-AS=$BIN/5a
-LD=$BIN/5l
-
-#CC=$BIN/tc
-#AS=$BIN/5a -t
-#LD=$BIN/5l -t
-
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
 KTZERO=0x02008010
 ARM7ZERO=0x03800000
-#KDZERO=0x02008010 #8010
+KDZERO=$KTZERO #8010
 
 OBJ=\
-#	rom.$O\
 	l.$O\
 	clock.$O\
 	div.$O\
@@ -63,42 +53,27 @@ HFILES=\
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
 
-# default:V: i$CONF.gz i$CONF.p9.gz
-default:V: i$CONF.rom
+default:V: i$CONF.nds # i$CONF.out
 
 install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $INSTALLDIR/i$CONF.raw
-
 
 i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES # -t 
-#	$LD -o o.out    -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES # -t 
-#	./mksymtab o.out && rm o.out
-	cd arm7; mk
-#	$CC $CFLAGS arm7/arm7.c
-#	$LD -o ids7  -H4 -R0 -T$ARM7ZERO   7.c  arm7.$O # -t 
-			
-# -D$KDZERO	
 
-trap.t: trap.5
-	cp trap.5 trap.t
-trap.5: trap.c
-	5c $CFLAGS trap.c
+arm7/$O.out:Pcmp -s:	/dev/null	# nasty but works, suggestions welcome
+	cd arm7; mk 5.out
+#	mk i5.out
 
+i$CONF.nds: i$CONF arm7/$O.out
+	ndstool -g INFR -c i$CONF.nds -b vn.bmp "INFERNO-DS v0.1; Author: NE" \
+		-7 arm7/$O.out -r7 $ARM7ZERO -e7 $ARM7ZERO \
+		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 
-
-i$CONF.rom: i$CONF
-	ndstool -g INFR NE  INFERNODS 0.1 -9 ids -7 arm7/o.out -e9 $KTZERO -e7  0x03800000 -c ids.nds
-#	dsbuild ids.nds -o ids.nds.gba
-#	open ids.nds
-#	scp ids.nds noah-e@rayserv44:~/
-	
-size: $OBJ $CONF.c $CONF.root.h $LIBNAMES
+i$CONF.out: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES >/dev/null # -t 
-	ksize size
-	rm size
-
+	ksize $target
 
 <../port/portmkfile
 
@@ -130,3 +105,6 @@ devuart.$O:	devuart.c
 syms:   $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE $CONF.c >syms
 	cd arm7; mk syms
+
+vclean:V: clean
+	cd arm7; mk vclean

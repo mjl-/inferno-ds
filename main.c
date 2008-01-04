@@ -27,10 +27,14 @@ extern int heap_pool_pcnt;
 extern int image_pool_pcnt;
 extern int kernel_pool_pcnt;
 
+/*
+ * flush data in a given address range to memory
+ * and invalidate the region in the instruction cache.
+ */
 int
-segflush(void *p, ulong l)
+segflush(void *a, ulong n)
 {
-	USED(p, l);
+	USED(a, n);
 	return 1;
 }
 
@@ -83,9 +87,12 @@ confinit(void)
 void
 machinit(void)
 {
-	Mach* p;
-	int i;
+	m = (Mach*)MACHADDR;
 	memset(m, 0, sizeof(Mach));	/* clear the mach struct */
+	m->machno = 1;
+	m->ticks = 1;
+	m->cpuhz = CLOCKFREQ;
+	//m->cputype = getcpuid()>>16;
 }
 void
 poolmove(void* p, void* g)
@@ -98,55 +105,73 @@ serputc()
 {
 	// dummy routine
 }
+
 void
 testintr()
 {
 	print("vblank intr\n");
 	
 }
+
+#define idoc(m) if(1) uartputs(m, strlen(m));
+#define doc(m) if(0) print("%s", m)
+
 void
 main(void)
 {
-	char *p, *g, *ep;
-	ulong *t;
-	ulong i,j,k;
+	//char *p, *g, *ep;
+	//ulong *t;
+	//ulong i,j,k;
+
 	/* fill out the data section by hand */
-/*	memset(edata, 0, end-edata); 	*/	/* clear the BSS */
-	poolsetcompact(mainmem, poolmove);
+	memset(edata, 0, end-edata); 		/* clear the BSS */
+
+	doc("machinit...\n");
 	machinit();
 	archreset();
+	quotefmtinstall();
+	doc("confinit...\n");
 	confinit();
-	links();
 
 /* TODO, fix printing, figure out what is wrong with locking and 
 	memory addresses  */
-
+	
+	doc("xinit...\n");
 	xinit();
-	poolinit();
+	doc("poolinit...\n");
 	poolsizeinit();
+	poolinit();
+	poolsetcompact(mainmem, poolmove);
 
+	doc("trapinit...\n");
 	trapinit(); 
+	doc("clockinit...\n");
 	clockinit(); 
+	doc("printinit...\n");
 	printinit();
-	m = (Mach*)MACHADDR;
 
+	doc("screeninit...\n");
 	screeninit();
 
-	i=getdtcm();
-	intrenable(0, testintr, 0, 0);
+	// there's nothing to link atm
+	links();
+
+//	i=getdtcm();
+//	intrenable(0, testintr, 0, 0);
 //	*((ulong*)0x04000004)|=1<<3;
-	spllo();
-	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
+//	spllo();
+//	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
 //	print("%lux\n",writedtcmctl(0xdeadbeef));
-	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
-	for(;;)
-		waitvblank();
-	loop();
+//	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
+//	for(;;){
+//		waitvblank();
+//	}
+//	loop();
 /*	for(;;);
 	for(;;) {
 		print("%d %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
 	} */
-
+	
 	procinit();
 
 	chandevreset();
@@ -157,6 +182,7 @@ main(void)
 
 	print("\nInferno %s\n", VERSION);
 	print("conf %s (%lud) jit %d\n\n", conffile, kerndate, cflag);
+
 	userinit();
 	schedinit();
 }
@@ -165,11 +191,12 @@ void
 init0(void)
 {
 	Osenv *o;
+	char buf[2*KNAMELEN];
 
-
-// print("init0\n");
 	up->nerrlab = 0;
+	
 	spllo();
+	
 	if(waserror())
 		panic("init0 %r");
 
@@ -179,16 +206,21 @@ init0(void)
 	 */
 	o = up->env;
 	o->pgrp->slash = namec("#/", Atodir, 0, 0);
-
 	cnameclose(o->pgrp->slash->name);
 	o->pgrp->slash->name = newcname("/");
 	o->pgrp->dot = cclone(o->pgrp->slash);
 	print("o->pgrp->dot %ulx\n", o->pgrp->dot);
 
 	chandevinit();
+	
+	if(!waserror()){
+		ksetenv("cputype", "arm", 0);
+		snprint(buf, sizeof(buf), "arm %s", conffile);
+		ksetenv("terminal", buf, 0);
+		poperror();
+	}
+	
 	poperror();
-// iprint("init0: disinit\n");
-// print("CXXXYYYYYYYYZZZZZZZ\n");
 	
 	disinit("/osinit.dis");
 }
@@ -203,8 +235,8 @@ userinit()
 	o = p->env;
 
 	o->fgrp = newfgrp(nil);
-
 	o->pgrp = newpgrp();
+	o->egrp = newegrp();
 	kstrdup(&o->user, eve);
 
 	strcpy(p->text, "interp");

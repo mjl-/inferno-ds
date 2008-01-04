@@ -1,0 +1,158 @@
+dev
+	root
+	cons archds lcd
+	env
+#	gpio
+	mnt
+	pipe
+	prog
+#	rtc
+	srv
+	draw screen
+	pointer
+#	touch
+#	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
+#	ether netif netaux ethermedium
+#	ata
+	nds
+#	uart
+
+ip
+#	il
+#	tcp
+#	udp
+#	rudp
+#	igmp
+#	ipifc
+#	icmp
+#	ipmux
+
+lib
+	interp
+	tk
+	draw
+	memlayer
+	memdraw
+	keyring
+	sec
+	mp
+	math
+	kern
+
+mod
+	sys
+	draw
+	tk
+	keyring
+
+port
+	alarm
+	alloc
+	allocb
+	chan
+	dev
+	dial
+	dis
+	discall
+	exception
+	exportfs
+	inferno
+	latin1
+	nocache
+	nodynld
+	parse
+	pgrp
+	print
+	proc
+	qio
+	qlock
+	random
+	sysfile
+	taslock
+	xalloc
+
+link	
+#	lcd
+#	ether589
+#	ethertdk
+#	pppmedium ppp compress
+misc
+
+code
+	int main_pool_pcnt = 30;
+	int heap_pool_pcnt = 30;
+	int image_pool_pcnt = 40;
+	int cflag = 0;
+
+	int consoleprint = 1;
+	int redirectconsole = 1;
+	char debug_keys = 1;
+	int panicreset = 0;
+	char *tkfont = "/fonts/lucidasans/unicode.7.font";
+	int	tkstylus = 1;
+	
+init
+	dsinit
+
+root
+	/chan	/
+	/dev	/
+	/dis
+	/env	/
+	/fd	/
+	/net	/
+	/net.alt	/
+	/nvfs /
+	/prog	/
+	/osinit.dis
+	/n/remote
+	/usr/inferno
+	/usr/inferno/charon
+	/usr/inferno/keyring
+	/usr/inferno/lib
+	/usr/inferno/lib/plumbing
+	/usr/inferno/namespace
+	/fonts/lucidasans/lsr.10
+	/fonts/lucidasans/lsr.12
+	/fonts/lucidasans/unicode.6.font
+	/fonts/lucidasans/unicode.7.font
+	/fonts/pelm/unicode.8.font
+	/fonts/pelm/latin1.8
+	/fonts/misc/latin1.6x13.font
+	/fonts/misc/latin1.6x13
+
+	/dis/lib/arg.dis
+	/dis/lib/auth.dis
+	/dis/lib/bufio.dis
+	/dis/lib/dhcpclient.dis
+	/dis/lib/env.dis
+	/dis/lib/filepat.dis
+	/dis/lib/ip.dis
+	/dis/lib/plumbmsg.dis
+	/dis/lib/random.dis
+	/dis/lib/readdir.dis
+	/dis/lib/ssl.dis
+	/dis/lib/string.dis
+	/dis/lib/titlebar.dis
+	/dis/lib/tkclient.dis
+	/dis/lib/translate.dis
+	/dis/lib/winplace.dis
+	/dis/lib/wmclient.dis
+	/dis/lib/wmlib.dis
+	/dis/lib/wmsrv.dis
+	/dis/lib/workdir.dis
+	/dis/sh.dis
+	/dis/touchcal.dis
+	/dis/wm/sh.dis
+	/dis/wm/wm.dis
+	/dis/wm/toolbar.dis
+	/dis/echo.dis
+	/dis/cat.dis
+	/dis/ftest.dis
+	/dis/sh/std.dis
+	
+	/lib/wmsetup
+	/icons/tk/vitasmall.bit
+	/icons/tk/task.bit
+	/icons/tk/maxf.bit
+	/icons/tk/exit.bit
