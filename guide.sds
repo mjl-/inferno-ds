@@ -2,6 +2,7 @@ tar czvf ds-changes.tgz `{changes | sed 's/#.*//; s/^changes //'}
 acme -a -l ds.dump &
 Dump /usr/inferno/os/ds/ds.dump
 
+u mount /mnt/usb
 cp isds.nds /mnt/usb
 u umount /mnt/usb
 
