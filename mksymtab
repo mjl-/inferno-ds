@@ -6,4 +6,4 @@ BEGIN { s="00000000"}
 {
 	print substr(s,0,8-length($1))$1,$3
 }
-')>ids.SYM
+') > $1.SYM
