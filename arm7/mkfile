@@ -1,7 +1,7 @@
 <../../../mkconfig
 
 TARGS=\
-	$O.out\
+	i$O\
 
 OFILES=\
 	l.$O\
@@ -25,11 +25,13 @@ CFLAGS=-wFV -I $ROOT/Inferno/arm/include -I $ROOT/include -r
 LDFLAGS=-H4 -R0 -T$ARM7ZERO
 BIN=$ROOT/$OBJDIR/bin
 
+i$O: $OFILES
+	$LD -o $target -H4 -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
 i$O.out: $OFILES
 	$LD -o $target -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
 	ksize $target
 
 vclean:V: clean
-	rm -f $O.out i$O.out
+	rm -f i$O i$O.out
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE

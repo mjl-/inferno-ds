@@ -59,20 +59,21 @@ install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $IN
 
 i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES # -t 
+	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
 
-arm7/$O.out:Pcmp -s:	/dev/null	# nasty but works, suggestions welcome
-	cd arm7; mk 5.out
+arm7/i$O:NV:
+	cd arm7
+	mk i5
 #	mk i5.out
 
-i$CONF.nds: i$CONF arm7/$O.out
-	ndstool -g INFR -c i$CONF.nds -b vn.bmp "INFERNO-DS v0.1; Author: NE" \
-		-7 arm7/$O.out -r7 $ARM7ZERO -e7 $ARM7ZERO \
+i$CONF.nds: i$CONF arm7/i$O
+	ndstool -g INFR -c i$CONF.nds -b vn.bmp 'INFERNO-DS v0.1; Author: NE' \
+		-7 arm7/i$O -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 
 i$CONF.out: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES >/dev/null # -t 
+	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES
 	ksize $target
 
 <../port/portmkfile
