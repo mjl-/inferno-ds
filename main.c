@@ -167,10 +167,10 @@ main(void)
 //		waitvblank();
 //	}
 //	loop();
-/*	for(;;);
+//	for(;;);
 	for(;;) {
-		print("%d %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
-	} */
+		print("%x %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
+	}
 	
 	procinit();
 

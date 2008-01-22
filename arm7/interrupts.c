@@ -46,15 +46,11 @@
 #include <u.h>
 #include "../mem.h"
 #include "nds.h"
-void IntrMain();	// Prototype for assembly interrupt dispatcher
 void irqDummy(void) {}
 
-#define INT_TABLE_SECTION
-
-VoidFunctionPointer __irq_vector[20];
 typedef struct IntTable IntTable;
+IntTable irqTable[MAX_INTERRUPTS];
 
-IntTable irqTable[MAX_INTERRUPTS] INT_TABLE_SECTION;
 void irqset(int mask, IntFn handler) {
 	int i;
 	IntTable *t;
@@ -63,15 +59,36 @@ void irqset(int mask, IntFn handler) {
 	for(i=0;i<MAX_INTERRUPTS;i++) 
 		if(!irqTable[i].mask || irqTable[i].mask == mask) 
 			break;
-	if ( i == MAX_INTERRUPTS ) return;
+	if ( i == MAX_INTERRUPTS )
+		return;
+
 	irqTable[i].handler	= handler;
 	irqTable[i].mask	= mask;
+
 	if(mask & IRQ_VBLANK)
 		REG_DISPSTAT |= DISP_VBLANK_IRQ ;
 	if(mask & IRQ_HBLANK)
 		REG_DISPSTAT |= DISP_HBLANK_IRQ ;
 	REG_IE |= mask;
 }
+
+void
+irqhandler(){
+	int i;
+	int iflags;
+
+	iflags = REG_IF;
+	for(i=0; i<MAX_INTERRUPTS; i++){
+		if (iflags & irqTable[i].mask){
+			irqTable[i].handler();
+		}
+		iflags &= ~irqTable[i].mask;
+	}
+
+	// ack. unhandled ints
+	REG_IF = iflags;
+}
+
 void irqInit() {
 	int i;
 	// Set all interrupts to dummy functions.
@@ -80,11 +97,12 @@ void irqInit() {
 		irqTable[i].handler = irqDummy;
 		irqTable[i].mask = 0;
 	}
-	IRQ_HANDLER = IntrMain;
+	IRQ_HANDLER = irqhandler;
 	REG_IE	= 0;			// disable all interrupts
 	REG_IF	= IRQ_ALL;		// clear all pending interrupts
 	REG_IME = 1;			// enable global interrupt
 }
+
 void irqClear(int mask) {
 	int i = 0;
 	for	(i=0;i<MAX_INTERRUPTS;i++)
@@ -99,6 +117,7 @@ void irqClear(int mask) {
 		REG_DISPSTAT &= ~DISP_YTRIGGER_IRQ;
 	REG_IE &= ~mask;
 }
+
 void irqInitHandler(IntFn handler) {
 	REG_IME = 0;
 	REG_IF = ~0;
@@ -106,6 +125,7 @@ void irqInitHandler(IntFn handler) {
 	IRQ_HANDLER = handler;
 	REG_IME = 1;
 }
+
 void irqen(uint32 irq) {
 	if (irq & IRQ_VBLANK)
 		REG_DISPSTAT |= DISP_VBLANK_IRQ ;
@@ -116,6 +136,7 @@ void irqen(uint32 irq) {
 	REG_IE |= irq;
 	REG_IME = 1;
 }
+
 void irqDisable(uint32 irq) {
 	if (irq & IRQ_VBLANK)
 		REG_DISPSTAT &= ~DISP_VBLANK_IRQ ;

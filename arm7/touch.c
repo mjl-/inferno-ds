@@ -159,6 +159,7 @@ int16 readtsc(uint32 cmd, int16 *dmax, u8 *err){
 	}
 	return (res & 0xFFF);
 }
+
 void 
 UpdateRange(uint8 *r, int16 lastdmax, u8 data_error, u8 wastouched)
 {
@@ -204,15 +205,16 @@ touchReadXY(touchPosition *tp)
 	uint32 oldIME;
 	s16 px,py;
 	PERSONAL_DATA *pd=PersonalData;
+
 	if (!tscinit) {
 		xscale=((pd->calX2px - pd->calX1px)<<19)/(pd->calX2 - pd->calX1);
 		yscale=((pd->calY2px-pd->calY1px)<<19)/((pd->calY2)-(pd->calY1));
 		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<19))/2;
 		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<19))/2;
-		xscale=35125;
-		xoff=0;
-		yscale=36000;
-		yoff=0;
+//		xscale=35125;
+//		xoff=0;
+//		yscale=36000;
+//		yoff=0;
 		tscinit=1;
 	}
 	oldIME = REG_IME;
@@ -255,10 +257,10 @@ touchReadXY(touchPosition *tp)
 			errloc = 3;
 			break;
 		}
-		px=(tp->x*xscale-xoff+xscale/2)>>19;
-		py=(tp->y*yscale-yoff+yscale/2)>>19;
-		px=tp->x/14-22;
-		py=tp->y/18-12;
+
+		px=(tp->x*xscale-xoff+xscale/2)>>(19-14);
+		py=(tp->y*yscale-yoff+yscale/2)>>(19-14);
+
 		if(px<0)
 			px=0;
 		if(py<0)

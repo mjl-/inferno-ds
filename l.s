@@ -220,8 +220,11 @@ TEXT	_clearregs(SB), $-4
 TEXT _stop(SB), $-4
 	MOVW $0xEAEAEA,R0
 
+TEXT swiDelay(SB), $-4
+	SWI	0x030000
+	RET
 TEXT	waitvblank(SB), $-4
-	SWI 0x050000
+	SWI	0x050000
 
 TEXT getdtcm(SB), $-4
 	MRC		15,0,R0,C9,C1,0

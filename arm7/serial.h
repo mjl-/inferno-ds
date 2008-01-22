@@ -136,7 +136,7 @@ int writePowerManagement(int reg, int cmd);
 
 int readPowerManagement(int reg);
 
-void busywait();
+void busywait(void);
 // Read the firmware
 void readFirmware(uint32 address, void * destination, uint32 size);
 

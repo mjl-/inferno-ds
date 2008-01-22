@@ -66,7 +66,7 @@ ndsinit(void)
 static Chan*
 ndsattach(char* spec)
 {
-	kproc("touchread", touchread, nil, 0);
+	if(1)kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 
@@ -146,6 +146,7 @@ touchread(void*)
 	//		continue; // should sleep until the pen is down
 	//	dx=IPC->touchXpx-x;
 	//	dy=IPC->touchYpx-y;
+	
 	/* have an option for handedness here? right now left handed */
 		buttons=~((IPC->buttons&Pendown)>>6|(REG_KEYINPUT&Rbut)>>6|(REG_KEYINPUT&Abut)<<1)&0x7;
 		if((b=!(REG_KEYINPUT&Bbut))^oldb && !n--) {
@@ -154,11 +155,15 @@ touchread(void*)
 			n=500;
 		}
 		mousetrack(buttons, IPC->touchXpx, IPC->touchYpx, 0);
-	//	x=IPC->touchXpx;
-	//	y=IPC->touchYpx;
+		if(0)print("touchread iter %#X %X %X %X %X\n", 
+			IPC->touchX, IPC->touchY,
+			IPC->touchXpx, IPC->touchYpx, IPC->buttons);
+		tsleep(&up->sleep, return0, 0, 5);
+		x=IPC->touchXpx;
+		y=IPC->touchYpx;
 	}
 }
-TransferRegion  *getIPC() {
+TransferRegion  *getIPC(void) {
 	return (TransferRegion*)(0x027FF000);
 }
 static  void IPC_SendSync(unsigned int sync) {

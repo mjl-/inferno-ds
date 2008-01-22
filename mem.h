@@ -59,10 +59,12 @@
  
 #define	EWRAMZERO	0x02000000
 #define	EWRAMTOP	0x023FFFFF
-#define	IWRAMZERO	0x03000000
-#define	IWRAMTOP	0x03007FFF
-#define 	LCD			0x04000000	/* LCD controller */
-#define	SPI			0x040001C0	/* serial peripheral interface controller */
+#define	IWRAMZERO9	0x03000000
+#define	IWRAMTOP9	0x03007FFF
+#define	IWRAMZERO7	0x03800000
+#define	IWRAMTOP7	0x03810000
+#define	LCD		0x04000000	/* LCD controller */
+#define	SPI		0x040001C0	/* serial peripheral interface controller */
 #define	VRAM		0x04000240	/* Vram bank controller */
 #define	POWER		0x04000304	/* Power controller */
 #define	SUBLCD		0x04001000	/* sub LCD controller */
@@ -72,7 +74,7 @@
 #define	VRAMTOP		0x06800000
 #define	VRAMLO		0x06000000
 #define	VRAMHI		0x0600A000
-#define	INTHAND		0x03007FFC
+#define	INTHAND		0x03007FFC	// (DWRAMTOP9 - 4) ?
 #define	SFRbase		0x04000000
 #define	ROMZERO		0x08000000
 

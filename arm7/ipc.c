@@ -2,7 +2,7 @@
 #include "../mem.h"
 #include "nds.h"
 
-TransferRegion  *getIPC() {
+TransferRegion  *getIPC(void) {
 	return (TransferRegion*)(0x027FF000);
 }
 static  void IPC_SendSync(unsigned int sync) {

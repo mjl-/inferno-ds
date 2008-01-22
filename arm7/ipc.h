@@ -133,4 +133,4 @@ enum IPC_CONTROL_BITS {
 };
 
 
-TransferRegion  *getIPC();
+TransferRegion  *getIPC(void);

@@ -1,9 +1,8 @@
 #!/bin/sh
 
-
-(echo 00000000 .arm; inm $1 | awk '
+(echo 00000000 .arm; inm -n $1 | awk '
 BEGIN { s="00000000"} 
 {
 	print substr(s,0,8-length($1))$1,$3
 }
-') > $1.SYM
+') > $1.sym
