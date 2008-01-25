@@ -1,0 +1,4 @@
+ktzero=0x02008010;
+
+map({"text", ktzero, map()[0][2]+ktzero - 0x1020, 0x20});
+print("acidmap");

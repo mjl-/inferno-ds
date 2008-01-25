@@ -18,6 +18,8 @@ i mk 'CONF=sds' vclean
 i mk 'CONF=sds' 
 desmume  isds.nds
 
+acid -l acidmap isds.p9
+
 desmume-cli '--cflash=disk.img'  isds.nds
 
 rm -f `changes arm7/ | sed -n '/# ?$/ {s/changes //; s/# ?//p;}'`

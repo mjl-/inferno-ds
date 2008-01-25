@@ -53,7 +53,7 @@ HFILES=\
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
 
-default:V: i$CONF.nds # i$CONF.out
+default:V: i$CONF.nds i$CONF.p9
 
 install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $INSTALLDIR/i$CONF.raw
 
@@ -71,7 +71,7 @@ i$CONF.nds: i$CONF arm7/i$O
 		-7 arm7/i$O -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 
-i$CONF.out: $OBJ $CONF.c $CONF.root.h $LIBNAMES
+i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES
 	ksize $target
