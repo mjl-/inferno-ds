@@ -27,11 +27,11 @@ BIN=$ROOT/$OBJDIR/bin
 
 i$O: $OFILES
 	$LD -o $target -H4 -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
-i$O.out: $OFILES
+i$O.p9: $OFILES
 	$LD -o $target -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
 	ksize $target
 
 vclean:V: clean
-	rm -f i$O i$O.out
+	rm -f i$O i$O.p9
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE

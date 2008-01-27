@@ -69,17 +69,21 @@ void irqset(int mask, IntFn handler) {
 		REG_DISPSTAT |= DISP_VBLANK_IRQ ;
 	if(mask & IRQ_HBLANK)
 		REG_DISPSTAT |= DISP_HBLANK_IRQ ;
+	if(mask & IRQ_VCOUNT)
+		REG_DISPSTAT |= DISP_YTRIGGER_IRQ;
 	REG_IE |= mask;
 }
 
-void
+static void
 irqhandler(){
 	int i;
-	int iflags;
+	int iflags, ime;
 
+	ime = REG_IME;
+	REG_IME = 0;
 	iflags = REG_IF;
 	for(i=0; i<MAX_INTERRUPTS; i++){
-		if (iflags & irqTable[i].mask){
+		if (iflags & irqTable[i].mask && irqTable[i].handler != 0){
 			irqTable[i].handler();
 		}
 		iflags &= ~irqTable[i].mask;
@@ -87,6 +91,8 @@ irqhandler(){
 
 	// ack. unhandled ints
 	REG_IF = iflags;
+	VBLANK_INTR_WAIT_FLAGS |= REG_IF;
+	REG_IME = ime;
 }
 
 void irqInit() {
@@ -100,7 +106,7 @@ void irqInit() {
 	IRQ_HANDLER = irqhandler;
 	REG_IE	= 0;			// disable all interrupts
 	REG_IF	= IRQ_ALL;		// clear all pending interrupts
-	REG_IME = 1;			// enable global interrupt
+//	REG_IME = 1;			// enable global interrupt
 }
 
 void irqClear(int mask) {
@@ -123,7 +129,7 @@ void irqInitHandler(IntFn handler) {
 	REG_IF = ~0;
 	REG_IE = 0;
 	IRQ_HANDLER = handler;
-	REG_IME = 1;
+//	REG_IME = 1;
 }
 
 void irqen(uint32 irq) {
@@ -134,7 +140,7 @@ void irqen(uint32 irq) {
 	if (irq & IRQ_VCOUNT)
 		REG_DISPSTAT |= DISP_YTRIGGER_IRQ;
 	REG_IE |= irq;
-	REG_IME = 1;
+//	REG_IME = 1;
 }
 
 void irqDisable(uint32 irq) {

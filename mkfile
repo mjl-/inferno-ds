@@ -63,8 +63,8 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 
 arm7/i$O:NV:
 	cd arm7
-	mk i5
-#	mk i5.out
+	mk i$O
+	mk i$O.p9
 
 i$CONF.nds: i$CONF arm7/i$O
 	ndstool -g INFR -c i$CONF.nds -b vn.bmp 'INFERNO-DS v0.1; Author: NE' \

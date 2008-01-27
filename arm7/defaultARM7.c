@@ -38,6 +38,7 @@ void
 trapinit()
 {
 	REG_IME = 0;
+
 	readFirmware(0x03FE00,PersonalData,sizeof(PersonalData));
 	poweron(POWER_SOUND);
 	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
@@ -48,22 +49,22 @@ trapinit()
 	irqInit();
 	initclkirq();
 	irqset(IRQ_VBLANK, VblankHandler);
-	irqen(IRQ_VBLANK);
-	VBLANK_INTR_WAIT_FLAGS = 0;
-	VBLANK_INTR_WAIT_FLAGS |= IRQ_VBLANK;
+//	irqen(IRQ_VBLANK);
 	
 // 	BUG: something is wrong here
 	setytrig(80);
 	irqset(IRQ_VCOUNT, VcountHandler);
-	irqen(IRQ_VCOUNT);
-	VBLANK_INTR_WAIT_FLAGS |= IRQ_VCOUNT;
+//	irqen(IRQ_VCOUNT);
+
+	REG_IME = 1;
 }
+
 
 #define DMTEST if(1)memtest
 int 
 main(int argc, char ** argv)
 {
-	USED(argc,argv);
+	USED(argc, argv);
 
 	/* fill out the data section by hand */
 	memset(edata, 0, end-edata); 		/* clear the BSS */
@@ -151,7 +152,6 @@ VcountHandler(void)
 	
 	// ack. ints
 	REG_IF = IRQ_VCOUNT;
-	VBLANK_INTR_WAIT_FLAGS |= IRQ_VBLANK;
 }
 
 void
@@ -173,6 +173,5 @@ VblankHandler(void){
 	
 	// ack. ints
 	REG_IF = IRQ_VBLANK;
-	VBLANK_INTR_WAIT_FLAGS |= IRQ_VBLANK;
 }
 

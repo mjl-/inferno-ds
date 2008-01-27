@@ -1,4 +1,5 @@
-tar czvf ds-changes.tgz `{changes | sed 's/#.*//; s/^changes //'}
+win rc
+changes
 acme -a -l ds.dump &
 Dump /usr/inferno/os/ds/ds.dump
 
@@ -6,20 +7,21 @@ u mount /mnt/usb
 cp isds.nds /mnt/usb
 u umount /mnt/usb
 
-changes
-ulimit -c unlimited
-i mk 'CONF=ds' vclean
-i mk 'CONF=ds' 
-desmume  ids.nds
-
 i inm isds.out
 cp dsinit.b ../init
 i mk 'CONF=sds' vclean
-i mk 'CONF=sds' 
-desmume  isds.nds
+i mk 'CONF=sds'
+i mk 'CONF=sds' syms
 
-acid -l acidmap isds.p9
+desmume isds.nds
+wine $home/dsemu/dsemu.exe isds.nds
 
+echo 'asm(0x209c608)' | i acid -l acidmap isds.p9
+echo 'asm(0x3800028)' | i acid -l arm7/acidmap arm7/i5.p9
+
+i mk 'CONF=ds' vclean
+i mk 'CONF=ds' 
+desmume  ids.nds
 desmume-cli '--cflash=disk.img'  isds.nds
 
 rm -f `changes arm7/ | sed -n '/# ?$/ {s/changes //; s/# ?//p;}'`
