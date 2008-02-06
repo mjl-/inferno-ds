@@ -4,6 +4,8 @@
 #include	"dat.h"
 #include	"fns.h"
 #include	"io.h"
+#include	"lcdreg.h"
+
 #include	"ureg.h"
 #include	"../port/error.h"
 
@@ -51,7 +53,7 @@ intrmask(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrmask: irq source %d out of range\n", v);
-	INTREG->msk |= (1 << v);
+	INTREG->msk &= ~(1 << v);
 }
 
 void
@@ -60,7 +62,7 @@ intrunmask(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrunmask: irq source %d out of range\n", v);
-	INTREG->msk &= ~(1 << v);
+	INTREG->msk |= (1 << v);
 }
 
 /* get rid of interrupts, i.e. after you've received one, probably unnecessary for ds. */
@@ -70,7 +72,9 @@ intrclear(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrclear: irq source %d out of range\n", v);
-	INTREG->pnd &= ~(1 << v);
+	
+	INTREG->pnd = (1 << v);
+	*((ulong*)IRQCHECK9) = (1 << v);
 }
 
 void
@@ -85,8 +89,12 @@ intrenable(int v, void (*f)(Ureg*, void*), void* a, int tbdf)
 	Irq[v].a = a;
 
 	x = splfhi();
-	/* Enable the interrupt by clearing the mask bit */
-	INTREG->msk |= 1 << v;
+
+	/* Enable the interrupt by setting the mask bit */
+	INTREG->msk |= (1 << v);
+	if (v==VBLANKbit | v==HBLANKbit | v==VCOUNTbit)
+		*((ulong*)DISPSTAT) |= (1 << v);
+
 	splx(x);
 }
 
@@ -94,19 +102,6 @@ ulong fiqstack[4];
 ulong irqstack[4];
 ulong abtstack[4];
 ulong undstack[4];
-
-static void
-safeintr(Ureg *, void *a)
-{
-	int v = (int)a;
-	int x;
-
-	/* No handler - clear the mask so we don't loop */
-	x = splfhi();
-	intrmask(v, 0);
-	splx(x);
-//	iprint("SPURIOUS INTERRUPT %d\n", v);
-}
 
 static void
 trapv(int off, void (*f)(void))
@@ -122,7 +117,33 @@ trapv(int off, void (*f)(void))
 static void
 maskallints(void)
 {
-//	INTREG->msk = 0x0;	/* mask out all interrupts */
+	INTREG->msk = 0x0;	/* mask out all interrupts */
+}
+
+static void
+intrs(Ureg *ur, ulong ibits)
+{
+	IrqEntry *cur;
+	int i, s;
+
+	for(i=0; i<nelem(Irq) && ibits; i++)
+		if(ibits & (1<<i)){
+			cur = &Irq[i];
+			if(cur->r != nil){
+				actIrq = cur->v; /* show active interrupt handler */
+				up = 0;		/* Make interrupted process invisible */
+
+				cur->r(ur, cur->a);
+				ibits &= ~(1<<i);
+			}
+		}
+
+	if(ibits != 0){
+		iprint("spurious irq interrupt: %8.8lux\n", ibits);
+		s = splfhi();
+		INTREG->pnd &= ~ibits;
+		splx(s);
+	}
 }
 
 /* set up interrupts */
@@ -131,13 +152,20 @@ trapinit(void)
 {
 	int v;
 	IntReg *intr = INTREG;
-	ulong **intrhand;
 	int i;
-//	writedtcmctl(0x00800000+0xa);
-//	intrhand = (ulong**)((getdtcm()&0xfffff000)+0x3ffc);
-	INTREG->master=1;
-//	INTREG->msk=1;
-//	INTREG->pnd=0xff;
+
+	INTREG->master=0;
+
+	// exception handler for: und pab dab
+	*((ulong*)EXCHAND) = (ulong)_vundcall;
+
+	// setup location of irq handler
+	writedtcmctl((INTHAND&0xffff0000) + 0xa);
+	
+	*((ulong*)INTHAND) = (ulong)_virqcall;
+	INTREG->msk=0;
+	INTREG->pnd=~0;
+
 //	*((ulong*)0x04000214)=0xdeadbeef;
 	/* set up stacks for various exceptions */
 	setr13(PsrMfiq, fiqstack+nelem(fiqstack));
@@ -145,22 +173,16 @@ trapinit(void)
 	setr13(PsrMabt, abtstack+nelem(abtstack));
 	setr13(PsrMund, undstack+nelem(undstack)); 
 
-//	*intrhand = (ulong*)_virqcall; /* the GBA hardware handles interrupts */
-
-	for (v = 0; v < nelem(Irq); v++) {
-		Irq[v].r = safeintr;
-		Irq[v].a = (void *)v;
-		Irq[v].v = v;
-	}
-
 	trapv(0x0, _vsvccall);
-	trapv(0x4, _vundcall);
+//	trapv(0x4, _vundcall);
 	trapv(0xc, _vpabcall);
 	trapv(0x10, _vdabcall);
-	trapv(0x18, _virqcall);
-	trapv(0x1c, _vfiqcall);
+//	trapv(0x18, _virqcall);
+//	trapv(0x1c, _vfiqcall);
 	trapv(0x8, _vsvccall);
 	serwrite = uartputs;
+
+	INTREG->master=1;
 }
 
 static char *_trap_str[PsrMask+1] = {
@@ -199,6 +221,7 @@ dflt(Ureg *ureg, ulong far)
 	sprint(buf, "trap: fault pc=%8.8lux addr=0x%lux", (ulong)ureg->pc, far);
 	disfault(ureg, buf);
 }
+
 
 /*
  *  All traps come here.  It is slower to have all traps ca)
@@ -248,19 +271,9 @@ trap(Ureg* ureg)
 			iup = up;	 /* Save ID of interrupted proc */
 		}
 
-		while (1) {		/* Use up all the active interrupts */
-			ulong hpip;
-			IrqEntry *curIrq;
-			IntReg *intr = INTREG;
+		/* Use up all the active interrupts */
+		intrs(ureg, INTREG->pnd);
 
-//			hpip = itype == PsrMirq ? intr->oset_irq : intr->oset_fiq;
-			if (hpip == 0x54)
-				break;
-			curIrq = Irq + (hpip >> 2);
-			actIrq = curIrq->v; /* show active interrupt handler */
-			up = 0;		/* Make interrupted process invisible */
-			curIrq->r(ureg, curIrq->a);	/* Call handler */
-		}
 		if (itype == PsrMirq) {
 			up = saveup;	/* Make interrupted process visible */
 			actIrq = -1;	/* No more interrupt handler running */

@@ -31,7 +31,7 @@
  * More accurate time
  */
  
-#define CLOCKFREQ	1678000
+#define CLOCKFREQ	1678000 // this should be 0x2000000
 #define MS2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000)) 
 #define US2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000000))  
 
@@ -53,12 +53,18 @@
 #define UCDRAMZERO	0xC8000000	/* base of memory doubly-mapped as uncached */
 #define AIVECADDR	0xFFFF0000	/* alternative interrupt vector address (other is 0) */
 
+#define	ICACHESZ	0x2000
+#define	DCACHESZ	0x1000
+#define	CACHELINESZ	32
+
 /*
  * Memory
  */
  
 #define	EWRAMZERO	0x02000000
 #define	EWRAMTOP	0x023FFFFF
+#define	DWRAMZERO	0x0b000000
+#define	DWRAMTOP9	0x0b003FFC
 #define	IWRAMZERO9	0x03000000
 #define	IWRAMTOP9	0x03007FFF
 #define	IWRAMZERO7	0x03800000
@@ -68,13 +74,15 @@
 #define	VRAM		0x04000240	/* Vram bank controller */
 #define	POWER		0x04000304	/* Power controller */
 #define	SUBLCD		0x04001000	/* sub LCD controller */
-#define	WIFI			0x04800000
+#define	WIFI		0x04800000
 #define	PALMEM		0x05000000
 #define	VRAMZERO	0x06000000
 #define	VRAMTOP		0x06800000
 #define	VRAMLO		0x06000000
 #define	VRAMHI		0x0600A000
-#define	INTHAND		0x03007FFC	// (DWRAMTOP9 - 4) ?
+#define	EXCHAND		0x027FFD9C	/* exc handler */
+#define	INTHAND		0x00803FFC	/* irq handler set with writedtmcctl */
+#define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
 #define	SFRbase		0x04000000
 #define	ROMZERO		0x08000000
 

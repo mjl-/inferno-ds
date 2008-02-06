@@ -166,8 +166,9 @@ typedef enum {
 
 
 // Display control registers
-#define DISPLAY_CR       (*(vuint32*)0x04000000)
-#define SUB_DISPLAY_CR   (*(vuint32*)0x04001000)
+#define DISPLAY_CR	0x04000000
+#define SUB_DISPLAY_CR	0x04001000
+#define DISPSTAT	0x04000004
 
 #define MODE_0_2D      0x10000
 #define MODE_1_2D      0x10001

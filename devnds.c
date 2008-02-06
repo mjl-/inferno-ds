@@ -66,7 +66,7 @@ ndsinit(void)
 static Chan*
 ndsattach(char* spec)
 {
-	if(1)kproc("touchread", touchread, nil, 0);
+	if(0)kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 

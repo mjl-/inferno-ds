@@ -84,25 +84,6 @@ main(int argc, char ** argv)
 	return 0;
 }
 
-void 
-startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) 
-{
-	SCHANNEL_TIMER(channel)  = SOUND_FREQ(sampleRate);
-	SCHANNEL_SOURCE(channel) = (u32)data;
-	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
-	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);
-}
-
-s32 
-getFreeSoundChannel()
-{
-	int i;
-	for (i=0; i<16; i++) {
-		if ( (SCHANNEL_CR(i) & SCHANNEL_ENABLE) == 0 ) return i;
-	}
-	return -1;
-}
-
 void
 VcountHandler(void)
 {
@@ -152,6 +133,25 @@ VcountHandler(void)
 	
 	// ack. ints
 	REG_IF = IRQ_VCOUNT;
+}
+
+void 
+startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) 
+{
+	SCHANNEL_TIMER(channel)  = SOUND_FREQ(sampleRate);
+	SCHANNEL_SOURCE(channel) = (u32)data;
+	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
+	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);
+}
+
+s32 
+getFreeSoundChannel()
+{
+	int i;
+	for (i=0; i<16; i++) {
+		if ( (SCHANNEL_CR(i) & SCHANNEL_ENABLE) == 0 ) return i;
+	}
+	return -1;
 }
 
 void

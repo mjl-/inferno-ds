@@ -131,7 +131,8 @@ TEXT spllo(SB), $-4
 	RET
 
 TEXT splx(SB), $-4
-	/* BUG - save PC in m->splpc - JB */
+	MOVW	$(MACHADDR), R6
+	MOVW	R14, (R6)	/* m->splpc */
 
 TEXT splxpc(SB), $-4
 	MOVW		R0, R1
@@ -223,8 +224,15 @@ TEXT _stop(SB), $-4
 TEXT swiDelay(SB), $-4
 	SWI	0x030000
 	RET
+
 TEXT	waitvblank(SB), $-4
 	SWI	0x050000
+	RET
+
+/* dsemu only: used to print to log */
+TEXT consputs(SB),$-4
+	SWI	0xff0000
+	RET
 
 TEXT getdtcm(SB), $-4
 	MRC		15,0,R0,C9,C1,0
@@ -241,3 +249,4 @@ TEXT loop(SB), $-4
 wait:
 	B wait
 	RET
+

@@ -7,7 +7,7 @@
 
 #include "ureg.h"
 
-static ulong timer_incr[2] = { 0, 0, };
+static ulong timer_incr[4] = { 0, 0, 0, 0};
 
 typedef struct Clock0link Clock0link;
 typedef struct Clock0link {
@@ -74,6 +74,7 @@ clockintr(Ureg*, void*)
 	Clock0link *lp;
 
 	m->ticks++;
+	if(0)print("clockintr %d\n", m->ticks);
 
 	checkalarms();
 
@@ -120,12 +121,13 @@ timerdisable( int timer )
 void
 timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 {
-	TimerReg *t = TIMERREG;
+	TimerReg *t = (TimerReg*)(TIMERbase) + timer;
 	if ((timer < 0) || (timer > 3))
 		return;
 	timerdisable(timer);
-	timer_incr[timer] = CLOCKFREQ/Hz;		/* set up freq */
-	t->data[timer] = timer_incr[timer];
+	timer_incr[timer] = TIMER_FREQ(Hz);		/* set up freq */
+	t->data = timer_incr[timer];
+	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
 	intrenable(TIMERbit(timer), f, a, 0);
 }
 
@@ -145,7 +147,7 @@ void
 clockinit(void)
 {
 	m->ticks = 0;
-	timerenable(0, HZ, clockintr, 0);
+	if(0)timerenable(0, HZ, clockintr, 0);
 }
 
 void
@@ -178,23 +180,23 @@ ulong _mularsv(ulong m0, ulong m1, ulong a, ulong s);
 // these routines are all limited to a maximum of 1165 seconds,
 // due to the wrap-around of the OSTIMER
 
-ulong
+ushort
 timer_start(void)
 {
-	return TIMERREG->data[0];
+	return TIMERREG->data;
 }
 
-ulong
+ushort
 timer_ticks(ulong t0)
 {
-	return TIMERREG->data[0] - t0;
+	return TIMERREG->data - t0;
 }
 
 int
 timer_devwait(ulong *adr, ulong mask, ulong val, int ost)
 {
 	int i;
-	ulong t0 = timer_start();
+	ushort t0 = timer_start();
 	while((*adr & mask) != val) 
 		if(timer_ticks(t0) > ost)
 			return ((*adr & mask) == val) ? 0 : -1;

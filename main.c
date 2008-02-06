@@ -106,11 +106,10 @@ serputc()
 	// dummy routine
 }
 
-void
-testintr()
+static void
+vblankintr()
 {
 	print("vblank intr\n");
-	
 }
 
 #define idoc(m) if(1) uartputs(m, strlen(m));
@@ -156,21 +155,14 @@ main(void)
 	// there's nothing to link atm
 	links();
 
-//	i=getdtcm();
-//	intrenable(0, testintr, 0, 0);
-//	*((ulong*)0x04000004)|=1<<3;
+//	intrenable(0, vblankintr, 0, 0);
 //	spllo();
-//	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
-//	print("%lux\n",writedtcmctl(0xdeadbeef));
-//	print("addr %lux sz %lux inthand %lux\n",  (i&0xfffff000), i&0x3e, (getdtcm()&0xfffff000)+0x3ffc);
-//	for(;;){
-//		waitvblank();
-//	}
+//	for(;;)	waitvblank();
 //	loop();
 //	for(;;);
-	for(;;) {
-		print("%x %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
-	}
+//	for(;;) {
+//		print("%x %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
+//	}
 	
 	procinit();
 

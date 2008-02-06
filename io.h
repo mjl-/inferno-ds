@@ -25,14 +25,11 @@
 
 typedef struct IntReg IntReg;
 struct IntReg {
-	ushort	master;
+	ushort	master;	// IME: Interrupt Master Enable
 	ulong	pad1;
-	ulong	msk;
-	ulong	pad2[4];
-	ulong	pnd;
+	ulong	msk;	// IE: Interrupt Request Enable
+	ulong	pnd;	// IF: Interrupt Request Flags
 };
-
-
 
 
 /* uarts? */
@@ -41,9 +38,29 @@ struct IntReg {
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
 struct TimerReg {
-	ulong	data[4];	/*  match */
-	ulong	ctl[4];
+	ushort	data;	/*  match */
+	ushort	ctl;
 };
+
+// timer ctl
+enum
+{
+	Tmrena	= (1<<7),	//	Enables the timer.
+	Tmrirq	= (1<<6),	//	request an Interupt on overflow.
+	Tmrcas	= (1<<2),	//	cause the timer to count when the timer below overflows (unavailable for timer 0).
+	Tmrdiv1	= (0),		//	Causes the timer to count at 33.514Mhz.
+	Tmrdiv64 = (1),		//	Causes the timer to count at (33.514 / 64) Mhz.
+	Tmrdiv256 = (2),	//	Causes the timer to count at (33.514 / 256) Mhz.
+	Tmrdiv1024=(3),		//	Causes the timer to count at (33.514 / 1024)Mhz.
+};
+
+// timer data
+#define CLCKFREQ	0x2000000
+#define TIMER_FREQ(n)    (-CLCKFREQ/(n))
+#define TIMER_FREQ_64(n)  (-(CLCKFREQ>>6)/(n))
+#define TIMER_FREQ_256(n) (-(CLCKFREQ>>8)/(n))
+#define TIMER_FREQ_1024(n) (-(CLCKFREQ>>10)/(n))
+
 
 /* lcd */
 /* 59.73 hz */

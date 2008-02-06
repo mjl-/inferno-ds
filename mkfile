@@ -108,4 +108,5 @@ syms:   $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	cd arm7; mk syms
 
 vclean:V: clean
+	rm -f syms
 	cd arm7; mk vclean

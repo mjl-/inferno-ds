@@ -100,6 +100,10 @@ struct Lock
  */
 struct Mach
 {
+	/* OFFSETS OF THE FOLLOWING KNOWN BY l.s */
+	ulong	splpc;		/* pc of last caller to splhi */
+
+	/* ordering from here on irrelevant */
 	ulong	ticks;			/* of the clock since boot time */
 	Proc	*proc;			/* current process on this processor */
 	Label	sched;			/* scheduler wakeup */

@@ -132,8 +132,8 @@ void	writeBackDC(void);
 // #define timer_ticks(t)	(*OSCR - (ulong)(t))
 #define DELAY(ms)	timer_delay(MS2TMR(ms))
 #define MICRODELAY(us)	timer_delay(US2TMR(us))
-ulong	timer_start(void);
-ulong	timer_ticks(ulong);
+ushort	timer_start(void);
+ushort	timer_ticks(ulong);
 int 	timer_devwait(ulong *adr, ulong mask, ulong val, int ost);
 void 	timer_setwatchdog(int ost);
 void 	timer_delay(int ost);
@@ -145,3 +145,4 @@ int	tmr2us(ulong t);
 void 	microdelay(int us);
 
 void dispfont(void);
+void consputs(char *str);
