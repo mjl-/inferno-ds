@@ -59,6 +59,8 @@ struct TransferRegion {
 
 	uint16 buttons;			//	 X, Y, /PENIRQ buttons
 
+	vuint16 heartbeat;
+
 	union {
 		vuint8 curtime[8];	//	 current time response from RTC
 

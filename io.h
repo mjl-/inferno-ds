@@ -14,8 +14,6 @@
 #define KEYbit			12
 #define CARTbit		13
 
-#define TIMERbit(n) 		(TIMER0bit + n)
-
 /*
   * Interrupt controller
   */
@@ -25,10 +23,10 @@
 
 typedef struct IntReg IntReg;
 struct IntReg {
-	ushort	master;	// IME: Interrupt Master Enable
+	ushort	ime;	// Interrupt Master Enable
 	ulong	pad1;
-	ulong	msk;	// IE: Interrupt Request Enable
-	ulong	pnd;	// IF: Interrupt Request Flags
+	ulong	ier;		// Interrupt Enable
+	ulong	ipr;		// Interrupt Pending
 };
 
 
@@ -45,13 +43,13 @@ struct TimerReg {
 // timer ctl
 enum
 {
-	Tmrena	= (1<<7),	//	Enables the timer.
-	Tmrirq	= (1<<6),	//	request an Interupt on overflow.
+	Tmrena	= (1<<7),	//	enables the timer.
+	Tmrirq	= (1<<6),	//	request an Interrupt on overflow.
 	Tmrcas	= (1<<2),	//	cause the timer to count when the timer below overflows (unavailable for timer 0).
-	Tmrdiv1	= (0),		//	Causes the timer to count at 33.514Mhz.
-	Tmrdiv64 = (1),		//	Causes the timer to count at (33.514 / 64) Mhz.
-	Tmrdiv256 = (2),	//	Causes the timer to count at (33.514 / 256) Mhz.
-	Tmrdiv1024=(3),		//	Causes the timer to count at (33.514 / 1024)Mhz.
+	Tmrdiv1	= (0),		//	set timer freq to 33.514 Mhz.
+	Tmrdiv64 = (1),		//	set timer freq to (33.514 / 64) Mhz.
+	Tmrdiv256 = (2),	//	set timer freq to (33.514 / 256) Mhz.
+	Tmrdiv1024=(3),		//	set timer freq to (33.514 / 1024) Mhz.
 };
 
 // timer data

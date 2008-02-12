@@ -106,6 +106,4 @@
 #define PsrZ		0x40000000	/* zero */
 #define PsrN		0x80000000	/* negative/less than */
 
-
-
 #define TIMERbase	0x04000100	/* timers */

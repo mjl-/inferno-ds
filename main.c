@@ -94,6 +94,7 @@ machinit(void)
 	m->cpuhz = CLOCKFREQ;
 	//m->cputype = getcpuid()>>16;
 }
+
 void
 poolmove(void* p, void* g)
 {
@@ -109,10 +110,11 @@ serputc()
 static void
 vblankintr()
 {
-	print("vblank intr\n");
+	iprint("vblank intr\n");
+	intrclear(VBLANKbit, 0);
 }
 
-#define idoc(m) if(1) uartputs(m, strlen(m));
+#define idoc(m) if(1) uartputs(m, strlen(m))
 #define doc(m) if(0) print("%s", m)
 
 void
@@ -124,7 +126,6 @@ main(void)
 
 	/* fill out the data section by hand */
 	memset(edata, 0, end-edata); 		/* clear the BSS */
-
 	doc("machinit...\n");
 	machinit();
 	archreset();
@@ -155,14 +156,13 @@ main(void)
 	// there's nothing to link atm
 	links();
 
-//	intrenable(0, vblankintr, 0, 0);
+//	intrenable(VBLANKbit, vblankintr, 0, 0);
 //	spllo();
 //	for(;;)	waitvblank();
 //	loop();
 //	for(;;);
-//	for(;;) {
-//		print("%x %d %d %d %d %d %d\n", IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons);
-//	}
+//	for(;;)
+//		print("h%d %d %d %d %d %d %d b %d t %d\n", m->ticks, IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons, IPC->unixTime);
 	
 	procinit();
 

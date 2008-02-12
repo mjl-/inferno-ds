@@ -113,6 +113,12 @@ struct Mach
 	int	machno;
 	int	nrdy;
 
+	/* stacks for exceptions */
+	ulong   fiqstack[4];
+	ulong   irqstack[4];
+	ulong   abtstack[4];
+	ulong   undstack[4];
+
 	int	stack[1];
 };
 

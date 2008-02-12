@@ -31,6 +31,9 @@ i$O.p9: $OFILES
 	$LD -o $target -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
 	ksize $target
 
+syms:   $OFILES
+	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE defaultARM7.c >syms
+
 vclean:V: clean
 	rm -f i$O i$O.p9
 

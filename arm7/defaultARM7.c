@@ -60,7 +60,7 @@ trapinit()
 }
 
 
-#define DMTEST if(1)memtest
+#define DMTEST if(0)memtest
 int 
 main(int argc, char ** argv)
 {
@@ -87,11 +87,16 @@ main(int argc, char ** argv)
 void
 VcountHandler(void)
 {
+	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
 	static int lastpress = -1;
 	uint16 press, x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
-	int t1,t2;
+	int i, t1, t2;
 	uint32 temp;
+	uint8 ct[sizeof(IPC->time.curtime)];
+
+	// Update the heartbeat
+	heartbeat++;
 
 	press = REG_KEYXY;
 	if (!((press^lastpress) & Pendown)) {
@@ -112,10 +117,17 @@ VcountHandler(void)
 		press |= Pendown;
 	}
 	
+	// Read the time
+	rtcGetTime((uint8 *)ct);
+	BCDToInteger((uint8 *)&(ct[1]), 7);
+
+	// Read the temperature
 	batt = touchRead(Tscgetbattery);
 	aux  = touchRead(Tscgetaux);
 	temp = touchReadTemperature(&t1, &t2);
 
+	// Update the IPC struct
+	IPC->heartbeat 		= heartbeat;
 	IPC->touchX			= x; // x/14-24
 	IPC->touchY			= y; // y/18-12
 	IPC->touchXpx		= xpx;
@@ -129,6 +141,10 @@ VcountHandler(void)
 	IPC->tdiode2		= t2;
 	IPC->temperature	= temp;
 	
+	for(i=0; i<sizeof(ct); i++) {
+		IPC->time.curtime[i] = ct[i];
+	}
+
 	DMTEST((char*)(IPC), 0x60, 1, 0);
 	
 	// ack. ints

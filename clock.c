@@ -69,22 +69,24 @@ profintr(Ureg *ur, void*)
 }
 
 static void
-clockintr(Ureg*, void*)
+clockintr(Ureg *ur, void *a)
 {
 	Clock0link *lp;
+	USED(ur, a);
 
+	intrclear(TIMER0bit, 0);
 	m->ticks++;
-	if(0)print("clockintr %d\n", m->ticks);
 
 	checkalarms();
 
 	if(canlock(&clock0lock)){
-		for(lp = clock0link; lp; lp = lp->link)
+		for(lp = clock0link; lp; lp = lp->link){
+			if(1)print("clki %d clkf %x\n", m->ticks, lp->clock);
 			if (lp->clock)
 				lp->clock();
+		}
 		unlock(&clock0lock);
 	}
-	intrclear(TIMERbit(0), 0);
 }
 
 /*
@@ -115,7 +117,7 @@ timerdisable( int timer )
 {
 	if ((timer < 0) || (timer > 3))
 		return;
-	intrmask(TIMERbit(timer), 0);
+	intrmask(TIMER0bit+timer, 0);
 }
 
 void
@@ -125,10 +127,10 @@ timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 	if ((timer < 0) || (timer > 3))
 		return;
 	timerdisable(timer);
-	timer_incr[timer] = TIMER_FREQ(Hz);		/* set up freq */
+	timer_incr[timer] = TIMER_FREQ_64(Hz);		/* set up freq */
 	t->data = timer_incr[timer];
-	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
-	intrenable(TIMERbit(timer), f, a, 0);
+	t->ctl = Tmrena | Tmrdiv64 | Tmrirq;
+	intrenable(TIMER0bit+timer, f, a, 0);
 }
 
 void
@@ -147,7 +149,7 @@ void
 clockinit(void)
 {
 	m->ticks = 0;
-	if(0)timerenable(0, HZ, clockintr, 0);
+	if(1)timerenable(0, HZ, clockintr, 0);
 }
 
 void

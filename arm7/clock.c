@@ -21,6 +21,8 @@
 ---------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
+#include <kern.h>
+
 #include "nds.h"
 //#include <time.h>
 
@@ -159,8 +161,10 @@ void syncRTC() {
 	
 	IPC->unixTime++;
 }
+
 void initclkirq() {
 	uint8 cmd[4];
+	struct Tm currentTime;
 	
 	REG_RCNT = 0x8100;
 	irqset(IRQ_NETWORK, syncRTC);
@@ -182,15 +186,82 @@ void initclkirq() {
 	rtcTransaction(cmd, 4, 0, 0);
 //	 Read all time settings on first start
 	rtcGetTimeAndDate((uint8 *)&(IPC->time.rtc.year));
-/*	struct tm currentTime;
-	currentTime.tm_sec  = IPC->time.rtc.seconds;
-	currentTime.tm_min  = IPC->time.rtc.minutes;
-	currentTime.tm_hour = IPC->time.rtc.hours;
-	currentTime.tm_mday = IPC->time.rtc.day;
-	currentTime.tm_mon  = IPC->time.rtc.month - 1;
-	currentTime.tm_year = IPC->time.rtc.year + 100;
+
+	currentTime.sec  = IPC->time.rtc.seconds;
+	currentTime.min  = IPC->time.rtc.minutes;
+	currentTime.hour = IPC->time.rtc.hours;
+	currentTime.mday = IPC->time.rtc.day;
+	currentTime.mon  = IPC->time.rtc.month - 1;
+	currentTime.year = IPC->time.rtc.year + 100;
 	
-	currentTime.tm_isdst = -1;
-	
-	IPC->unixTime = mktime(&currentTime); */
+	currentTime.tzoff = -1;
+	IPC->unixTime = tm2sec(&currentTime);
+}
+
+#define SEC2MIN 60L
+#define SEC2HOUR (60L*SEC2MIN)
+#define SEC2DAY (24L*SEC2HOUR)
+
+/*
+ *  days per month plus days/year
+ */
+static	int	dmsize[] =
+{
+	365, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+};
+static	int	ldmsize[] =
+{
+	366, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+};
+
+/*
+ *  return the days/month for the given year
+ */
+static int*
+yrsize(int yr)
+{
+	if( (yr % 4 == 0)) // && (yr % 100 != 0 || yr % 400 == 0) 
+		return ldmsize;
+	else
+		return dmsize;
+}
+
+// taken from emu/Nt/ie-os.c
+long
+tm2sec(Tm *tm)
+{
+	long secs;
+	int i, *d2m;
+
+	secs = 0;
+
+	/*
+	 *  seconds per year
+	 */
+	for(i = 1970; i < tm->year; i++){
+		d2m = yrsize(i);
+		secs += d2m[0] * SEC2DAY;
+	}
+
+	/*
+	 *  seconds per month
+	 */
+	d2m = yrsize(tm->year);
+	for(i = 1; i < tm->mon; i++){
+		secs += d2m[i] * SEC2DAY;
+	}
+
+	/*
+	 * secs in last month
+	 */
+	secs += (tm->mday-1) * SEC2DAY;
+
+	/*
+	 * hours, minutes, seconds
+	 */
+	secs += tm->hour * SEC2HOUR;
+	secs += tm->min * SEC2MIN;
+	secs += tm->sec;
+
+	return secs;
 }

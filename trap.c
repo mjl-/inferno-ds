@@ -53,7 +53,7 @@ intrmask(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrmask: irq source %d out of range\n", v);
-	INTREG->msk &= ~(1 << v);
+	INTREG->ier &= ~(1 << v);
 }
 
 void
@@ -62,7 +62,7 @@ intrunmask(int v, int tbdf)
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrunmask: irq source %d out of range\n", v);
-	INTREG->msk |= (1 << v);
+	INTREG->ier |= (1 << v);
 }
 
 /* get rid of interrupts, i.e. after you've received one, probably unnecessary for ds. */
@@ -73,7 +73,7 @@ intrclear(int v, int tbdf)
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrclear: irq source %d out of range\n", v);
 	
-	INTREG->pnd = (1 << v);
+	INTREG->ipr = (1 << v);
 	*((ulong*)IRQCHECK9) = (1 << v);
 }
 
@@ -90,8 +90,8 @@ intrenable(int v, void (*f)(Ureg*, void*), void* a, int tbdf)
 
 	x = splfhi();
 
-	/* Enable the interrupt by setting the mask bit */
-	INTREG->msk |= (1 << v);
+	/* Enable the interrupt by setting the enable bit */
+	INTREG->ier |= (1 << v);
 	if (v==VBLANKbit | v==HBLANKbit | v==VCOUNTbit)
 		*((ulong*)DISPSTAT) |= (1 << v);
 
@@ -117,7 +117,7 @@ trapv(int off, void (*f)(void))
 static void
 maskallints(void)
 {
-	INTREG->msk = 0x0;	/* mask out all interrupts */
+	INTREG->ier = 0x0;	/* disable all interrupts */
 }
 
 static void
@@ -133,7 +133,10 @@ intrs(Ureg *ur, ulong ibits)
 				actIrq = cur->v; /* show active interrupt handler */
 				up = 0;		/* Make interrupted process invisible */
 
+				INTREG->ime = 0;
 				cur->r(ur, cur->a);
+				INTREG->ime = 1;
+
 				ibits &= ~(1<<i);
 			}
 		}
@@ -141,7 +144,7 @@ intrs(Ureg *ur, ulong ibits)
 	if(ibits != 0){
 		iprint("spurious irq interrupt: %8.8lux\n", ibits);
 		s = splfhi();
-		INTREG->pnd &= ~ibits;
+		INTREG->ipr &= ibits;
 		splx(s);
 	}
 }
@@ -151,10 +154,9 @@ void
 trapinit(void)
 {
 	int v;
-	IntReg *intr = INTREG;
 	int i;
 
-	INTREG->master=0;
+	INTREG->ime=0;
 
 	// exception handler for: und pab dab
 	*((ulong*)EXCHAND) = (ulong)_vundcall;
@@ -163,26 +165,25 @@ trapinit(void)
 	writedtcmctl((INTHAND&0xffff0000) + 0xa);
 	
 	*((ulong*)INTHAND) = (ulong)_virqcall;
-	INTREG->msk=0;
-	INTREG->pnd=~0;
+	INTREG->ier=0;
+	INTREG->ipr=~0;
 
-//	*((ulong*)0x04000214)=0xdeadbeef;
 	/* set up stacks for various exceptions */
-	setr13(PsrMfiq, fiqstack+nelem(fiqstack));
-	setr13(PsrMirq, irqstack+nelem(irqstack));
-	setr13(PsrMabt, abtstack+nelem(abtstack));
-	setr13(PsrMund, undstack+nelem(undstack)); 
+	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));
+	setr13(PsrMirq, m->irqstack+nelem(m->irqstack));
+	setr13(PsrMabt, m->abtstack+nelem(m->abtstack));
+	setr13(PsrMund, m->undstack+nelem(m->undstack)); 
 
-	trapv(0x0, _vsvccall);
+//	trapv(0x0, _vsvccall);
 //	trapv(0x4, _vundcall);
-	trapv(0xc, _vpabcall);
-	trapv(0x10, _vdabcall);
+//	trapv(0xc, _vpabcall);
+//	trapv(0x10, _vdabcall);
 //	trapv(0x18, _virqcall);
 //	trapv(0x1c, _vfiqcall);
-	trapv(0x8, _vsvccall);
+//	trapv(0x8, _vsvccall);
 	serwrite = uartputs;
 
-	INTREG->master=1;
+	INTREG->ime=1;
 }
 
 static char *_trap_str[PsrMask+1] = {
@@ -272,7 +273,7 @@ trap(Ureg* ureg)
 		}
 
 		/* Use up all the active interrupts */
-		intrs(ureg, INTREG->pnd);
+		intrs(ureg, INTREG->ipr);
 
 		if (itype == PsrMirq) {
 			up = saveup;	/* Make interrupted process visible */
