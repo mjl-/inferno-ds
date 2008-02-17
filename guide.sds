@@ -11,8 +11,8 @@ u umount /mnt/usb
 i inm isds.p9
 cp dsinit.b ../init
 i mk 'CONF=sds' vclean
-i mk 'CONF=sds'
 i mk 'CONF=sds' syms
+i mk 'CONF=sds'
 
 desmume isds.nds
 wine $home/dsemu/dsemu.exe isds.nds

@@ -162,7 +162,7 @@ void syncRTC() {
 	IPC->unixTime++;
 }
 
-void initclkirq() {
+void initclkirq(void) {
 	uint8 cmd[4];
 	struct Tm currentTime;
 	

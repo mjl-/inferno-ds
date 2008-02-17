@@ -1,10 +1,10 @@
 #include "../mem.h"
 
 TEXT _main(SB), $-4
-//	MOVW		$setR12(SB), R12 	/* static base (SB) */
 /*	MOVW		$Mach0(SB), R13 */
 //	ADD		$(KSTACK-4), R13	/* leave 4 bytes for link */
 
+	MOVW		$setR12(SB), R12 	/* static base (SB) */
 	MOVW		$(PsrMirq), R1	/* Switch to IRQ mode */
 	MOVW		R1, CPSR
 	MOVW		$(IWRAMTOP7 - 0x60), R13

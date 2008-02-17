@@ -98,11 +98,6 @@ intrenable(int v, void (*f)(Ureg*, void*), void* a, int tbdf)
 	splx(x);
 }
 
-ulong fiqstack[4];
-ulong irqstack[4];
-ulong abtstack[4];
-ulong undstack[4];
-
 static void
 trapv(int off, void (*f)(void))
 {
@@ -145,6 +140,7 @@ intrs(Ureg *ur, ulong ibits)
 		iprint("spurious irq interrupt: %8.8lux\n", ibits);
 		s = splfhi();
 		INTREG->ipr &= ibits;
+		*((ulong*)IRQCHECK9) = ibits;
 		splx(s);
 	}
 }

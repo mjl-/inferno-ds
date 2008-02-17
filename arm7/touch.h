@@ -71,4 +71,5 @@ void touchReadXY(touchPosition *tp);
 
 uint16 touchRead(uint32 cmd);
 uint32 touchReadTemperature(int * t1, int * t2);
+int16 readtsc(uint32 cmd, int16 *dmax, u8 *err);
 

@@ -46,20 +46,18 @@
 #include <u.h>
 #include "../mem.h"
 #include "nds.h"
-void irqDummy(void) {}
 
 typedef struct IntTable IntTable;
 IntTable irqTable[MAX_INTERRUPTS];
 
 void irqset(int mask, IntFn handler) {
 	int i;
-	IntTable *t;
-	if (!mask) 
-		return;
-	for(i=0;i<MAX_INTERRUPTS;i++) 
-		if(!irqTable[i].mask || irqTable[i].mask == mask) 
+
+	for(i=0; i<MAX_INTERRUPTS; i++) 
+		if(mask == (1<<i)) 
 			break;
-	if ( i == MAX_INTERRUPTS )
+			
+	if (i == MAX_INTERRUPTS)
 		return;
 
 	irqTable[i].handler	= handler;
@@ -77,44 +75,52 @@ void irqset(int mask, IntFn handler) {
 static void
 irqhandler(){
 	int i;
-	int iflags, ime;
+	int ibits, oime;
 
-	ime = REG_IME;
+	oime = REG_IME;
 	REG_IME = 0;
-	iflags = REG_IF;
+	ibits = REG_IF;
 	for(i=0; i<MAX_INTERRUPTS; i++){
-		if (iflags & irqTable[i].mask && irqTable[i].handler != 0){
+		if (ibits & (1<<i) && irqTable[i].handler){
 			irqTable[i].handler();
 		}
-		iflags &= ~irqTable[i].mask;
+		ibits &= ~(1<<i);
 	}
 
 	// ack. unhandled ints
-	REG_IF = iflags;
-	VBLANK_INTR_WAIT_FLAGS |= REG_IF;
-	REG_IME = ime;
+	if (ibits != 0){
+		REG_IF = ibits;
+		*(ulong*)IRQCHECK7 = ibits;
+	}
+	REG_IME = oime;
 }
 
 void irqInit() {
 	int i;
 	// Set all interrupts to dummy functions.
-	for(i = 0; i < MAX_INTERRUPTS; i ++)
-	{
-		irqTable[i].handler = irqDummy;
-		irqTable[i].mask = 0;
+	for(i = 0; i < MAX_INTERRUPTS; i++){
+		irqTable[i].handler = 0;
+		irqTable[i].mask = (1<<i);
 	}
-	IRQ_HANDLER = irqhandler;
-	REG_IE	= 0;			// disable all interrupts
-	REG_IF	= IRQ_ALL;		// clear all pending interrupts
+	
+	*(ulong*)INTHAND7 = (ulong)irqhandler;
+	REG_IE = 0;				// disable all interrupts
+	REG_IF = ~0;			// clear all pending interrupts
 //	REG_IME = 1;			// enable global interrupt
 }
 
 void irqClear(int mask) {
-	int i = 0;
-	for	(i=0;i<MAX_INTERRUPTS;i++)
-		if	(irqTable[i].mask == mask) break;
-	if ( i == MAX_INTERRUPTS ) return;
-	irqTable[i].handler	= irqDummy;
+	int i;
+	for (i=0; i<MAX_INTERRUPTS; i++)
+		if (irqTable[i].mask == (1<<i))
+			break;
+			
+	if (i == MAX_INTERRUPTS)
+		return;
+
+	irqTable[i].mask = 0;
+	irqTable[i].handler = 0;
+	
 	if (mask & IRQ_VBLANK)
 		REG_DISPSTAT &= ~DISP_VBLANK_IRQ ;
 	if (mask & IRQ_HBLANK)
@@ -128,7 +134,7 @@ void irqInitHandler(IntFn handler) {
 	REG_IME = 0;
 	REG_IF = ~0;
 	REG_IE = 0;
-	IRQ_HANDLER = handler;
+	*(ulong*)INTHAND7 = (ulong)handler;
 //	REG_IME = 1;
 }
 

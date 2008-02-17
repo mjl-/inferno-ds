@@ -35,8 +35,10 @@ enum
 };
 
 void
-trapinit()
+trapinit(void)
 {
+	int16 dmax;
+	u8 err;
 	REG_IME = 0;
 
 	readFirmware(0x03FE00,PersonalData,sizeof(PersonalData));
@@ -44,7 +46,8 @@ trapinit()
 	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
 
 	/* dummy read to enable the touchpad PENIRQ */
-	readtsc(TscgetX, MaxRetry, MaxRange);
+	dmax = MaxRetry; err = MaxRange;
+	readtsc(TscgetX, &dmax, &err);
 	
 	irqInit();
 	initclkirq();
@@ -60,7 +63,7 @@ trapinit()
 }
 
 
-#define DMTEST if(0)memtest
+#define DMTEST if(1)memtest
 int 
 main(int argc, char ** argv)
 {
@@ -77,9 +80,11 @@ main(int argc, char ** argv)
 
 	// keep the ARM7 out of main RAM
 	while (1){
-		swiWaitForVBlank();
+		VcountHandler();
+//		swiWaitForVBlank();
 		swiDelay(50000);
-		DMTEST((char*)(IPC), 0x30, 1, 0);
+
+//		DMTEST((char*)(IPC), 0x30, 1, 0);
 	}
 	return 0;
 }
@@ -149,6 +154,7 @@ VcountHandler(void)
 	
 	// ack. ints
 	REG_IF = IRQ_VCOUNT;
+	*(ulong*)IRQCHECK7 = IRQ_VCOUNT;
 }
 
 void 
@@ -189,5 +195,6 @@ VblankHandler(void){
 	
 	// ack. ints
 	REG_IF = IRQ_VBLANK;
+	*(ulong*)IRQCHECK7 = IRQ_VBLANK;
 }
 

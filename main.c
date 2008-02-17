@@ -110,10 +110,11 @@ serputc()
 static void
 vblankintr()
 {
-	iprint("vblank intr\n");
+	print("vblank intr\n");
 	intrclear(VBLANKbit, 0);
 }
 
+void mprotinit(void);
 #define idoc(m) if(1) uartputs(m, strlen(m))
 #define doc(m) if(0) print("%s", m)
 
@@ -126,6 +127,9 @@ main(void)
 
 	/* fill out the data section by hand */
 	memset(edata, 0, end-edata); 		/* clear the BSS */
+
+	doc("mprotinit...\n");
+	mprotinit();
 	doc("machinit...\n");
 	machinit();
 	archreset();
@@ -161,8 +165,13 @@ main(void)
 //	for(;;)	waitvblank();
 //	loop();
 //	for(;;);
-//	for(;;)
-//		print("h%d %d %d %d %d %d %d b %d t %d\n", m->ticks, IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2, IPC->buttons, IPC->unixTime);
+	for(;;)
+		print("h%x t %x "
+			"%x %d %d %d %d %d "
+			"b %d t %d\n",
+			IPC->heartbeat, m->ticks,
+			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
+			IPC->buttons, IPC->unixTime);
 	
 	procinit();
 

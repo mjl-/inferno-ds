@@ -168,6 +168,7 @@ dsconsinit(void)
 void
 uartputs(char* s, int n) {
 	USED(s,n);
-	if(0) consputs(s); /* enable only for dsemu */
+	/* NOTE!: enable only for dsemu */
+	if(0) consputs(s); 
 }
 

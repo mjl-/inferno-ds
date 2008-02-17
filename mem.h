@@ -60,7 +60,7 @@
 /*
  * Memory
  */
- 
+
 #define	EWRAMZERO	0x02000000
 #define	EWRAMTOP	0x023FFFFF
 #define	DWRAMZERO	0x0b000000
@@ -68,7 +68,7 @@
 #define	IWRAMZERO9	0x03000000
 #define	IWRAMTOP9	0x03007FFF
 #define	IWRAMZERO7	0x03800000
-#define	IWRAMTOP7	0x03810000
+#define	IWRAMTOP7	0x0380FFF0
 #define	LCD		0x04000000	/* LCD controller */
 #define	SPI		0x040001C0	/* serial peripheral interface controller */
 #define	VRAM		0x04000240	/* Vram bank controller */
@@ -84,6 +84,8 @@
 #define	INTHAND		0x00803FFC	/* irq handler set with writedtmcctl */
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
 #define	SFRbase		0x04000000
+#define	INTHAND7	(SFRbase - 4)
+#define	IRQCHECK7	(SFRbase - 8)
 #define	ROMZERO		0x08000000
 
 /*

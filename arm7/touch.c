@@ -37,8 +37,9 @@ abs(long a)
 {
 	return a>0 ? a : -a;
 }
-u8 
-chkstylus()
+
+u8
+chkstylus(void)
 {
 	busywait();
 	REG_SPICNT = Spien|Spi2mhz|Spitouch|Spicont; //0x8A01;
@@ -211,10 +212,10 @@ touchReadXY(touchPosition *tp)
 		yscale=((pd->calY2px-pd->calY1px)<<19)/((pd->calY2)-(pd->calY1));
 		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<19))/2;
 		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<19))/2;
-//		xscale=35125;
-//		xoff=0;
-//		yscale=36000;
-//		yoff=0;
+		xscale=35125;
+		xoff=0;
+		yscale=36000;
+		yoff=0;
 		tscinit=1;
 	}
 	oldIME = REG_IME;
@@ -258,8 +259,10 @@ touchReadXY(touchPosition *tp)
 			break;
 		}
 
-		px=(tp->x*xscale-xoff+xscale/2)>>(19-14);
-		py=(tp->y*yscale-yoff+yscale/2)>>(19-14);
+//		px=(tp->x*xscale-xoff+xscale/2)>>19;
+//		py=(tp->y*yscale-yoff+yscale/2)>>19;
+		px = tp->x>>(19-15);
+		py = tp->y>>(19-15);
 
 		if(px<0)
 			px=0;

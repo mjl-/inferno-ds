@@ -143,12 +143,12 @@ enum IME_VALUE {
 	IME_ENABLE = 1,	/*!< Enable all interrupts not masked out in REG_IE */
 };
 
-// most of this is relative to SFRbase
-#define IRQ_HANDLER *((VoidFunctionPointer *)(0x04000000 - 4))
-#define VBLANK_INTR_WAIT_FLAGS  *((int*)(0x04000000 - 8))
+struct IntTable{
+	IntFn handler;
+	u32 mask;
+};
 
-struct IntTable{IntFn handler; u32 mask;};
-void irqInit();
+void irqInit(void);
 void irqset(int irq, VoidFunctionPointer handler);
 /* ! \fn irqClear(IRQ_MASK irq)
 	\brief remove the handler associated with the interrupt mask irq.
