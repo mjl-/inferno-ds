@@ -5,6 +5,8 @@
 #include	"fns.h"
 #include	"io.h"
 #include	"../port/error.h"
+#include	<keyboard.h>
+
 #include 	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
 #include	"arm7/touch.h"
@@ -13,10 +15,12 @@
 enum {
 	Qdir,
 	Qctl,
+	Qinfo,
 	Qbattery,
 	Qversion,
 	Qtouchctl,
 };
+
 enum {
 	Dssoftreset = 0x00,
 	Dsdelay = 0x03,
@@ -39,11 +43,13 @@ enum {
 	Dsdecodedelta16 = 0x18,
 	sethaltcr = 0x1F,
 };
+
 static void touchread(void*);
 static
 Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,
 	"ndsctl",	{Qctl},		0,		0600,
+	"ndsinfo",	{Qinfo},	0,		0600,
 	"battery",	{Qbattery},	0,		0444,
 	"version",	{Qversion},	0,		0444,
 	"touchctl",	{Qtouchctl},	0,	0644,
@@ -107,6 +113,18 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	case Qtouchctl:
 		break;
 	case Qbattery:
+		tmp = malloc(READSTR);
+		if(waserror()){
+			free(tmp);
+			nexterror();
+		}
+		v = IPC->battery;
+		snprint(tmp, READSTR, "status: %d %s\n", v, (v? "high" : "low"));
+		n = readstr(offset, a, n, tmp);
+		poperror();
+		free(tmp);
+		break;
+		
 	case Qversion:
 	default:
 		n=0;
@@ -131,41 +149,127 @@ ndswrite(Chan* c, void* a, long n, vlong)
 	}
 	return n;
 }
-enum {
-	Rbut=1<<8,
-	Abut=1,
-	Bbut=1<<1,
+
+enum
+{
+	Numbtns	= 13,
+
+	// relative to KEYINPUT (arm9)
+	Abtn	=	1<<0,
+	Bbtn	=	1<<1,
+	Selbtn	=	1<<2,
+	Startbtn=	1<<3,
+	Rightbtn=	1<<4,
+	Leftbtn	=	1<<5,
+	Upbtn	=	1<<6,
+	Downbtn	=	1<<7,
+	Rbtn	=	1<<8,
+	Lbtn	=	1<<9,
+	
+	Xbtn =	1<<10,
+	Ybtn	=	1<<11,
+	Pdown	= 1<<12,
+
+	// relative to XKEYS (arm7 only)
+	Xbtn7	= 1<<0,
+	Ybtn7	= 1<<1,
+	Pdown7	= 1<<2,	// pen down
+	Lclose7	= 1<<3,	// lid closed
 };
+
+static	Rune	rockermap[3][Numbtns] ={
+	{'\n', '\t', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// right handed
+	{'\n', '\t', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// left handed
+	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// debug
+};
+
+// done on vblank irq why ? polling ?; the same for touchread
+// need a way to be notified when keys state changes
+
+// debug mode controled by Conf.bmap, key combo to enable debug mode?
+// to allow registering debugkeys to perform checks & ease debug
+
+static int
+ndskeys(void)
+{
+	int i, b;
+	ushort state;
+	static ushort ostate;
+
+	//print("\n");
+	
+	state = REG_KEYINPUT;
+	state |=  ~(IPC->buttons & (Xbtn7|Ybtn7|Pdown7)) << 10;
+
+	if (ostate == state)
+		return 0;
+
+ 	// check Lclose7 and switch lcd backlight on/off
+	if (IPC->buttons & Lclose7)
+		;
+	else
+		;
+	
+	for (i = 0 ; i < nelem(rockermap[conf.bmap]) ; i++){
+		if ((state >> i) & 1){
+			kbdrepeat(0);
+		}else{
+			if (0)print("ndskeys: %#x %c(%d)\n", state, rockermap[conf.bmap][i], i);
+			kbdrepeat(0);
+			kbdputc(kbdq, rockermap[conf.bmap][i]);
+		}
+	}
+	ostate = state;
+
+	b = 0;
+	if (state & Startbtn)
+		b = 1;
+	if (state & Lbtn)
+		b = 2;
+	if (state & Rbtn)
+		b = 4;
+
+	swiDelay(1000);
+	return b;
+}
+
 static void
 touchread(void*)
 {
-	int x=0, y=0, dx, dy, buttons, b, oldb=0, n=0;
+//	int x, y;
+	int px, py, buttons, b, oldb=0, n=0;
 	for(;;) {
-	//	print("touchread iter\n");
-	//	if(!(IPC->buttons&Pendown))
-	//		continue; // should sleep until the pen is down
-	//	dx=IPC->touchXpx-x;
-	//	dy=IPC->touchYpx-y;
+		// should sleep until the pen is down
+		if((IPC->buttons&Pendown))
+			continue;
 	
-	/* have an option for handedness here? right now left handed */
-		buttons=~((IPC->buttons&Pendown)>>6|(REG_KEYINPUT&Rbut)>>6|(REG_KEYINPUT&Abut)<<1)&0x7;
-		if((b=!(REG_KEYINPUT&Bbut))^oldb && !n--) {
+//		x=IPC->touchX;
+//		y=IPC->touchY;
+
+		if((b=!(REG_KEYINPUT&Bbtn))^oldb && !n--) {
 			kbdputc(kbdq,'\n');
 			b=oldb;
 			n=500;
 		}
-		mousetrack(buttons, IPC->touchXpx, IPC->touchYpx, 0);
-		if(0)print("touchread iter %#X %X %X %X %X\n", 
-			IPC->touchX, IPC->touchY,
-			IPC->touchXpx, IPC->touchYpx, IPC->buttons);
+
+		px=IPC->touchXpx;
+		py=IPC->touchYpx;
+
+		// the state of touch screen presses changes with buttons
+		buttons = ndskeys();
+			
+		// todo take care of changes in buttons, penup/pendown, rockermap, handedness
+		mousetrack(buttons, px, py, buttons);
+
+		if(1)print("ts %#d %d %X\n", px, py, buttons);
 		tsleep(&up->sleep, return0, 0, 5);
-		x=IPC->touchXpx;
-		y=IPC->touchYpx;
 	}
 }
+
 TransferRegion  *getIPC(void) {
 	return (TransferRegion*)(0x027FF000);
 }
+
 static  void IPC_SendSync(unsigned int sync) {
 	REG_IPC_SYNC = (REG_IPC_SYNC & 0xf0ff) | (((sync) & 0x0f) << 8) | IPC_SYNC_IRQ_REQUEST;
 }

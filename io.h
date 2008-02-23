@@ -52,13 +52,10 @@ enum
 	Tmrdiv1024=(3),		//	set timer freq to (33.514 / 1024) Mhz.
 };
 
-// timer data
+// timer data usage:
+// TIMER_FREQ(freq, div), with freq in Hz and div is TmrdivN
 #define CLCKFREQ	0x2000000
-#define TIMER_FREQ(n)    (-CLCKFREQ/(n))
-#define TIMER_FREQ_64(n)  (-(CLCKFREQ>>6)/(n))
-#define TIMER_FREQ_256(n) (-(CLCKFREQ>>8)/(n))
-#define TIMER_FREQ_1024(n) (-(CLCKFREQ>>10)/(n))
-
+#define TIMER_FREQ(f, d)    (-CLCKFREQ >> ((6+2*(d-1)) * (d>0)) / (f))
 
 /* lcd */
 /* 59.73 hz */

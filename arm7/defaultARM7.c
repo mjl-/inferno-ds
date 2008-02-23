@@ -52,24 +52,22 @@ trapinit(void)
 	irqInit();
 	initclkirq();
 	irqset(IRQ_VBLANK, VblankHandler);
-//	irqen(IRQ_VBLANK);
+	irqen(IRQ_VBLANK);
 	
-// 	BUG: something is wrong here
 	setytrig(80);
 	irqset(IRQ_VCOUNT, VcountHandler);
-//	irqen(IRQ_VCOUNT);
+	irqen(IRQ_VCOUNT);
 
 	REG_IME = 1;
 }
 
 
-#define DMTEST if(1)memtest
+#define DMTEST if(0)memtest
 int 
 main(int argc, char ** argv)
 {
 	USED(argc, argv);
 
-	/* fill out the data section by hand */
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
 	DMTEST((char*)(IPC), 0x10, 1, 0);
@@ -80,10 +78,9 @@ main(int argc, char ** argv)
 
 	// keep the ARM7 out of main RAM
 	while (1){
-		VcountHandler();
-//		swiWaitForVBlank();
-		swiDelay(50000);
+		swiWaitForVBlank();
 
+//		swiDelay(50000);
 //		DMTEST((char*)(IPC), 0x30, 1, 0);
 	}
 	return 0;

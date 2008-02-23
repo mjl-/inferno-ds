@@ -250,7 +250,6 @@ wait:
 	B wait
 	RET
 
-
 /*
  * Memory protection unit: go(es)to mem.h
  */
@@ -306,7 +305,7 @@ TEXT mprotinit(SB), $-4
 	ORR	$0x0a,R0,R0
 	MCR	15, 0, R0, C9, C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
 
-	MOVW $0x20, R0
+	MOVW	$0x20, R0
 	MCR	15, 0, R0, C9, C1,1		/* ITCM base = 0 , size = 32 MB */
 
 	/* Setup memory regions similar to Release Version */

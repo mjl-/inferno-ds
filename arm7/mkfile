@@ -35,6 +35,7 @@ syms:   $OFILES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE defaultARM7.c >syms
 
 vclean:V: clean
+	rm -f syms
 	rm -f i$O i$O.p9
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE

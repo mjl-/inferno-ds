@@ -52,7 +52,7 @@
 /*
 	Read a byte from the microphone
 */
-u8 MIC_ReadData();
+u8 MIC_ReadData(void);
 
 /*---------------------------------------------------------------------------------
 	Fill the buffer with data from the microphone. The buffer will be
@@ -60,7 +60,7 @@ u8 MIC_ReadData();
 	reached, no more data will be stored. Uses ARM7 timer 0.  
 ---------------------------------------------------------------------------------*/
 void StartRecording(u8* buffer, int length);
-int StopRecording();
+int StopRecording(void);
 
 /* This must be called during IRQ_TIMER0 */
 void ProcessMicrophoneTimerIRQ();
@@ -70,15 +70,13 @@ void PM_SetAmp(u8 control);
 
 // Turn the microphone on 
 
-static  void MIC_On() {
+static  void MIC_On(void) {
   PM_SetAmp(PM_AMP_ON);
 }
 
-
-
 // Turn the microphone off 
 
-static  void MIC_Off() {
+static  void MIC_Off(void) {
 
   PM_SetAmp(PM_AMP_OFF);
 }

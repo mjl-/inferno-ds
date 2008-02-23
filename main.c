@@ -82,6 +82,8 @@ confinit(void)
 
 	conf.nproc = 100 + ((conf.npage*BY2PG)/MB)*5;
 	conf.nmach = 1;
+	
+	conf.bmap = 2;
 }
 
 void
@@ -125,7 +127,6 @@ main(void)
 	//ulong *t;
 	//ulong i,j,k;
 
-	/* fill out the data section by hand */
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
 	doc("mprotinit...\n");
@@ -163,16 +164,17 @@ main(void)
 //	intrenable(VBLANKbit, vblankintr, 0, 0);
 //	spllo();
 //	for(;;)	waitvblank();
-//	loop();
 //	for(;;);
-	for(;;)
-		print("h%x t %x "
-			"%x %d %d %d %d %d "
-			"b %d t %d\n",
-			IPC->heartbeat, m->ticks,
+	if (1){
+		for(;;)
+		print("H%x T%d B%x "
+			"%x %d %d %d %x %x "
+			"b%d t%d\n",
+			IPC->heartbeat, IPC->temperature/4096, IPC->battery,
 			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
 			IPC->buttons, IPC->unixTime);
-	
+	}
+
 	procinit();
 
 	chandevreset();

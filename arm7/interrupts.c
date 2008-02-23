@@ -63,17 +63,11 @@ void irqset(int mask, IntFn handler) {
 	irqTable[i].handler	= handler;
 	irqTable[i].mask	= mask;
 
-	if(mask & IRQ_VBLANK)
-		REG_DISPSTAT |= DISP_VBLANK_IRQ ;
-	if(mask & IRQ_HBLANK)
-		REG_DISPSTAT |= DISP_HBLANK_IRQ ;
-	if(mask & IRQ_VCOUNT)
-		REG_DISPSTAT |= DISP_YTRIGGER_IRQ;
-	REG_IE |= mask;
+	irqen(mask);
 }
 
 static void
-irqhandler(){
+irqhandler(void){
 	int i;
 	int ibits, oime;
 
@@ -95,7 +89,7 @@ irqhandler(){
 	REG_IME = oime;
 }
 
-void irqInit() {
+void irqInit(void) {
 	int i;
 	// Set all interrupts to dummy functions.
 	for(i = 0; i < MAX_INTERRUPTS; i++){
@@ -121,13 +115,7 @@ void irqClear(int mask) {
 	irqTable[i].mask = 0;
 	irqTable[i].handler = 0;
 	
-	if (mask & IRQ_VBLANK)
-		REG_DISPSTAT &= ~DISP_VBLANK_IRQ ;
-	if (mask & IRQ_HBLANK)
-		REG_DISPSTAT &= ~DISP_HBLANK_IRQ ;
-	if (mask & IRQ_VCOUNT)
-		REG_DISPSTAT &= ~DISP_YTRIGGER_IRQ;
-	REG_IE &= ~mask;
+	irqDisable(mask);
 }
 
 void irqInitHandler(IntFn handler) {
@@ -140,7 +128,7 @@ void irqInitHandler(IntFn handler) {
 
 void irqen(uint32 irq) {
 	if (irq & IRQ_VBLANK)
-		REG_DISPSTAT |= DISP_VBLANK_IRQ ;
+		REG_DISPSTAT |= DISP_VBLANK_IRQ;
 	if (irq & IRQ_HBLANK)
 		REG_DISPSTAT |= DISP_HBLANK_IRQ ;
 	if (irq & IRQ_VCOUNT)
@@ -151,9 +139,9 @@ void irqen(uint32 irq) {
 
 void irqDisable(uint32 irq) {
 	if (irq & IRQ_VBLANK)
-		REG_DISPSTAT &= ~DISP_VBLANK_IRQ ;
+		REG_DISPSTAT &= ~DISP_VBLANK_IRQ;
 	if (irq & IRQ_HBLANK)
-		REG_DISPSTAT &= ~DISP_HBLANK_IRQ ;
+		REG_DISPSTAT &= ~DISP_HBLANK_IRQ;
 	if (irq & IRQ_VCOUNT)
 		REG_DISPSTAT &= ~DISP_YTRIGGER_IRQ;
 	REG_IE &= ~irq;

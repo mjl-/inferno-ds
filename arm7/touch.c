@@ -208,14 +208,14 @@ touchReadXY(touchPosition *tp)
 	PERSONAL_DATA *pd=PersonalData;
 
 	if (!tscinit) {
-		xscale=((pd->calX2px - pd->calX1px)<<19)/(pd->calX2 - pd->calX1);
-		yscale=((pd->calY2px-pd->calY1px)<<19)/((pd->calY2)-(pd->calY1));
-		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<19))/2;
-		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<19))/2;
-		xscale=35125;
-		xoff=0;
-		yscale=36000;
-		yoff=0;
+		xscale=((pd->calX2px - pd->calX1px)<<(19-15))/(pd->calX2 - pd->calX1);
+		yscale=((pd->calY2px-pd->calY1px)<<(19-15))/((pd->calY2)-(pd->calY1));
+		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<(19-15)))/2;
+		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<(19-15)))/2;
+//		xscale=3512
+//		xoff=0;
+//		yscale=36000;
+//		yoff=0;
 		tscinit=1;
 	}
 	oldIME = REG_IME;
@@ -259,6 +259,7 @@ touchReadXY(touchPosition *tp)
 			break;
 		}
 
+		// TODO get this right; ie: tp->x / 15 hangs arm7 cpu
 //		px=(tp->x*xscale-xoff+xscale/2)>>19;
 //		py=(tp->y*yscale-yoff+yscale/2)>>19;
 		px = tp->x>>(19-15);

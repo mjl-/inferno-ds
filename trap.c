@@ -17,9 +17,9 @@ typedef struct IrqEntry {
 		int	v;
 } IrqEntry;
 
-enum {
+enum
+{
 	NumIRQbits = MaxIRQbit+1,
-
 };
 
 static IrqEntry Irq[NumIRQbits];
@@ -155,12 +155,12 @@ trapinit(void)
 	INTREG->ime=0;
 
 	// exception handler for: und pab dab
-	*((ulong*)EXCHAND) = (ulong)_vundcall;
+	*((ulong*)EXCHAND9) = (ulong)_vundcall;
 
 	// setup location of irq handler
-	writedtcmctl((INTHAND&0xffff0000) + 0xa);
+	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
 	
-	*((ulong*)INTHAND) = (ulong)_virqcall;
+	*((ulong*)INTHAND9) = (ulong)_virqcall;
 	INTREG->ier=0;
 	INTREG->ipr=~0;
 
