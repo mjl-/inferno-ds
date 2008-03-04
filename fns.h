@@ -7,6 +7,7 @@ int	archflash12v(int);
 void	archflashwp(int);
 void	archreboot(void);
 void	archreset(void);
+void	archconsole(void);
 void	catchDref(char *s, void *v);
 void	catchDval(char *s, ulong v, ulong m);
 void	catchIref(char *s, void *a);

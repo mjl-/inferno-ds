@@ -1,0 +1,15 @@
+dd if=/dev/zero of=cfdisk.img bs=1048576 count=64
+mkdosfs -F16 cfdisk.img
+mount cfdisk.img cfdisk/ -o loop,uid=$USER -t vfat
+umount cfdisk/
+
+i mk CONF=sds
+dlditool misc/Mpcf.dldi isds.nds 
+desmume-cli '--cflash=cfdisk.img'  isds.nds
+arm-objdump -D -m arm -b binary misc/Mpcf.dldi
+
+#links
+http://forums.desmume.org/viewtopic.php?pid=1717
+http://forums.desmume.org/viewtopic.php?id=102
+http://forum.gbadev.org/viewtopic.php?t=13049
+http://dldi.drunkencoders.com/index.php?title=GBA_Movie_Player_%28Compact_Flash%29

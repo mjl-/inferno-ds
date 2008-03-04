@@ -6,16 +6,19 @@ dev
 	mnt
 	pipe
 	prog
-#	rtc
+	rtc
 	srv
-	draw screen
+	dup
+	draw screen swcursor
 	pointer
-#	touch
 #	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
 #	ether netif netaux ethermedium
 #	ata
-	nds
 #	uart
+
+	nds
+	dldi
+#	audio invhit
 
 ip
 #	il
@@ -76,10 +79,8 @@ link
 #	ether589
 #	ethertdk
 #	pppmedium ppp compress
-#	audio
 
 misc
-#	invhit
 
 code
 	int main_pool_pcnt = 30;
@@ -127,6 +128,7 @@ root
 	/dis/lib/arg.dis
 	/dis/lib/auth.dis
 	/dis/lib/bufio.dis
+	/dis/lib/daytime.dis
 	/dis/lib/dhcpclient.dis
 	/dis/lib/env.dis
 	/dis/lib/filepat.dis
@@ -136,6 +138,7 @@ root
 	/dis/lib/readdir.dis
 	/dis/lib/ssl.dis
 	/dis/lib/string.dis
+	/dis/lib/styx.dis
 	/dis/lib/titlebar.dis
 	/dis/lib/tkclient.dis
 	/dis/lib/translate.dis
@@ -144,6 +147,7 @@ root
 	/dis/lib/wmlib.dis
 	/dis/lib/wmsrv.dis
 	/dis/lib/workdir.dis
+	/dis/dossrv.dis
 	/dis/sh.dis
 	/dis/touchcal.dis
 	/dis/wm/sh.dis

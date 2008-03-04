@@ -254,17 +254,18 @@ wait:
  * Memory protection unit: go(es)to mem.h
  */
  
-#define PAGE_16K	(0x0e << 1)
-#define PAGE_32K	(0x0f << 1)
-#define PAGE_4M	(0x15 << 1)
-#define PAGE_64M	(0x19 << 1)
-#define PAGE_128M	(0x1a << 1)
+#define	PAGE_16K	(0x0e << 1)
+#define	PAGE_32K	(0x0f << 1)
+#define	PAGE_4M		(0x15 << 1)
+#define	PAGE_64M	(0x19 << 1)
+#define	PAGE_128M	(0x1a << 1)
 
-#define ITCM_EN		(1<<18)
-#define DTCM_EN		(1<<16)
-#define ICACHE_EN		(1<<12)
-#define DCACHE_EN		(1<<2)
-#define PROTECT_EN		(1<<0)
+#define	PROTECT_EN	(1 << 0)
+#define	DCACHE_EN	(1 << 2)
+#define	ICACHE_EN	(1 << 12)
+#define	HIVECT_EN	(1 << 13)
+#define	DTCM_EN		(1 << 16)
+#define	ITCM_EN		(1 << 18)
 
 TEXT mprotinit(SB), $-4
 	/* turn the power on for M3 */
@@ -279,14 +280,14 @@ TEXT mprotinit(SB), $-4
 
 	/* disable DTCM and protection unit */
 	MOVW	0x00002078, R1		
-//	MCR	15, 0, R1, C1, C0
+	MCR	15, 0, R1, C1, C0, 0
 	
 	/* allocate GBA+Main Memory to ARM9 */
 	/* (Setting wait_cr here allows init of card specific registers here) */
 	/* bit  7: GBA  Slot allocated to ARM9 */
 	/* bit 11: DS   Slot allocated to ARM9 */
 	/* bit 15: Main Memory priority to ARM9 */
-	MOVW	$0x04000204, R0 			/* wait_cr */
+	MOVW	$(EXMEMCNT), R0 			/* wait_cr */
 	MOVW	(R0), R1
 	BIC	$0x0080, R1, R1
 	BIC	$0x8800, R1, R1
@@ -295,7 +296,7 @@ TEXT mprotinit(SB), $-4
 	/* Protection unit Setup added by Sasq */
 	/* Disable cache */
 	MOVW	0, R0
-	MCR	15, 0, R0, C7, C5, 0		/*  Instruction cache */
+	MCR	15, 0, R0, C7, C5, 0		/* Instruction cache */
 	MCR	15, 0, R0, C7, C6, 0		/* Data cache */
 	
 	/* Wait for write buffer to empty */
@@ -360,9 +361,9 @@ TEXT mprotinit(SB), $-4
 	MCR	15, 0, R0, C5, C0, 2
 
         /* Enable ICache, DCache, ITCM & DTCM */
-//	MCR	15, 0, R0, C1, C0, 0
+	MCR	15, 0, R0, C1, C0, 0
 	MOVW	$(ITCM_EN | DTCM_EN | ICACHE_EN | DCACHE_EN | PROTECT_EN), R1
 	ORR	R1, R0, R0
-//	MCR	15, 0, R0, C1, C0, 0
+	MRC	15, 0, R0, C1, C0, 0
 
 	RET

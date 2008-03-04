@@ -189,15 +189,15 @@ static	Rune	rockermap[3][Numbtns] ={
 // debug mode controled by Conf.bmap, key combo to enable debug mode?
 // to allow registering debugkeys to perform checks & ease debug
 
+void setlcdblight(int on);
+
 static int
 ndskeys(void)
 {
-	int i, b;
+	int i;
 	ushort state;
-	static ushort ostate;
+	static ushort ostate, b;
 
-	//print("\n");
-	
 	state = REG_KEYINPUT;
 	state |=  ~(IPC->buttons & (Xbtn7|Ybtn7|Pdown7)) << 10;
 
@@ -206,9 +206,9 @@ ndskeys(void)
 
  	// check Lclose7 and switch lcd backlight on/off
 	if (IPC->buttons & Lclose7)
-		;
+		setlcdblight(0);
 	else
-		;
+		setlcdblight(1);
 	
 	for (i = 0 ; i < nelem(rockermap[conf.bmap]) ; i++){
 		if ((state >> i) & 1){
@@ -221,15 +221,15 @@ ndskeys(void)
 	}
 	ostate = state;
 
-	b = 0;
+	if (state & Selbtn)
+		b = 0;
 	if (state & Startbtn)
 		b = 1;
 	if (state & Lbtn)
 		b = 2;
 	if (state & Rbtn)
 		b = 4;
-
-	swiDelay(1000);
+	
 	return b;
 }
 
@@ -237,7 +237,7 @@ static void
 touchread(void*)
 {
 //	int x, y;
-	int px, py, buttons, b, oldb=0, n=0;
+	int px, py, b, bbtn, oldbbtn=0, n=0;
 	for(;;) {
 		// should sleep until the pen is down
 		if((IPC->buttons&Pendown))
@@ -246,9 +246,9 @@ touchread(void*)
 //		x=IPC->touchX;
 //		y=IPC->touchY;
 
-		if((b=!(REG_KEYINPUT&Bbtn))^oldb && !n--) {
+		if((bbtn=!(REG_KEYINPUT&Bbtn))^oldbbtn && !n--) {
 			kbdputc(kbdq,'\n');
-			b=oldb;
+			bbtn=oldbbtn;
 			n=500;
 		}
 
@@ -256,13 +256,12 @@ touchread(void*)
 		py=IPC->touchYpx;
 
 		// the state of touch screen presses changes with buttons
-		buttons = ndskeys();
+		b = ndskeys();
 			
 		// todo take care of changes in buttons, penup/pendown, rockermap, handedness
-		mousetrack(buttons, px, py, buttons);
+		mousetrack(b, px, py, 0);
 
-		if(1)print("ts %#d %d %X\n", px, py, buttons);
-		tsleep(&up->sleep, return0, 0, 5);
+		if(1)print("ts %#d %d %X\n", px, py, b);
 	}
 }
 

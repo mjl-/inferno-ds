@@ -84,6 +84,8 @@
 #define	SFRbase		0x04000000
 #define	ROMZERO		0x08000000
 
+#define	EXMEMCNT	0x04000204
+
 /*
  * ARM7 specific
  */

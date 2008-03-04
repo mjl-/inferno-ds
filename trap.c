@@ -150,19 +150,17 @@ void
 trapinit(void)
 {
 	int v;
-	int i;
 
 	INTREG->ime=0;
+	INTREG->ier=0;
+	INTREG->ipr=~0;
 
 	// exception handler for: und pab dab
 	*((ulong*)EXCHAND9) = (ulong)_vundcall;
 
 	// setup location of irq handler
 	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
-	
 	*((ulong*)INTHAND9) = (ulong)_virqcall;
-	INTREG->ier=0;
-	INTREG->ipr=~0;
 
 	/* set up stacks for various exceptions */
 	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));
@@ -170,6 +168,12 @@ trapinit(void)
 	setr13(PsrMabt, m->abtstack+nelem(m->abtstack));
 	setr13(PsrMund, m->undstack+nelem(m->undstack)); 
 
+	for (v = 0; v < nelem(Irq); v++) {
+		Irq[v].r = nil;
+		Irq[v].a = (void *)v;
+		Irq[v].v = v;
+	}
+	
 //	trapv(0x0, _vsvccall);
 //	trapv(0x4, _vundcall);
 //	trapv(0xc, _vpabcall);
@@ -177,6 +181,7 @@ trapinit(void)
 //	trapv(0x18, _virqcall);
 //	trapv(0x1c, _vfiqcall);
 //	trapv(0x8, _vsvccall);
+
 	serwrite = uartputs;
 
 	INTREG->ime=1;
@@ -468,7 +473,7 @@ dumpstk(ulong *l)
 	ulong *v, i;
 	ulong inst;
 	ulong *estk;
-	uint len;
+	int len;
 
 	len = KSTACK/sizeof *l;
 	if (up == 0)

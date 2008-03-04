@@ -74,9 +74,8 @@ clockintr(Ureg *ur, void *a)
 	Clock0link *lp;
 	USED(ur, a);
 
-	intrclear(TIMER0bit, 0);
 	m->ticks++;
-
+	
 	checkalarms();
 
 	if(canlock(&clock0lock)){
@@ -87,6 +86,7 @@ clockintr(Ureg *ur, void *a)
 		}
 		unlock(&clock0lock);
 	}
+	intrclear(TIMER0bit, 0);
 }
 
 /*

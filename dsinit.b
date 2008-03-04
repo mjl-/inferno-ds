@@ -35,7 +35,6 @@ ethername := "ether0";
 
 # standard Inferno flash partitions
 
-
 # add devices
 # start a shell or window manager
 #
@@ -50,17 +49,56 @@ init()
 
 	sys->bind("/", "/", Sys->MREPL);
 
+	lightup();
+
+	localok := 0;
+	if(lfs() >= 0){
+		# let's just take a closer look
+		sys->bind("/n/local/nvfs", "/nvfs", Sys->MREPL|Sys->MCREATE);
+		(rc, nil) := sys->stat("/n/local/dis/sh.dis");
+		if(rc >= 0)
+			localok = 1;
+		else
+			err("local file system unusable");
+	}
+
 #	dobind("#I", "/net", sys->MAFTER);	# IP
 	dobind("#p", "/prog", sys->MREPL);	# prog
 	dobind("#c", "/dev", sys->MREPL); 	# console
-	sys->bind("#d", "/fd", Sys->MREPL);
+	dobind("#d", "/fd", Sys->MREPL);	# dup
 	dobind("#i", "/dev", sys->MAFTER);	# draw
 	dobind("#m", "/dev", Sys->MAFTER);	# pointer
 	dobind("#e", "/env", sys->MREPL|sys->MCREATE);	# environment
 #	dobind("#A", "/dev", Sys->MAFTER);	# optional audio
-	dobind("#T","/dev",sys->MAFTER);	# touch screen and other ipaq devices
+	dobind("#T","/dev",sys->MAFTER);	# touch screen and other nds devices
+
+	timefile: string;
+	rootsource: string;
+	cfd := sys->open("/dev/consctl", Sys->OWRITE);
+	if(cfd != nil)
+		sys->fprint(cfd, "rawon");
+#	for(;;){
+#		(rootsource, timefile) = askrootsource(localok, netok);
+#		if(rootsource == nil)
+#			break;	# internal
+#		(rc, nil) := sys->stat(rootsource+"/dis/sh.dis");
+#		if(rc < 0)
+#			err("%s has no shell");
+#		else if(sys->bind(rootsource, "/", Sys->MAFTER) < 0)
+#			sys->print("can't bind %s on /: %r\n", rootsource);
+#		else{
+#			sys->bind(rootsource+"/dis", "/dis", Sys->MBEFORE|Sys->MCREATE);
+#			break;
+#		}
+#	}
+	cfd = nil;
 
 	setsysname("ds");			# set system name
+
+	now := getclock(timefile, rootsource);
+	setclock("/dev/time", now);
+	if(timefile != "#r/rtc")
+		setclock("#r/rtc", now/big 1000000);
 
 	sys->chdir("/");
 
@@ -97,7 +135,7 @@ dobind(f, t: string, flags: int)
 lightup()
 {
 	# backlight
-	fd := sys->open("#T/ipaqctl", Sys->OWRITE);
+	fd := sys->open("#T/ndsctl", Sys->OWRITE);
 	if(fd != nil)
 		sys->fprint(fd, "light 1 1 0x80");
 }
@@ -312,12 +350,12 @@ lfs(): int
 #		return -1;
 #	if(!ftlinit("#F/flash/fs"))
 #		return -1;
-#	if(iskfs("#X/ftldata"))
-#		return lkfs("#X/ftldata");
-#	c := chan of string;
-#	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: "#X/ftldata" :: "-m" :: "/n/local" :: nil, nil);
-#	if(<-c != nil)
-#		return -1;
+	if(iskfs("#L/data"))
+		return lkfs("#L/data");
+	c := chan of string;
+	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: "#L/data" :: "-m" :: "/n/local" :: nil, nil);
+	if(<-c != nil)
+		return -1;
 	return 0;
 }
 

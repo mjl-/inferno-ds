@@ -6,14 +6,15 @@ dev
 	mnt
 	pipe
 	prog
-#	rtc
+	rtc
 	srv
-	draw screen
+	dup
+	draw screen swcursor
 	pointer
-#	touch
 #	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
 #	ether netif netaux ethermedium
 #	ata
+
 	nds
 
 ip

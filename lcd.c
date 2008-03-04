@@ -42,40 +42,46 @@ typedef struct {
 	ushort*	lower;
 } LCDdisplay;
 
-static LCDdisplay	*vd;	// current active display
+static LCDdisplay	*ld;	// current active display
 
 void
 lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 {
 	if(p > 255)
 		return;
-	vd->palette[p] = ((r>>(32-5))<<10) |
+	ld->palette[p] = ((r>>(32-5))<<10) |
 			((g>>(32-5))<<5) |
 			(b>>(32-5));
 }
 
-static void
-disablelcd(void)
+void
+setlcdblight(int on)
 {
 	LcdReg *lcd = LCDREG;
 
-	/* if LCD enabled, turn off */
-	if(lcd->lcsr & EnableCtlr) {
+	if(on && (lcd->lcsr & EnableCtlr))
+		return;
+	if(!on && !(lcd->lcsr & EnableCtlr))
+		return;
+
+	/* enable/disable LCD */
+	if (on)
+		lcd->lcsr |= EnableCtlr;
+	else
 		lcd->lcsr &= ~EnableCtlr;
-	}
 }
 
 static void
-setlcdmode(LCDdisplay *vd)
+setlcdmode(LCDdisplay *ld)
 {
 	LCDmode *p;
 	LcdReg *sublcd = SUBLCDREG;
 	LcdReg *lcd = LCDREG;
 	VramReg *vram = VRAMREG;
 	PowerReg *power = POWERREG;
-	p = (LCDmode*)&vd->Vmode;
+	p = (LCDmode*)&ld->Vmode;
 
-	disablelcd();
+	setlcdblight(0);
 	lcd->lccr = 0;	
   	
  //	sublcd->lccr = MODE_0_2D | DISPLAY_BG0_ACTIVE;
@@ -93,21 +99,21 @@ lcd_init(LCDmode *p)
 	int palsize;
 	int fbsize;
 
-	vd = &main_display;
-	vd->Vmode = *p;
-	vd->LCDparam = *p;
-	DPRINT("%dx%dx%d: hz=%d\n", vd->x, vd->y, vd->depth, vd->hz); /* */
+	ld = &main_display;
+	ld->Vmode = *p;
+	ld->LCDparam = *p;
+	DPRINT("%dx%dx%d: hz=%d\n", ld->x, ld->y, ld->depth, ld->hz); /* */
 
-	vd->palette = PAL;
-	vd->palette[0] = 0;
-	vd->upper = VIDMEMLO;
-	vd->bwid = vd->x; /* only 8 bit for now, may implement 16 bit later */
-	vd->lower = VIDMEMHI;
-	vd->fb = vd->lower;
-	DPRINT("  fbsize=%d p=%p u=%p l=%p\n", fbsize, vd->palette, vd->upper, vd->lower); /* */
+	ld->palette = PAL;
+	ld->palette[0] = 0;
+	ld->upper = VIDMEMLO;
+	ld->bwid = ld->x; /* only 8 bit for now, may implement 16 bit later */
+	ld->lower = VIDMEMHI;
+	ld->fb = ld->lower;
+	DPRINT("  fbsize=%d p=%p u=%p l=%p\n", fbsize, ld->palette, ld->upper, ld->lower); /* */
 
-	setlcdmode(vd);
-	return vd;
+	setlcdmode(ld);
+	return ld;
 }
 
 void
@@ -162,7 +168,7 @@ dsconsinit(void)
 {
 
 	ushort *palette = ((ushort*)PAL);
-	setlcdmode(vd);
+	setlcdmode(ld);
 }
 
 void

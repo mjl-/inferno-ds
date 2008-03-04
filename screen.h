@@ -3,6 +3,7 @@ typedef struct LCDmode LCDmode;
 typedef struct LCDparam LCDparam;
 typedef struct Vdisplay Vdisplay;
 typedef struct Vmode Vmode;
+typedef struct SWcursor SWcursor;
 
 #define CURSWID	16
 #define CURSHGT	16
@@ -62,3 +63,23 @@ extern void	blankscreen(int);
 extern void	drawblankscreen(int);
 extern ulong blanktime;
 extern Point mousexy(void);
+
+// needed by port/swcursor.c
+enum
+{
+	Backgnd = 0xFF,	/* white */
+	Foregnd =	0x00,	/* black */
+};
+
+extern Vdisplay *vd;
+extern SWcursor *swc;
+extern Memimage *gscreen;
+
+SWcursor* swcurs_create(ulong *, int, int, Rectangle, int);
+void swcurs_destroy(SWcursor*);
+void swcurs_enable(SWcursor*);
+void swcurs_disable(SWcursor*);
+void swcurs_hide(SWcursor*);
+void swcurs_unhide(SWcursor*);
+void swcurs_load(SWcursor*, Cursor*);
+void swcursupdate(int, int, int, int);

@@ -116,7 +116,7 @@ vblankintr()
 	intrclear(VBLANKbit, 0);
 }
 
-void mprotinit(void);
+ulong mprotinit(void);
 #define idoc(m) if(1) uartputs(m, strlen(m))
 #define doc(m) if(0) print("%s", m)
 
@@ -125,7 +125,7 @@ main(void)
 {
 	//char *p, *g, *ep;
 	//ulong *t;
-	//ulong i,j,k;
+	ulong i,j,k;
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
@@ -167,10 +167,10 @@ main(void)
 //	for(;;);
 	if (1){
 		for(;;)
-		print("H%x T%d B%x "
+		print("H%x T%ld B%x t%lux "
 			"%x %d %d %d %x %x "
-			"b%d t%d\n",
-			IPC->heartbeat, IPC->temperature/4096, IPC->battery,
+			"b%d t%ld\n",
+			IPC->heartbeat, IPC->temperature/4096, IPC->battery, m->ticks,
 			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
 			IPC->buttons, IPC->unixTime);
 	}
