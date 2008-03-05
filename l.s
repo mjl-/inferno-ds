@@ -36,6 +36,26 @@ TEXT setr13(SB), $-4
 	MOVW		R2, CPSR
 	RET
 
+TEXT vectors(SB), $-4
+	MOVW	0x18(R15), R15			/* reset */
+	MOVW	0x18(R15), R15			/* undefined */
+	MOVW	0x18(R15), R15			/* SWI */
+	MOVW	0x18(R15), R15			/* prefetch abort */
+	MOVW	0x18(R15), R15			/* data abort */
+	MOVW	0x18(R15), R15			/* reserved */
+	MOVW	0x18(R15), R15			/* IRQ */
+	MOVW	0x18(R15), R15			/* FIQ */
+
+TEXT vtable(SB), $-4
+	WORD	$_vsvccall(SB)			/* reset, in svc mode already */
+	WORD	$_vundcall(SB)			/* undefined, switch to svc mode */
+	WORD	$_vsvccall(SB)			/* swi, in svc mode already */
+	WORD	$_vpabcall(SB)			/* prefetch abort, switch to svc mode */
+	WORD	$_vdabcall(SB)			/* data abort, switch to svc mode */
+	WORD	$_vsvccall(SB)			/* reserved */
+	WORD	$_virqcall(SB)			/* IRQ, switch to svc mode */
+	WORD	$_vfiqcall(SB)			/* FIQ, switch to svc mode */
+
 TEXT _vundcall(SB), $-4			
 _vund:
 	MOVM.DB		[R0-R3], (R13)

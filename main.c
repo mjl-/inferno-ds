@@ -12,6 +12,7 @@
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
 Conf conf;
+Vectorpage	*page0 = (Vectorpage*)0;	/* doubly-mapped to AIVECADDR */
 
 /* So we can initialize our own data section and bss */
 extern char bdata[];
@@ -162,7 +163,7 @@ main(void)
 	links();
 
 //	intrenable(VBLANKbit, vblankintr, 0, 0);
-//	spllo();
+	spllo();
 //	for(;;)	waitvblank();
 //	for(;;);
 	if (1){

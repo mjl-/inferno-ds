@@ -129,6 +129,15 @@ extern Mach Mach0;
 extern Mach *m;
 extern Proc *up;
 
+/*
+ * Layout at virtual address 0.
+ */
+typedef struct Vectorpage {
+	void	(*vectors[8])(void);
+	uint	vtable[8];
+} Vectorpage;
+extern Vectorpage *page0;
+
 typedef struct MemBank {
 	uint	pbase;
 	uint	plimit;

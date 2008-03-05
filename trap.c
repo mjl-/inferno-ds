@@ -155,25 +155,32 @@ trapinit(void)
 	INTREG->ier=0;
 	INTREG->ipr=~0;
 
-	// exception handler for: und pab dab
-	*((ulong*)EXCHAND9) = (ulong)_vundcall;
-
-	// setup location of irq handler
-	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
-	*((ulong*)INTHAND9) = (ulong)_virqcall;
-
 	/* set up stacks for various exceptions */
 	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));
 	setr13(PsrMirq, m->irqstack+nelem(m->irqstack));
 	setr13(PsrMabt, m->abtstack+nelem(m->abtstack));
 	setr13(PsrMund, m->undstack+nelem(m->undstack)); 
 
+	/* set up exception vectors, disabled as it doesn't work on hw */
+	if(0){
+		memmove(page0->vectors, vectors, sizeof(page0->vectors));
+		memmove(page0->vtable, vtable, sizeof(page0->vtable));
+		//dcflush(page0, sizeof(*page0));
+	}
+
 	for (v = 0; v < nelem(Irq); v++) {
 		Irq[v].r = nil;
 		Irq[v].a = (void *)v;
 		Irq[v].v = v;
 	}
-	
+
+	// exception handler for: und pab dab
+//	*((ulong*)EXCHAND9) = (ulong)_vundcall;
+
+	// setup location of irq handler
+//	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
+//	*((ulong*)INTHAND9) = (ulong)_virqcall;
+
 //	trapv(0x0, _vsvccall);
 //	trapv(0x4, _vundcall);
 //	trapv(0xc, _vpabcall);

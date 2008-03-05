@@ -80,7 +80,7 @@ clockintr(Ureg *ur, void *a)
 
 	if(canlock(&clock0lock)){
 		for(lp = clock0link; lp; lp = lp->link){
-			if(1)print("clki %d clkf %x\n", m->ticks, lp->clock);
+			if(0)print("clki %lud clkf %lux\n", m->ticks, lp->clock);
 			if (lp->clock)
 				lp->clock();
 		}
