@@ -45,7 +45,7 @@
 #define KZERO		0x02000000
 #define MACHADDR	(KZERO+0x00002000)
 #define KTTB		(KZERO+0x00004000)
-#define KTZERO	(KZERO+0x00008010)
+#define KTZERO		(KZERO+0x00008010)
 #define KSTACK	8192			/* Size of kernel stack */
 
 #define DCFADDR	FLUSHMEM	/* cached and buffered for cache writeback */
@@ -83,7 +83,6 @@
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
 #define	SFRbase		0x04000000
 #define	ROMZERO		0x08000000
-
 #define	EXMEMCNT	0x04000204
 
 /*
@@ -114,4 +113,63 @@
 #define PsrZ		0x40000000	/* zero */
 #define PsrN		0x80000000	/* negative/less than */
 
-#define TIMERbase	0x04000100	/* timers */
+/*
+ * Coprocessors
+ */
+ 
+#define CpMPU		15
+
+/*
+ * Memory protection unit:
+ */
+
+#define	Pagesz(logsz)	((logsz) << 1)
+#define	Pagesz16K	(0x0e << 1)
+#define	Pagesz32K	(0x0f << 1)
+#define	Pagesz4M	(0x15 << 1)
+#define	Pagesz64M	(0x19 << 1)
+#define	Pagesz128M	(0x1a << 1)
+
+/*
+ * Internal MPU coprocessor registers
+ */
+ 
+#define	CpCPUID		0		/* R: */
+#define	CpControl	1		/* R/W: */
+#define	CpCachebit	2		/* R/W: Cachability Bits for Protection Region*/
+#define	CpWBops		3		/* W: Write Buffer operations */
+#define	CpAccess	5		/* R/W: Access Permission Protection Region */
+#define	CpPerm		6		/* R/W: Protection Unit Instruction Region 0..7 */
+#define	CpCacheCtl	7		/* W: Cache Commands */
+#define	CpTCM		9		/* R/W: Tightly Coupled Memory */
+
+/*
+ * CpControl bits
+ */
+ 
+#define	CpCmpu		0x00000001	/* MPU enable */
+#define	CpCalign	0x00000002	/* alignment fault enable */
+#define	CpCdcache	0x00000004	/* Dada cache enable */
+#define	CpCwb		0x00000008	/* write buffer turned on */
+#define	CpCi32		0x00000010	/* 32-bit programme space */
+#define	CpCd32		0x00000020	/* 32-bit data space */
+#define	CpClateabt	0x00000040	/* Late abort Mode (pre v4) */
+#define	CpCbe		0x00000080	/* big-endian operation */
+#define	CpCicache	0x00001000	/* Instruction cache enable */
+#define	CpCaltivec	0x00002000	/* alternative interrupt vectors */
+#define	CpCrrob		0x00004000	/* Round Robin cache replacement */
+#define	CpCprearm	0x00008000	/* Pre-ARMv5 Mode */
+#define	CpCdtcme	0x00010000	/* DTCM enable */
+#define	CpCitcme	0x00040000	/* ITCM enable */
+
+/*
+ * Access permissions
+ */
+
+#define	MpuAP(i, v)	((v)<<((i)*4))	/* access permissions */
+#define	MpuAPnone	0			/* no access */
+#define	MpuAPsrw	1			/* supervisor rw */
+#define	MpuAPuro	2			/* supervisor rw + user ro */
+#define	MpuAPurw	3			/* supervisor rw + user rw */
+#define	MpuAPsro	5			/* supervisor ro */
+#define	MpuAPsuro	6			/* supervisor ro + user ro */

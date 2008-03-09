@@ -176,7 +176,6 @@ trapinit(void)
 
 	// exception handler for: und pab dab
 //	*((ulong*)EXCHAND9) = (ulong)_vundcall;
-
 	// setup location of irq handler
 //	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
 //	*((ulong*)INTHAND9) = (ulong)_virqcall;

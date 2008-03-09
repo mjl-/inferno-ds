@@ -170,7 +170,6 @@ dldiinit(void){
 	
 	ret = hdr.io.init();
 	print("init: %d\n", ret);
-	while(1);
 	
 	if(0){
 	uchar sect[SECTSZ];

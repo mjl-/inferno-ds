@@ -29,10 +29,10 @@ struct IntReg {
 	ulong	ipr;		// Interrupt Pending
 };
 
-
 /* uarts? */
 
 /* timers */
+#define TIMERbase	0x04000100	/* timers */
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
 struct TimerReg {

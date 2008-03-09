@@ -119,7 +119,7 @@ vblankintr()
 
 ulong mprotinit(void);
 #define idoc(m) if(1) uartputs(m, strlen(m))
-#define doc(m) if(0) print("%s", m)
+#define doc if(1) print
 
 void
 main(void)

@@ -270,23 +270,6 @@ wait:
 	B wait
 	RET
 
-/*
- * Memory protection unit: go(es)to mem.h
- */
- 
-#define	PAGE_16K	(0x0e << 1)
-#define	PAGE_32K	(0x0f << 1)
-#define	PAGE_4M		(0x15 << 1)
-#define	PAGE_64M	(0x19 << 1)
-#define	PAGE_128M	(0x1a << 1)
-
-#define	PROTECT_EN	(1 << 0)
-#define	DCACHE_EN	(1 << 2)
-#define	ICACHE_EN	(1 << 12)
-#define	HIVECT_EN	(1 << 13)
-#define	DTCM_EN		(1 << 16)
-#define	ITCM_EN		(1 << 18)
-
 TEXT mprotinit(SB), $-4
 	/* turn the power on for M3 */
 	MOVW	$0x04000304, R0
@@ -299,8 +282,8 @@ TEXT mprotinit(SB), $-4
 	MOVW	R1, (R0)
 
 	/* disable DTCM and protection unit */
-	MOVW	0x00002078, R1		
-	MCR	15, 0, R1, C1, C0, 0
+	MOVW	$(CpClateabt|CpCd32|CpCi32|CpCwb), R1
+	MCR	CpMPU, 0, R1, C(CpControl), C0, 0
 	
 	/* allocate GBA+Main Memory to ARM9 */
 	/* (Setting wait_cr here allows init of card specific registers here) */
@@ -314,76 +297,77 @@ TEXT mprotinit(SB), $-4
 	MOVW	R1, (R0)
 	
 	/* Protection unit Setup added by Sasq */
+	
 	/* Disable cache */
 	MOVW	0, R0
-	MCR	15, 0, R0, C7, C5, 0		/* Instruction cache */
-	MCR	15, 0, R0, C7, C6, 0		/* Data cache */
+	MCR	CpMPU, 0, R0, C(CpCacheCtl), C5, 0		/* Instruction cache */
+	MCR	CpMPU, 0, R0, C(CpCacheCtl), C6, 0		/* Data cache */
 	
 	/* Wait for write buffer to empty */
-	MCR	15, 0, R0, C7, C10, 4
+	MCR	CpMPU, 0, R0, C(CpCacheCtl), C10, 4
 
 	MOVW	$(DWRAMZERO), R0
 	ORR	$0x0a,R0,R0
-	MCR	15, 0, R0, C9, C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
+	MCR	CpMPU, 0, R0, C(CpTCM), C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
 
 	MOVW	$0x20, R0
-	MCR	15, 0, R0, C9, C1,1		/* ITCM base = 0 , size = 32 MB */
+	MCR	CpMPU, 0, R0, C(CpTCM), C1,1		/* ITCM base = 0 , size = 32 MB */
 
 	/* Setup memory regions similar to Release Version */
 
 	/* Region 0 - IO registers */
-	MOVW	$(PAGE_64M | 0x04000000 | 1), R0
-	MCR	15, 0, R0, C6, C0, 0
+	MOVW	$(Pagesz64M | 0x04000000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C0, 0
 
 	/* Region 1 - Main Memory */
-	MOVW	$(PAGE_4M | 0x02000000 | 1), R0
-	MCR	15, 0, R0, C6, C1, 0
+	MOVW	$(Pagesz4M | 0x02000000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C1, 0
 
 	/* Region 2 - iwram */
-	MOVW	$(PAGE_32K | 0x037F8000 | 1), R0
-	MCR	15, 0, R0, C6, C2, 0
+	MOVW	$(Pagesz32K | 0x037F8000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C2, 0
 
 	/* Region 3 - DS Accessory (GBA Cart) */
-	MOVW	$(PAGE_128M | 0x08000000 | 1), R0
-	MCR	15, 0, R0, C6, C3, 0
+	MOVW	$(Pagesz128M | 0x08000000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C3, 0
 
 	/* Region 4 - DTCM */
-	MOVW	$(PAGE_16K | DWRAMZERO | 1), R0
-	MCR	15, 0, R0, C6, C4, 0
+	MOVW	$(Pagesz16K | DWRAMZERO | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C4, 0
 
 	/* Region 5 - ITCM */
-	MOVW	$(PAGE_32K | IWRAMZERO9 | 1), R0
-	MCR	15, 0, R0, C6, C5, 0
+	MOVW	$(Pagesz32K | IWRAMZERO9 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C5, 0
 
 	/* Region 6 - System ROM */
-	MOVW	$(PAGE_32K | 0xFFFF0000 | 1), R0
-	MCR	15, 0, R0, C6, C6, 0
+	MOVW	$(Pagesz32K | 0x00000000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C6, 0
 
 	/* Region 7 - non cacheable main ram */
-	MOVW	$(PAGE_4M  | 0x02400000 | 1), R0
-	MCR	15, 0, R0, C6, C7, 0
+	MOVW	$(Pagesz4M  | 0x02400000 | 1), R0
+	MCR	CpMPU, 0, R0, C(CpPerm), C7, 0
 
 	/* Write buffer enable */
-	MOVW	$0x2, R0
-	MCR	15, 0, R0, C3, C0, 0
+	MOVW	$(1<<1), R0
+	MCR	CpMPU, 0, R0, C(CpWBops), C0, 0
 
 	/* DCache & ICache enable */
-	MOVW	$0x42, R0
-	MCR	15, 0, R0, C2, C0, 0
-	MCR	15, 0, R0, C2, C0, 1
+	MOVW	$(1<<1), R0
+	MCR	CpMPU, 0, R0, C(CpCachebit), C0, 0
+	MCR	CpMPU, 0, R0, C(CpCachebit), C0, 1
 
 	/* IAccess */
-	MOVW	0x36636333, R0
-	MCR	15, 0, R0, C5, C0, 3
+	MOVW	0x33636333, R0
+	MCR	CpMPU, 0, R0, C(CpAccess), C0, 3
 
 	/* DAccess */
 	MOVW	0x36333333, R0
-	MCR	15, 0, R0, C5, C0, 2
+	MCR	CpMPU, 0, R0, C(CpAccess), C0, 2
 
-        /* Enable ICache, DCache, ITCM & DTCM */
-	MCR	15, 0, R0, C1, C0, 0
-	MOVW	$(ITCM_EN | DTCM_EN | ICACHE_EN | DCACHE_EN | PROTECT_EN), R1
+	/* Enable ICache, DCache, ITCM, DTCM */
+	MCR	CpMPU, 0, R0, C(CpControl), C0, 0
+	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache|CpCmpu), R1
 	ORR	R1, R0, R0
-	MRC	15, 0, R0, C1, C0, 0
+	MRC	CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET

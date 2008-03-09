@@ -115,6 +115,7 @@ root
 	/usr/inferno/keyring
 	/usr/inferno/lib
 	/usr/inferno/lib/plumbing
+	/usr/inferno/lib/wmsetup
 	/usr/inferno/namespace
 	/fonts/lucidasans/lsr.10
 	/fonts/lucidasans/lsr.12
