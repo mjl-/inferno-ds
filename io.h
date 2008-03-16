@@ -23,10 +23,10 @@
 
 typedef struct IntReg IntReg;
 struct IntReg {
-	ushort	ime;	// Interrupt Master Enable
+	ulong	ime;	// Interrupt Master Enable
 	ulong	pad1;
-	ulong	ier;		// Interrupt Enable
-	ulong	ipr;		// Interrupt Pending
+	ulong	ier;	// Interrupt Enable
+	ulong	ipr;	// Interrupt Pending
 };
 
 /* uarts? */

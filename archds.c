@@ -12,6 +12,9 @@
 #include	<memdraw.h>
 #include	"screen.h"
 
+#include "../port/netif.h"
+#include "etherif.h"
+
 void
 archreset(void)
 {
@@ -71,6 +74,25 @@ archlcdmode(LCDmode *m)
 	return 0;
 }
 
+/*
+ * set ether parameters: the contents should be derived from EEPROM or NVRAM
+ */
+int
+archether(int ctlno, Ether *ether)
+{
+	if(ctlno > 0)
+		return -1;
+	sprint(ether->type, "nifi");
+	ether->mem = 0;
+	ether->nopt = 0;
+	ether->port = 0x300;	/* there isn't an ether EEPROM; use chip's default */
+	ether->irq = 21;	 /* GPIO */
+	ether->itype = 0;	/* active high */
+//	gpioreserve(ether->irq);
+//	gpioconfig(ether->irq, Gpio_gpio | Gpio_in);
+//	memmove(ether->ea, macaddrs[ctlno], Eaddrlen);
+	return 1;
+}
 
 /*
 void

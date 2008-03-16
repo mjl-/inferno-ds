@@ -63,16 +63,21 @@ ndsreset(void)
 //	swi(Dssoftreset);
 }
 
-
 static void
-ndsinit(void)
+keysintr(Ureg*, void*)
 {
+	print("keysintr\n");
+	intrclear(KEYbit, 0);
+//	wakeup(&powerevent);
 }
 
 static Chan*
 ndsattach(char* spec)
 {
-	if(0)kproc("touchread", touchread, nil, 0);
+	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
+	intrenable(0, KEYbit, keysintr, nil, 0);
+
+	if(1)kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 
@@ -166,102 +171,98 @@ enum
 	Rbtn	=	1<<8,
 	Lbtn	=	1<<9,
 	
-	Xbtn =	1<<10,
+	Xbtn	=	1<<10,
 	Ybtn	=	1<<11,
-	Pdown	= 1<<12,
+	Lclose	= 	1<<13,
+	Pdown	=	1<<16,
 
 	// relative to XKEYS (arm7 only)
 	Xbtn7	= 1<<0,
 	Ybtn7	= 1<<1,
-	Pdown7	= 1<<2,	// pen down
+	Pdown7	= 1<<6,	// pen down
 	Lclose7	= 1<<3,	// lid closed
 };
 
 static	Rune	rockermap[3][Numbtns] ={
-	{'\n', '\t', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// right handed
-	{'\n', '\t', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// left handed
-	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift},	// debug
+	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
+	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
 };
 
-// done on vblank irq why ? polling ?; the same for touchread
-// need a way to be notified when keys state changes
+// TODO
+// - debug mode controled by Conf.bmap, use debugkeys to perform checks & ease debug
+// - take care of changes in buttons, penup/pendown, rockermap, handedness
+// - screen orientation switch between landscape/portrait
 
-// debug mode controled by Conf.bmap, key combo to enable debug mode?
-// to allow registering debugkeys to perform checks & ease debug
-
+#define kpressed(k, os, ns) (!(os & k) && (ns & k))
+#define kreleased(k, os, ns) ((os & k) && !(ns & k))
 void setlcdblight(int on);
 
 static int
 ndskeys(void)
 {
 	int i;
-	ushort state;
-	static ushort ostate, b;
+	ulong st, b;
+	static ulong ost;
 
-	state = REG_KEYINPUT;
-	state |=  ~(IPC->buttons & (Xbtn7|Ybtn7|Pdown7)) << 10;
+	st = REG_KEYINPUT;
+	st |=  (~IPC->buttons & (Xbtn7|Ybtn7|Pdown7|Lclose7)) << 10;
 
-	if (ostate == state)
-		return 0;
+	if(kreleased(Pdown, ost, st))
+		b = 0;
+	if(kpressed(Pdown, ost, st))
+		b = 1;
+	if(b && kpressed(Lbtn, ost, st))
+		b = 2;
+	if(b && kpressed(Rbtn, ost, st))
+		b = 4;
 
- 	// check Lclose7 and switch lcd backlight on/off
-	if (IPC->buttons & Lclose7)
+ 	// lid controls lcd backlight
+	if(kpressed(Lclose, ost, st))
 		setlcdblight(0);
-	else
+	if(kreleased(Lclose, ost, st))
 		setlcdblight(1);
 	
-	for (i = 0 ; i < nelem(rockermap[conf.bmap]) ; i++){
-		if ((state >> i) & 1){
-			kbdrepeat(0);
-		}else{
-			if (0)print("ndskeys: %#x %c(%d)\n", state, rockermap[conf.bmap][i], i);
+	for (i=0; i<nelem(rockermap[conf.bmap]); i++){
+		if (kpressed(1<<i, st, ost)){
+			if (0)print("ndskeys: %#x %c(%d)\n", st, rockermap[conf.bmap][i], i);
 			kbdrepeat(0);
 			kbdputc(kbdq, rockermap[conf.bmap][i]);
+		}else{
+			kbdrepeat(0);
 		}
 	}
-	ostate = state;
 
-	if (state & Selbtn)
-		b = 0;
-	if (state & Startbtn)
-		b = 1;
-	if (state & Lbtn)
-		b = 2;
-	if (state & Rbtn)
-		b = 4;
-	
+	ost = st;
 	return b;
+}
+
+static int
+tsactivity0(void *arg){
+	return (~IPC->buttons & Pdown7) == Pdown7 || (REG_KEYINPUT & 0x3FF) != 0; 
 }
 
 static void
 touchread(void*)
 {
-//	int x, y;
-	int px, py, b, bbtn, oldbbtn=0, n=0;
+	int px, py, b, isdown;
+
 	for(;;) {
-		// should sleep until the pen is down
-		if((IPC->buttons&Pendown))
-			continue;
-	
-//		x=IPC->touchX;
-//		y=IPC->touchY;
-
-		if((bbtn=!(REG_KEYINPUT&Bbtn))^oldbbtn && !n--) {
-			kbdputc(kbdq,'\n');
-			bbtn=oldbbtn;
-			n=500;
-		}
-
+		// pointer button events change with keys
+		b = ndskeys();
 		px=IPC->touchXpx;
 		py=IPC->touchYpx;
 
-		// the state of touch screen presses changes with buttons
-		b = ndskeys();
-			
-		// todo take care of changes in buttons, penup/pendown, rockermap, handedness
-		mousetrack(b, px, py, 0);
+		isdown=(~IPC->buttons & Pdown7);
+		if(isdown)
+			mousetrack(b, px, py, 0);
+		else
+			mousetrack(0, 0, 0, 1);
 
-		if(1)print("ts %#d %d %X\n", px, py, b);
+		// should sleep until the pen is down
+		tsleep(&up->sleep, tsactivity0, nil, 50);
+
+		if(0)print("ts down %x %#d %d %X\n", isdown, px, py, b);
 	}
 }
 
@@ -283,7 +284,7 @@ Dev ndsdevtab = {
 	"nds",
 
 	ndsreset,
-	ndsinit,
+	devinit,
 	devshutdown,
 	ndsattach,
 	ndswalk,

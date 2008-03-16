@@ -78,7 +78,7 @@ intrclear(int v, int tbdf)
 }
 
 void
-intrenable(int v, void (*f)(Ureg*, void*), void* a, int tbdf)
+intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 {
 	int x;
 
@@ -162,7 +162,7 @@ trapinit(void)
 	setr13(PsrMund, m->undstack+nelem(m->undstack)); 
 
 	/* set up exception vectors, disabled as it doesn't work on hw */
-	if(0){
+	if(1){
 		memmove(page0->vectors, vectors, sizeof(page0->vectors));
 		memmove(page0->vtable, vtable, sizeof(page0->vtable));
 		//dcflush(page0, sizeof(*page0));

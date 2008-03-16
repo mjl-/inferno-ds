@@ -43,6 +43,7 @@ struct ISAConf {
 	char	type[KNAMELEN];
 	ulong	port;
 	ulong	irq;
+	int	itype;
 	ulong	sairq;
 	ulong	dma;
 	ulong	mem;

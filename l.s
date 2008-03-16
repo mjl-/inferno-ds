@@ -255,22 +255,22 @@ TEXT consputs(SB),$-4
 	RET
 
 TEXT getdtcm(SB), $-4
-	MRC		15,0,R0,C9,C1,0
+	MRC		CpMPU,0,R0,C(CpTCM),C1,0
 	RET
 
 TEXT getdtcmctl(SB), $-4
-	MRC		15,0,R0,C9,C1,0
+	MRC		CpMPU,0,R0,C(CpTCM),C1,0
 	RET
 
 TEXT writedtcmctl(SB), $-4
-	MCR		15,0,R0,C9,C1,0
+	MCR		CpMPU,0,R0,C(CpTCM),C1,0
 	RET
 TEXT loop(SB), $-4
 wait:
 	B wait
 	RET
 
-TEXT mprotinit(SB), $-4
+TEXT mpuinit(SB), $-4
 	/* turn the power on for M3 */
 	MOVW	$0x04000304, R0
 	MOVW	$0x8203, R1

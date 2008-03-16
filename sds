@@ -11,8 +11,8 @@ dev
 	dup
 	draw screen swcursor
 	pointer
-#	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
-#	ether netif netaux ethermedium
+	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
+	ether netif netaux ethermedium
 #	ata
 #	uart
 
@@ -22,13 +22,14 @@ dev
 
 ip
 #	il
-#	tcp
-#	udp
+	tcp
+	udp
 #	rudp
 #	igmp
-#	ipifc
-#	icmp
-#	ipmux
+	ipifc
+	icmp
+	icmp6
+	ipmux
 
 lib
 	interp
@@ -92,8 +93,9 @@ code
 	int redirectconsole = 1;
 	char debug_keys = 1;
 	int panicreset = 0;
-	char *tkfont = "/fonts/lucidasans/unicode.7.font";
+	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
+	int ispointervisible = 1;
 	
 init
 	dsinit
@@ -119,8 +121,10 @@ root
 	/usr/inferno/namespace
 	/fonts/lucidasans/lsr.10
 	/fonts/lucidasans/lsr.12
+	/fonts/lucidasans/lsb.10
 	/fonts/lucidasans/unicode.6.font
 	/fonts/lucidasans/unicode.7.font
+	/fonts/lucidasans/boldlatin1.6.font
 	/fonts/pelm/unicode.8.font
 	/fonts/pelm/latin1.8
 	/fonts/misc/latin1.6x13.font
@@ -149,11 +153,13 @@ root
 	/dis/lib/wmsrv.dis
 	/dis/lib/workdir.dis
 	/dis/dossrv.dis
+	/dis/ls.dis
 	/dis/sh.dis
 	/dis/touchcal.dis
+	/dis/wm/keyboard.dis
 	/dis/wm/sh.dis
-	/dis/wm/wm.dis
 	/dis/wm/toolbar.dis
+	/dis/wm/wm.dis
 	/dis/echo.dis
 	/dis/cat.dis
 	/dis/ftest.dis

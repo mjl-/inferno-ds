@@ -84,7 +84,7 @@ confinit(void)
 	conf.nproc = 100 + ((conf.npage*BY2PG)/MB)*5;
 	conf.nmach = 1;
 	
-	conf.bmap = 2;
+	conf.bmap = 0;
 }
 
 void
@@ -117,9 +117,8 @@ vblankintr()
 	intrclear(VBLANKbit, 0);
 }
 
-ulong mprotinit(void);
 #define idoc(m) if(1) uartputs(m, strlen(m))
-#define doc if(1) print
+#define doc if(0) print
 
 void
 main(void)
@@ -130,8 +129,8 @@ main(void)
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
-	doc("mprotinit...\n");
-	mprotinit();
+	doc("mpuinit...\n");
+	mpuinit();
 	doc("machinit...\n");
 	machinit();
 	archreset();
@@ -162,11 +161,11 @@ main(void)
 	// there's nothing to link atm
 	links();
 
-//	intrenable(VBLANKbit, vblankintr, 0, 0);
-	spllo();
+//	intrenable(0, VBLANKbit, vblankintr, 0, 0);
+//	spllo();
 //	for(;;)	waitvblank();
 //	for(;;);
-	if (1){
+	if (0){
 		for(;;)
 		print("H%x T%ld B%x t%lux "
 			"%x %d %d %d %x %x "

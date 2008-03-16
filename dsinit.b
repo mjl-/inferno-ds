@@ -62,7 +62,7 @@ init()
 			err("local file system unusable");
 	}
 
-#	dobind("#I", "/net", sys->MAFTER);	# IP
+	dobind("#I", "/net", sys->MAFTER);	# IP
 	dobind("#p", "/prog", sys->MREPL);	# prog
 	dobind("#c", "/dev", sys->MREPL); 	# console
 	dobind("#d", "/fd", Sys->MREPL);	# dup

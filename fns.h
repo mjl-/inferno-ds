@@ -41,7 +41,7 @@ void	fpinit(void);
 ulong	getcallerpc(void*);
 void	gotopc(ulong);
 #define	idlehands()			/* nothing to do in the runproc */
-void	intrenable(int, void (*)(Ureg*, void*), void*, int);
+void	intrenable(int, int, void (*)(Ureg*, void*), void*, char*);
 void intrclear(int, int);
 void intrmask(int, int);
 void intrunmask(int, int);
@@ -75,6 +75,7 @@ ulong	mmuregr(int);
 void	mmuregw(int, ulong);
 void	mmureset(void);
 void	mouseinit(void);
+ulong	mpuinit(void);
 void	nowriteSeg(void *, void *);
 void*	pa2va(ulong);
 int	pcmpin(int slot, int type);

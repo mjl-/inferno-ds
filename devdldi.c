@@ -14,7 +14,7 @@
 #include	"io.h"
 #include	"../port/error.h"
 
-#define	DPRINT	if(1)print
+#define	DPRINT	if(0)print
 
 enum{
 	Qdir,
@@ -125,8 +125,7 @@ dldiinit(void){
 	int ret;
 	int i;
 	
-	if (0)
-	print("DLDI hdr %lx sz: %d fix: %s%s%s%s\n",
+	DPRINT("DLDI hdr %lx sz: %d fix: %s%s%s%s\n",
 		(ulong) &hdr,
 		sizeof(DLDIhdr),
 		(hdr.sect2fix & Fixall)? "all": "",
