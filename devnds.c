@@ -77,7 +77,7 @@ ndsattach(char* spec)
 	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
 	intrenable(0, KEYbit, keysintr, nil, 0);
 
-	if(1)kproc("touchread", touchread, nil, 0);
+	if(0)kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 

@@ -20,13 +20,6 @@ wine $home/dsemu/dsemu.exe isds.nds
 echo 'asm(0x209c608)' | i acid -l acidmap isds.p9
 echo 'asm(0x3800028)' | i acid -l arm7/acidmap arm7/i5.p9
 
-i mk 'CONF=ds' vclean
-i mk 'CONF=ds' 
-desmume  ids.nds
-desmume-cli '--cflash=disk.img'  isds.nds
-
-rm -f `changes arm7/ | sed -n '/# ?$/ {s/changes //; s/# ?//p;}'`
-
 i emu disdep /os/init/dsinit.dis | sort |t+
 cat <<EOF
 	/dis/wm/toolbar.dis

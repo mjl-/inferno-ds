@@ -160,6 +160,8 @@ main(void)
 
 	// there's nothing to link atm
 	links();
+	procinit();
+	chandevreset();
 
 //	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 //	spllo();
@@ -174,10 +176,6 @@ main(void)
 			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
 			IPC->buttons, IPC->unixTime);
 	}
-
-	procinit();
-
-	chandevreset();
 
 	eve = strdup("inferno");
 	archconsole();

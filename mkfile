@@ -102,7 +102,9 @@ devbench.$O: bench.h benchmod.h
 
 devuart.$O:	devuart.c
 	$CC $CFLAGS devuart.c
-	
+devaudio.$O:	devaudio.c
+	$CC $CFLAGS devaudio.c
+
 syms:   $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE $CONF.c >syms
 	cd arm7; mk syms

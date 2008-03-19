@@ -18,7 +18,7 @@ dev
 
 	nds
 	dldi
-#	audio invhit
+	audio invhit
 
 ip
 #	il
@@ -84,9 +84,9 @@ link
 misc
 
 code
-	int main_pool_pcnt = 30;
+	int main_pool_pcnt = 50;
 	int heap_pool_pcnt = 30;
-	int image_pool_pcnt = 40;
+	int image_pool_pcnt = 20;
 	int cflag = 0;
 
 	int consoleprint = 1;
@@ -156,6 +156,7 @@ root
 	/dis/ls.dis
 	/dis/sh.dis
 	/dis/touchcal.dis
+	/dis/wm/memory.dis
 	/dis/wm/keyboard.dis
 	/dis/wm/sh.dis
 	/dis/wm/toolbar.dis
