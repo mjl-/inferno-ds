@@ -16,6 +16,7 @@ i mk 'CONF=sds'
 
 desmume isds.nds
 wine $home/dsemu/dsemu.exe isds.nds
+wine $home/nogba-2.6a/'NO$GBA.EXE' isds.nds
 
 echo 'asm(0x209c608)' | i acid -l acidmap isds.p9
 echo 'asm(0x3800028)' | i acid -l arm7/acidmap arm7/i5.p9

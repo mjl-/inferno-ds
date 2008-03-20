@@ -163,7 +163,9 @@ root
 	/dis/wm/wm.dis
 	/dis/echo.dis
 	/dis/cat.dis
+	/dis/date.dis
 	/dis/ftest.dis
+	/dis/time.dis
 	/dis/sh/std.dis
 	
 	/lib/wmsetup

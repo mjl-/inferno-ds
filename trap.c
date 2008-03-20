@@ -166,6 +166,11 @@ trapinit(void)
 		memmove(page0->vectors, vectors, sizeof(page0->vectors));
 		memmove(page0->vtable, vtable, sizeof(page0->vtable));
 		//dcflush(page0, sizeof(*page0));
+
+		if (memcmp(page0->vectors, vectors, sizeof(page0->vectors)))
+			print("trapinit: bad vectors[%d] at %#lux\n", sizeof(page0->vectors), page0->vectors);
+		if (memcmp(page0->vtable, vtable, sizeof(page0->vtable)))
+			print("trapinit: bad vtable[%d] at %#lux\n", sizeof(page0->vtable, page0->vtable));
 	}
 
 	for (v = 0; v < nelem(Irq); v++) {

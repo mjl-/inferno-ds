@@ -37,7 +37,7 @@ TEXT DC_FlushRange(SB), $-4
 	RET
 */
 void	DC_FlushRange(const void *base, u32 size);
-static void playSoundBlock(TransferSound *snd) {
+static void playSoundBlock(TransferSound *snd){
 //	DC_FlushRange(snd, sizeof(TransferSound) );
 
 	IPC->soundData = snd;
@@ -46,25 +46,25 @@ static void playSoundBlock(TransferSound *snd) {
 static TransferSound Snd;
 static TransferSoundData SndDat =		{ (void *)0 , 0, 11025, 64, 64, 1 };
 
-void setGenericSound( u32 rate, u8 vol, u8 pan, u8 format) {
+void setGenericSound(u32 rate, u8 vol, u8 pan, u8 format){
 	SndDat.rate		= rate;
 	SndDat.vol		= vol;
 	SndDat.pan		= pan;
 	SndDat.format	= format;
 }
 
-void playSound( TransferSoundData* sound) {
+void playSound(TransferSoundData* sound) {
 	Snd.count = 1;
 
-	memcpy(&Snd.data[0], sound, sizeof(TransferSoundData) );
+	memcpy(&Snd.data[0], sound, sizeof(TransferSoundData));
 
 	playSoundBlock(&Snd);
 }
 
-void playGenericSound(const void* data, u32 length) {
+void playGenericSound(const void* data, u32 length){
 	Snd.count = 1;
 
-	memcpy(&Snd.data[0], &SndDat, sizeof(TransferSoundData) );
+	memcpy(&Snd.data[0], &SndDat, sizeof(TransferSoundData));
 	Snd.data[0].data = data;
 	Snd.data[0].len = length;
 
