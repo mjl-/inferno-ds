@@ -24,7 +24,6 @@ KDZERO=$KTZERO #8010
 OBJ=\
 	l.$O\
 	clock.$O\
-	div.$O\
 	fpi.$O\
 	fpiarm.$O\
 	fpimem.$O\

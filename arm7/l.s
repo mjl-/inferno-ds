@@ -26,7 +26,21 @@ TEXT swiDelay(SB), $-4
 TEXT swiWaitForVBlank(SB), $-4
 	SWI	0x050000
 	RET
+
+TEXT swiDivide(SB), $-4
+	SWI	0x090000
+	RET
+
+TEXT swiRemainder(SB), $-4
+	SWI	0x090000
+	MOVW	R1, R0
+	RET
+
 /* fixme will need to figure out more here */
 TEXT swiDivMod(SB), $-4
+	MOVM.DB.W	[R2-R3], (R13)
 	SWI 0x090000
+	MOVM.DB.W	(R13), [R2-R3]
+	MOVW	R0, (R2)
+	MOVW	R1, (R3)
 	RET

@@ -58,6 +58,7 @@ int	archlcdmode(LCDmode*);
 Vdisplay	*lcd_init(LCDmode*);
 void	lcd_setcolor(ulong, ulong, ulong, ulong);
 void	lcd_flush(void);
+void flushmemscreen(Rectangle r);
 
 extern void	blankscreen(int);
 extern void	drawblankscreen(int);
@@ -83,3 +84,4 @@ void swcurs_hide(SWcursor*);
 void swcurs_unhide(SWcursor*);
 void swcurs_load(SWcursor*, Cursor*);
 void swcursupdate(int, int, int, int);
+

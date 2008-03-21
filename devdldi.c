@@ -108,8 +108,8 @@ DLDIhdr hdr=
 .sbss = 0, .ebss = 0,	
 	
 .io = {
-	"dldi",
-	0,
+	.type = "dldi",
+	.caps = 0,
 	
 	nulliofunc,
 	nulliofunc,
@@ -137,7 +137,8 @@ dldiinit(void){
 		print("bad DLDIhdr start %lx %lx\n", (ulong) &hdr, hdr.sdata);
 
 	print("dldi: %s\n", hdr.textid);
-	print("%.4s %s%s %s%s (%lx)\n",
+	if (hdr.io.caps){
+		print("%.4s %s%s %s%s (%lx)\n",
 		hdr.io.type, 
 		(hdr.io.caps & Cslotgba)? "gba" : "",
 		(hdr.io.caps & Cslotnds)? "nds" : "",
@@ -145,31 +146,32 @@ dldiinit(void){
 		(hdr.io.caps & Cwrite)? "w" : "",
 		hdr.io.caps);
 	
-//	more checks ...
-//	DPRINT("hdr data %lx %x\n", hdr.sdata, hdr.edata);
-//	DPRINT("hdr glue %lx %lx\n", hdr.sglue, hdr.eglue);
-//	DPRINT("hdr got %lx %lx\n", hdr.sgot, hdr.egot);
-//	DPRINT("hdr bss %lx %lx\n", hdr.sbss, hdr.ebss);
-//	
-//	DPRINT("io.type %lx %x\n", &hdr.io.type[0], hdr.io.type[0]);
-//	DPRINT("io.caps %lx %lx\n", &hdr.io.caps, hdr.io.caps);
-//	
-//	DPRINT("io.init %lx %lx %lx\n", &hdr.io.init, (*hdr.io.init), *(*hdr.io.init));
-//	DPRINT("io.isinserted %lx %lx\n", &hdr.io.isinserted, (*hdr.io.isinserted));
-//	DPRINT("io.read %lx %lx\n", &hdr.io.read, (*hdr.io.read));
-//	DPRINT("io.write %lx %lx\n", &hdr.io.write, *hdr.io.write);
-//	DPRINT("io.clrstatus %lx %lx\n", &hdr.io.clrstatus, *hdr.io.clrstatus);
-//	DPRINT("io.deinit %lx %lx\n", &hdr.io.deinit, *hdr.io.deinit);
-//
-	ret = hdr.io.isinserted();
-	print("isinserted: %d\n", ret);
+		ret = hdr.io.isinserted();
+		print("isinserted: %d\n", ret);
 
-	ret = hdr.io.clrstatus();
-	print("clrstatus: %d\n", ret);
+		ret = hdr.io.clrstatus();
+		print("clrstatus: %d\n", ret);
 	
-	ret = hdr.io.init();
-	print("init: %d\n", ret);
-	
+		ret = hdr.io.init();
+		print("init: %d\n", ret);
+
+		// more checks ...
+		DPRINT("hdr data %lx %lx\n", hdr.sdata, hdr.edata);
+		DPRINT("hdr glue %lx %lx\n", hdr.sglue, hdr.eglue);
+		DPRINT("hdr got %lx %lx\n", hdr.sgot, hdr.egot);
+		DPRINT("hdr bss %lx %lx\n", hdr.sbss, hdr.ebss);
+		
+		DPRINT("io.type %lx %x\n", &hdr.io.type[0], hdr.io.type[0]);
+		DPRINT("io.caps %lx %lx\n", &hdr.io.caps, hdr.io.caps);
+		
+		DPRINT("io.init %lx %lx %lx\n", &hdr.io.init, (*hdr.io.init), *(*hdr.io.init));
+		DPRINT("io.isinserted %lx %lx\n", &hdr.io.isinserted, (*hdr.io.isinserted));
+		DPRINT("io.read %lx %lx\n", &hdr.io.read, (*hdr.io.read));
+		DPRINT("io.write %lx %lx\n", &hdr.io.write, *hdr.io.write);
+		DPRINT("io.clrstatus %lx %lx\n", &hdr.io.clrstatus, *hdr.io.clrstatus);
+		DPRINT("io.deinit %lx %lx\n", &hdr.io.deinit, *hdr.io.deinit);
+	}
+
 	if(0){
 	uchar sect[SECTSZ];
 	
@@ -219,14 +221,13 @@ dldiclose(Chan *)
 static long
 dldiread(Chan* c, void* a, long n, vlong offset)
 {
-	int ret;
 	DPRINT("dldiread a %lx n %ld o %lld\n", a, n , offset);
-
+	
 	switch ((ulong)c->qid.path) {
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		ret = hdr.io.read(offset / SECTSZ, n / SECTSZ, a);
+		hdr.io.read(offset / SECTSZ, n / SECTSZ, a);
 		break;
 	default:
 		n = 0;
@@ -238,14 +239,13 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 static long
 dldiwrite(Chan* c, void* a, long n, vlong offset)
 {
-	int ret;
 	DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n , offset);
 
 	switch ((ulong)c->qid.path) {
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		ret = hdr.io.write(offset / SECTSZ, n / SECTSZ, a);
+//		hdr.io.write(offset / SECTSZ, n / SECTSZ, a);
 		break;
 	default:
 		n = 0;

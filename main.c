@@ -35,8 +35,9 @@ extern int kernel_pool_pcnt;
 int
 segflush(void *a, ulong n)
 {
-	USED(a, n);
-	return 1;
+	dcflush(a, n);
+	icflush(a, n);
+	return 0;
 }
 
 static void
@@ -125,7 +126,7 @@ main(void)
 {
 	//char *p, *g, *ep;
 	//ulong *t;
-	ulong i,j,k;
+	//ulong i,j,k;
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 

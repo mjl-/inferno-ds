@@ -157,8 +157,10 @@ VcountHandler(void)
 void 
 startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) 
 {
-//	SCHANNEL_TIMER(channel)  = SOUND_FREQ(sampleRate);
-	SCHANNEL_TIMER(channel)  = 0xfa1d;
+	// TODO: fix freq = - 0x01000000 / sampleRate;
+	if (sampleRate == 11127)
+		SCHANNEL_TIMER(channel) = SOUND_FREQ(11127);
+
 	SCHANNEL_SOURCE(channel) = (u32)data;
 	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
 	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);

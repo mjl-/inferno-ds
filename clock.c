@@ -127,9 +127,9 @@ timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 	if ((timer < 0) || (timer > 3))
 		return;
 	timerdisable(timer);
-	timer_incr[timer] = TIMER_FREQ(Hz, Tmrdiv64);	/* set up freq */
+	timer_incr[timer] = TIMER_FREQ(Hz, Tmrdiv1024);	/* set up freq */
 	t->data = timer_incr[timer];
-	t->ctl = Tmrena | Tmrdiv64 | Tmrirq;
+	t->ctl = Tmrena | Tmrdiv1024 | Tmrirq;
 	intrenable(0, TIMER0bit+timer, f, a, 0);
 }
 

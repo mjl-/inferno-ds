@@ -1,5 +1,7 @@
 #include "mem.h"
 
+#define	CPWAIT	MRC	CpMPU, 0, R2, C(2), C(0), 0; MOVW R2, R2; SUB $4, R15
+
 /*
  * 		Entered from the boot loader with
  *		supervisor mode, interrupts disabled;
@@ -8,17 +10,16 @@
 TEXT _startup(SB), $-4
 	MOVW		$setR12(SB), R12 	/* static base (SB) */
 	MOVW		$Mach0(SB), R13
-	ADD		$(KSTACK-4), R13	/* leave 4 bytes for link */
+	ADD			$(KSTACK-4), R13	/* leave 4 bytes for link */
 	
 
 	MOVW		$(PsrDirq|PsrDfiq|PsrMsvc), R1	/* Switch to SVC mode */
 	MOVW		R1, CPSR
 
-
 	BL		main(SB)		/* jump to kernel */
-
 dead:
-	B	dead
+	B		dead
+	BL		_div(SB)			/* hack to get _div etc loaded */
 
 GLOBL 		Mach0(SB), $KSTACK
 
@@ -228,30 +229,30 @@ TEXT	gotopc(SB), $-4
 
 
 TEXT _halt(SB), $-4
-	SWI 0x02
+	SWI 0x020000
 
 TEXT _reset(SB), $-4
-	SWI 0x0
+	SWI 0x010000
 
 /* need to allow kernel to pass args on what to clear */	
 TEXT	_clearregs(SB), $-4
-	MOVW $0x4, R0
-	SWI 0x1
+	MOVW 	$0x4, R0
+	SWI 	0x010000
 
 TEXT _stop(SB), $-4
-	MOVW $0xEAEAEA,R0
+	MOVW 	$0xEAEAEA,R0
 
 TEXT swiDelay(SB), $-4
-	SWI	0x030000
+	SWI		0x030000
 	RET
 
 TEXT	waitvblank(SB), $-4
-	SWI	0x050000
+	SWI		0x050000
 	RET
 
 /* dsemu only: used to print to log */
 TEXT consputs(SB),$-4
-	SWI	0xff0000
+	SWI		0xff0000
 	RET
 
 TEXT getdtcm(SB), $-4
@@ -283,7 +284,7 @@ TEXT mpuinit(SB), $-4
 
 	/* disable DTCM and protection unit */
 	MOVW	$(CpClateabt|CpCd32|CpCi32|CpCwb), R1
-	MCR	CpMPU, 0, R1, C(CpControl), C0, 0
+	MCR		CpMPU, 0, R1, C(CpControl), C0, 0
 	
 	/* allocate GBA+Main Memory to ARM9 */
 	/* (Setting wait_cr here allows init of card specific registers here) */
@@ -292,82 +293,142 @@ TEXT mpuinit(SB), $-4
 	/* bit 15: Main Memory priority to ARM9 */
 	MOVW	$(EXMEMCNT), R0 			/* wait_cr */
 	MOVW	(R0), R1
-	BIC	$0x0080, R1, R1
-	BIC	$0x8800, R1, R1
+	BIC		$0x0080, R1, R1
+	BIC		$0x8800, R1, R1
 	MOVW	R1, (R0)
 	
 	/* Protection unit Setup added by Sasq */
 	
 	/* Disable cache */
 	MOVW	0, R0
-	MCR	CpMPU, 0, R0, C(CpCacheCtl), C5, 0		/* Instruction cache */
-	MCR	CpMPU, 0, R0, C(CpCacheCtl), C6, 0		/* Data cache */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C5, 0		/* Instruction cache */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C6, 0		/* Data cache */
 	
 	/* Wait for write buffer to empty */
 	MCR	CpMPU, 0, R0, C(CpCacheCtl), C10, 4
 
 	MOVW	$(DWRAMZERO), R0
-	ORR	$0x0a,R0,R0
-	MCR	CpMPU, 0, R0, C(CpTCM), C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
+	ORR		$0x0a,R0,R0
+	MCR		CpMPU, 0, R0, C(CpTCM), C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
 
 	MOVW	$0x20, R0
-	MCR	CpMPU, 0, R0, C(CpTCM), C1,1		/* ITCM base = 0 , size = 32 MB */
+	MCR		CpMPU, 0, R0, C(CpTCM), C1,1		/* ITCM base = 0 , size = 32 MB */
 
 	/* Setup memory regions similar to Release Version */
 
 	/* Region 0 - IO registers */
 	MOVW	$(Pagesz64M | 0x04000000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C0, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C0, 0
 
 	/* Region 1 - Main Memory */
 	MOVW	$(Pagesz4M | 0x02000000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C1, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C1, 0
 
 	/* Region 2 - iwram */
 	MOVW	$(Pagesz32K | 0x037F8000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C2, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C2, 0
 
 	/* Region 3 - DS Accessory (GBA Cart) */
 	MOVW	$(Pagesz128M | 0x08000000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C3, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C3, 0
 
 	/* Region 4 - DTCM */
 	MOVW	$(Pagesz16K | DWRAMZERO | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C4, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C4, 0
 
 	/* Region 5 - ITCM */
 	MOVW	$(Pagesz32K | IWRAMZERO9 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C5, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C5, 0
 
 	/* Region 6 - System ROM */
 	MOVW	$(Pagesz32K | 0x00000000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C6, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C6, 0
 
 	/* Region 7 - non cacheable main ram */
 	MOVW	$(Pagesz4M  | 0x02400000 | 1), R0
-	MCR	CpMPU, 0, R0, C(CpPerm), C7, 0
+	MCR		CpMPU, 0, R0, C(CpPerm), C7, 0
 
 	/* Write buffer enable */
 	MOVW	$(1<<1), R0
-	MCR	CpMPU, 0, R0, C(CpWBops), C0, 0
+	MCR		CpMPU, 0, R0, C(CpWBops), C0, 0
 
 	/* DCache & ICache enable */
 	MOVW	$(1<<1), R0
-	MCR	CpMPU, 0, R0, C(CpCachebit), C0, 0
-	MCR	CpMPU, 0, R0, C(CpCachebit), C0, 1
+	MCR		CpMPU, 0, R0, C(CpCachebit), C0, 0
+	MCR		CpMPU, 0, R0, C(CpCachebit), C0, 1
 
 	/* IAccess */
 	MOVW	0x33636333, R0
-	MCR	CpMPU, 0, R0, C(CpAccess), C0, 3
+	MCR		CpMPU, 0, R0, C(CpAccess), C0, 3
 
 	/* DAccess */
 	MOVW	0x36333333, R0
-	MCR	CpMPU, 0, R0, C(CpAccess), C0, 2
+	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
 	/* Enable ICache, DCache, ITCM, DTCM */
-	MCR	CpMPU, 0, R0, C(CpControl), C0, 0
+	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache|CpCmpu), R1
-	ORR	R1, R0, R0
-	MRC	CpMPU, 0, R0, C(CpControl), C0, 0
+	ORR		R1, R0, R0
+	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
 
+	RET
+
+/*
+ *	 icache: clean and invalidate all
+ */
+TEXT icflushall(SB), $-4
+	MOVW	$0, R0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 0
+	CPWAIT
+	RET
+
+/*
+ *	icache: invalidate a range
+ */
+TEXT icflush(SB), $-4
+	ADD		R0, R1, R1
+	BIC		$(CACHELINESZ - 1), R0, R0
+.icinvalidate:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 1
+	ADD		$CACHELINESZ, R0
+	CMP		R0, R1
+	BLT		.icinvalidate
+	CPWAIT
+	RET
+
+/*
+ *	dcache: clean and invalidate all
+ */
+TEXT dcflushall(SB), $-4
+	MOVW	$0, R0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 0
+	CPWAIT
+	RET
+
+/*
+ *	dcache: clean and invalidate a range
+ */
+TEXT dcflush(SB), $-4
+	ADD		R0, R1, R1
+	BIC		$(CACHELINESZ - 1), R0, R0
+.flush:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1
+	ADD		$CACHELINESZ, R0
+	CMP		R0, R1
+	BLT		.flush
+	CPWAIT
+	RET
+
+/*
+ *	dcache: invalidate a range
+ */
+TEXT dcinval(SB), $-4
+	ADD		R0, R1, R1
+	BIC		$(CACHELINESZ - 1), R0, R0
+.dcinvalidate:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 1
+	ADD		$CACHELINESZ, R0
+	CMP		R0, R1
+	BLT		.dcinvalidate
+	CPWAIT
 	RET
