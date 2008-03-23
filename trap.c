@@ -106,7 +106,6 @@ trapv(int off, void (*f)(void))
 	vloc = (ulong *)(off+0xFFFF0000);
 	offset = (((ulong *) f) - vloc)-2;
 	*vloc = (0xea << 24) | offset;
-	*((ulong*)0xFFFF0000)=0xdeadbeef;
 }
 
 static void
@@ -159,19 +158,22 @@ trapinit(void)
 	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));
 	setr13(PsrMirq, m->irqstack+nelem(m->irqstack));
 	setr13(PsrMabt, m->abtstack+nelem(m->abtstack));
-	setr13(PsrMund, m->undstack+nelem(m->undstack)); 
+	setr13(PsrMund, m->undstack+nelem(m->undstack));
+	
+	/* highly accessed data goes to TCM: vectors, Mach0, stacks, ... */
+	witcm(0x00000000 | 0x20); /* ITCM base = 0 , size = 32 MB */
+	//wdtcm(DTCMZERO | 0x0a);  /* DTCM base = __dtcm_start, size = 16 KB */
 
-	/* set up exception vectors, disabled as it doesn't work on hw */
-	if(1){
-		memmove(page0->vectors, vectors, sizeof(page0->vectors));
-		memmove(page0->vtable, vtable, sizeof(page0->vtable));
-		dcflush(page0, sizeof(*page0));
+	/* set up exception vectors */
+	memmove(page0->vectors, vectors, sizeof(page0->vectors));
+	memmove(page0->vtable, vtable, sizeof(page0->vtable));
 
-		if (memcmp(page0->vectors, vectors, sizeof(page0->vectors)))
-			print("trapinit: bad vectors[%d] at %#lux\n", sizeof(page0->vectors), page0->vectors);
-		if (memcmp(page0->vtable, vtable, sizeof(page0->vtable)))
-			print("trapinit: bad vtable[%d] at %#lux\n", sizeof(page0->vtable), page0->vtable);
-	}
+	dcflush(page0, sizeof(*page0));
+	icflush(page0, sizeof(*page0));
+
+	if (memcmp(page0->vectors, vectors, sizeof(page0->vectors)) ||
+	    memcmp(page0->vtable, vtable, sizeof(page0->vtable)))
+		print("trapinit: bad vectors/vtable at %#lux [%d]\n", page0, sizeof(*page0));
 
 	for (v = 0; v < nelem(Irq); v++) {
 		Irq[v].r = nil;
@@ -179,22 +181,7 @@ trapinit(void)
 		Irq[v].v = v;
 	}
 
-	// exception handler for: und pab dab
-//	*((ulong*)EXCHAND9) = (ulong)_vundcall;
-	// setup location of irq handler
-//	writedtcmctl((INTHAND9&0xffff0000) + 0xa);
-//	*((ulong*)INTHAND9) = (ulong)_virqcall;
-
-//	trapv(0x0, _vsvccall);
-//	trapv(0x4, _vundcall);
-//	trapv(0xc, _vpabcall);
-//	trapv(0x10, _vdabcall);
-//	trapv(0x18, _virqcall);
-//	trapv(0x1c, _vfiqcall);
-//	trapv(0x8, _vsvccall);
-
 	serwrite = uartputs;
-
 	INTREG->ime=1;
 }
 

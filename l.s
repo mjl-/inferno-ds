@@ -255,20 +255,28 @@ TEXT consputs(SB),$-4
 	SWI		0xff0000
 	RET
 
-TEXT getdtcm(SB), $-4
-	MRC		CpMPU,0,R0,C(CpTCM),C1,0
+TEXT rdtcm(SB), $-4
+ 	MRC		CpMPU,0,R0,C(CpTCM),C1,0
+ 	RET
+ 
+TEXT wdtcm(SB), $-4
+ 	MCR		CpMPU,0,R0,C(CpTCM),C1,0
+ 	RET
+
+TEXT ritcm(SB), $-4
+	MRC		CpMPU,0,R0,C(CpTCM),C1,1
+ 	RET
+ 
+TEXT witcm(SB), $-4
+	MCR		CpMPU,0,R0,C(CpTCM),C1,1
 	RET
 
-TEXT getdtcmctl(SB), $-4
-	MRC		CpMPU,0,R0,C(CpTCM),C1,0
-	RET
-
-TEXT writedtcmctl(SB), $-4
-	MCR		CpMPU,0,R0,C(CpTCM),C1,0
-	RET
-TEXT loop(SB), $-4
-wait:
-	B wait
+TEXT rcpctl(SB), $-4
+	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
+ 	RET
+ 
+TEXT wcpctl(SB), $-4
+	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 	RET
 
 TEXT mpuinit(SB), $-4
@@ -307,21 +315,14 @@ TEXT mpuinit(SB), $-4
 	/* Wait for write buffer to empty */
 	MCR	CpMPU, 0, R0, C(CpCacheCtl), C10, 4
 
-	MOVW	$(DWRAMZERO), R0
-	ORR		$0x0a,R0,R0
-	MCR		CpMPU, 0, R0, C(CpTCM), C1,0		/* DTCM base = __dtcm_start, size = 16 KB */
-
-	MOVW	$0x20, R0
-	MCR		CpMPU, 0, R0, C(CpTCM), C1,1		/* ITCM base = 0 , size = 32 MB */
-
 	/* Setup memory regions similar to Release Version */
 
 	/* Region 0 - IO registers */
-	MOVW	$(Pagesz64M | 0x04000000 | 1), R0
+	MOVW	$(Pagesz64M | SFRbase | 1), R0
 	MCR		CpMPU, 0, R0, C(CpPerm), C0, 0
 
 	/* Region 1 - Main Memory */
-	MOVW	$(Pagesz4M | 0x02000000 | 1), R0
+	MOVW	$(Pagesz4M | EWRAMZERO | 1), R0
 	MCR		CpMPU, 0, R0, C(CpPerm), C1, 0
 
 	/* Region 2 - iwram */
@@ -329,11 +330,11 @@ TEXT mpuinit(SB), $-4
 	MCR		CpMPU, 0, R0, C(CpPerm), C2, 0
 
 	/* Region 3 - DS Accessory (GBA Cart) */
-	MOVW	$(Pagesz128M | 0x08000000 | 1), R0
+	MOVW	$(Pagesz128M | ROMZERO | 1), R0
 	MCR		CpMPU, 0, R0, C(CpPerm), C3, 0
 
 	/* Region 4 - DTCM */
-	MOVW	$(Pagesz16K | DWRAMZERO | 1), R0
+	MOVW	$(Pagesz16K | DTCMZERO | 1), R0
 	MCR		CpMPU, 0, R0, C(CpPerm), C4, 0
 
 	/* Region 5 - ITCM */
@@ -366,10 +367,12 @@ TEXT mpuinit(SB), $-4
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
 	/* Enable ICache, DCache, ITCM, DTCM */
-	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
+	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
 	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache|CpCmpu), R1
 	ORR		R1, R0, R0
-	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
+	MOVW	$(CpCaltivec), R1
+	BIC		R1, R0, R0
+	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET
 

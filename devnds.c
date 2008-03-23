@@ -16,8 +16,6 @@ enum {
 	Qdir,
 	Qctl,
 	Qinfo,
-	Qbattery,
-	Qversion,
 	Qtouchctl,
 };
 
@@ -50,8 +48,6 @@ Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,
 	"ndsctl",	{Qctl},		0,		0600,
 	"ndsinfo",	{Qinfo},	0,		0600,
-	"battery",	{Qbattery},	0,		0444,
-	"version",	{Qversion},	0,		0444,
 	"touchctl",	{Qtouchctl},	0,	0644,
 };
 
@@ -110,27 +106,28 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 {
 	char *tmp, buf[64];
 	uchar reply[12];
-	int v, p, l;
+	int v, t, l;
 
 	switch((ulong)c->qid.path){
 	case Qdir:
 		return devdirread(c, a, n, ndstab, nelem(ndstab), devgen);
 	case Qtouchctl:
 		break;
-	case Qbattery:
+	case Qinfo:
 		tmp = malloc(READSTR);
 		if(waserror()){
 			free(tmp);
 			nexterror();
 		}
 		v = IPC->battery;
-		snprint(tmp, READSTR, "status: %d %s\n", v, (v? "high" : "low"));
+		t = 0xff; // read console type, version from firmware
+		snprint(tmp, READSTR, "ds type: %x %s\nbattery: %d %s\n",
+			t, (t == 0xff? "NDS" : "NDS-lite"), v, (v? "high" : "low"));
 		n = readstr(offset, a, n, tmp);
 		poperror();
 		free(tmp);
 		break;
 		
-	case Qversion:
 	default:
 		n=0;
 		break;

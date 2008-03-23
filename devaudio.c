@@ -68,7 +68,6 @@ audioinit(void){
 //	memset(IPC->soundData, 0, sizeof(TransferSound));
 
 	setGenericSound(11127, 0x7F, 0, 1);
-	setGenericSound(11127, 0x7F, 0, 1);
 	playGenericSound(invhitcode, invhitlen);
 }
 

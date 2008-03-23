@@ -84,6 +84,7 @@
 #define	SFRbase		0x04000000
 #define	ROMZERO		0x08000000
 #define	EXMEMCNT	0x04000204
+#define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
 
 /*
  * ARM7 specific
@@ -127,6 +128,7 @@
 #define	Pagesz16K	(0x0e << 1)
 #define	Pagesz32K	(0x0f << 1)
 #define	Pagesz4M	(0x15 << 1)
+#define	Pagesz32M	(0x18 << 1)
 #define	Pagesz64M	(0x19 << 1)
 #define	Pagesz128M	(0x1a << 1)
 
@@ -149,7 +151,7 @@
  
 #define	CpCmpu		0x00000001	/* MPU enable */
 #define	CpCalign	0x00000002	/* alignment fault enable */
-#define	CpCdcache	0x00000004	/* Dada cache enable */
+#define	CpCdcache	0x00000004	/* Data cache enable */
 #define	CpCwb		0x00000008	/* write buffer turned on */
 #define	CpCi32		0x00000010	/* 32-bit programme space */
 #define	CpCd32		0x00000020	/* 32-bit data space */
@@ -160,7 +162,9 @@
 #define	CpCrrob		0x00004000	/* Round Robin cache replacement */
 #define	CpCprearm	0x00008000	/* Pre-ARMv5 Mode */
 #define	CpCdtcme	0x00010000	/* DTCM enable */
+#define	CpCdtcml	0x00020000	/* DTCM load mode */
 #define	CpCitcme	0x00040000	/* ITCM enable */
+#define	CpCitcml	0x00080000	/* ITCM load mode */
 
 /*
  * Access permissions
