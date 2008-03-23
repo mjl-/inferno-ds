@@ -1,0 +1,20 @@
+/home/salva
+/usr/local/plan9/font/lucsans/unicode.8.font
+/lib/font/bit/lucm/unicode.8.font
+  0.0000000  51.1264080
+f          0          11      445062      445069   1.8181818 
+         11          63      849678           0           0 /mnt/m/r/inferno-os/os/ds/docs/gbatek.txt Del Snarf | Look Wait
+f          0          13        1396        1396  10.3030303 
+         13          56        1679           1           1 /usr/inferno/os/ds/ Del Snarf Get | Look guide.sds fns.h
+f          0          15          15          51  15.4978355 
+         15          46        1157           0           0 /usr/inferno/os/ds/guide.sds Del Snarf | Look 
+f          0          17        6176        6180  23.9826840 
+         17          53        8685           0           0 /usr/inferno/os/ds/l.s Del Snarf Undo | Look Font Get
+f          1           1           0           0   1.8181818 
+          1          52        1595           1           0 /home/salva/ Del Snarf Get | Look /usr/inferno/os/ds
+f          1           8        9990        9991   3.6363636 
+          8          73       12091           0           0 /mnt/m/r/linux-2.6.x/arch/arm/mach-nds/head.S Del Snarf | Look 
+f          1          10        1424        1446  64.7619048 
+         10          78        2581           0           0 /mnt/m/r/linux-2.6.x/arch/arm/mach-nds/disable-itcm-writes.S Del Snarf | Look 
+f          1          24       17859       17886  88.0519481 
+         24          62       17895           0           0 /mnt/m/r/linux-2.6.x/arch/arm/kernel/traps.c Del Snarf | Look 
