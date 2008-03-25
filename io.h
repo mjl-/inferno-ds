@@ -18,7 +18,6 @@
   * Interrupt controller
   */
 
-#define INTbase	(SFRbase + 0x208)
 #define INTREG	((IntReg *)INTbase)
 
 typedef struct IntReg IntReg;
@@ -32,7 +31,7 @@ struct IntReg {
 /* uarts? */
 
 /* timers */
-#define TIMERbase	0x04000100	/* timers */
+
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
 struct TimerReg {

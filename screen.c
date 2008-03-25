@@ -164,17 +164,12 @@ setscreen(LCDmode *mode)
 {
 	int h;
 
-
-
 	vd = lcd_init(mode);
 	if(vd == nil)
 		panic("can't initialise LCD");
 
-
-
 	gscreen = &xgscreen;
 	xgdata.ref = 1;
-
 
 	gscreen->r = Rect(0, 0, vd->x, vd->y);
 	gscreen->clipr = gscreen->r;
@@ -195,8 +190,8 @@ setscreen(LCDmode *mode)
 	h = memdefont->height;
 	window = insetrect(gscreen->r, 4);
 	window.max.y = window.min.y+(Dy(window)/h)*h;
-	screenclear(); 
 
+	screenclear(); 
 }
 
 void
@@ -212,6 +207,14 @@ screeninit(void)
 	if(printbufpos)
 		screenputs("", 0);
 	blanktime = 3;	/* minutes */
+
+	if(0){
+		swc = swcurs_create((ulong*)vd->fb, gscreen->width, gscreen->depth, gscreen->clipr, 0);
+		if (swc != nil){
+			swcurs_load(swc, &arrow);
+			swcurs_enable(swc);
+		}
+	}
 }
 
 uchar*

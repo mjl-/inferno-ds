@@ -108,7 +108,7 @@ init()
 		start("wm/wm", nil);
 		exit;
 	}
-	start("sh", nil);
+	start("sh", "-l" :: nil);
 }
 
 start(cmd: string, args: list of string)

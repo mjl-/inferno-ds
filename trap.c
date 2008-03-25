@@ -74,7 +74,6 @@ intrclear(int v, int tbdf)
 		panic("intrclear: irq source %d out of range\n", v);
 	
 	INTREG->ipr = (1 << v);
-	*((ulong*)IRQCHECK9) = (1 << v);
 }
 
 void
@@ -139,7 +138,6 @@ intrs(Ureg *ur, ulong ibits)
 		iprint("spurious irq interrupt: %8.8lux\n", ibits);
 		s = splfhi();
 		INTREG->ipr &= ibits;
-		*((ulong*)IRQCHECK9) = ibits;
 		splx(s);
 	}
 }
@@ -161,8 +159,8 @@ trapinit(void)
 	setr13(PsrMund, m->undstack+nelem(m->undstack));
 	
 	/* highly accessed data goes to TCM: vectors, Mach0, stacks, ... */
-	witcm(0x00000000 | 0x20); /* ITCM base = 0 , size = 32 MB */
-	//wdtcm(DTCMZERO | 0x0a);  /* DTCM base = __dtcm_start, size = 16 KB */
+	//witcm(0x00000000 | 0x20); /* ITCM base = 0, size = 32 MB */
+	//wdtcm(DTCMZERO | 0x0a);  /* DTCM size = DTCMZERO, size =16 KB */
 
 	/* set up exception vectors */
 	memmove(page0->vectors, vectors, sizeof(page0->vectors));

@@ -81,18 +81,21 @@
 #define	EXCHAND9	0x027FFD9C	/* exc handler */
 #define	INTHAND9	0x00803FFC	/* irq handler set with writedtmcctl */
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
-#define	SFRbase		0x04000000
+#define	SFRZERO		0x04000000
 #define	ROMZERO		0x08000000
 #define	EXMEMCNT	0x04000204
 #define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
+
+#define INTbase	(SFRZERO + 0x208)
+#define TIMERbase	(SFRZERO + 0x100)
 
 /*
  * ARM7 specific
  */
 #define	IWRAMZERO7	0x03800000
 #define	IWRAMTOP7	0x0380FFF0
-#define	INTHAND7	(SFRbase - 4)
-#define	IRQCHECK7	(SFRbase - 8)
+#define	INTHAND7	(SFRZERO - 4)
+#define	IRQCHECK7	(SFRZERO - 8)
 
 /*
  * PSR

@@ -95,7 +95,6 @@ code
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
-	int ispointervisible = 1;
 	
 init
 	dsinit
@@ -111,7 +110,64 @@ root
 	/nvfs /
 	/prog	/
 	/osinit.dis
+
+# intialisation
+	/dis/touchcal.dis
+
+# dos file system
+	/dis/dossrv.dis
+	/dis/disk/format.dis
+
+# kfs file system
+	/dis/disk/kfs.dis
+	/dis/disk/kfscmd.dis
+
+# used by file systems and commands
+	/dis/lib/arg.dis
+	/dis/lib/styx.dis
+	/dis/lib/string.dis
+	/dis/lib/daytime.dis
+
+# For development work:
+	/dis/sh.dis
+	/dis/sh/std.dis
+	/dis/ls.dis
+	/dis/cat.dis
+	/dis/bind.dis
+	/dis/mount.dis
+	/dis/pwd.dis
+	/dis/echo.dis
+	/dis/cd.dis
+	/dis/xd.dis
+	/dis/cp.dis
+	/dis/mkdir.dis
+	/dis/rm.dis
+	/dis/p.dis
+	/dis/ps.dis
+	/dis/date.dis
+	/dis/time.dis
+	/dis/ftest.dis
+	/dis/lib/readdir.dis
+	/dis/lib/workdir.dis
+	/dis/lib/daytime.dis
+	/dis/lib/auth.dis
+	/dis/lib/env.dis
+	/dis/lib/ssl.dis
+	/dis/lib/bufio.dis
+
+# dhcp
+	/dis/lib/dhcpclient.dis
+	/dis/lib/ip.dis
+
 	/n/remote
+	/n/local
+	/n/client
+	/n/rdbg
+	/n/dump
+	/n/disk
+	/n/kfs
+
+# things that live in /n/local
 	/usr/inferno
 	/usr/inferno/charon
 	/usr/inferno/keyring
@@ -130,20 +186,12 @@ root
 	/fonts/misc/latin1.6x13.font
 	/fonts/misc/latin1.6x13
 
-	/dis/lib/arg.dis
-	/dis/lib/auth.dis
-	/dis/lib/bufio.dis
-	/dis/lib/daytime.dis
-	/dis/lib/dhcpclient.dis
-	/dis/lib/env.dis
 	/dis/lib/filepat.dis
-	/dis/lib/ip.dis
+	/dis/lib/plumbing.dis
 	/dis/lib/plumbmsg.dis
+	/dis/lib/rand.dis
 	/dis/lib/random.dis
-	/dis/lib/readdir.dis
-	/dis/lib/ssl.dis
-	/dis/lib/string.dis
-	/dis/lib/styx.dis
+	/dis/lib/regex.dis
 	/dis/lib/titlebar.dis
 	/dis/lib/tkclient.dis
 	/dis/lib/translate.dis
@@ -151,24 +199,15 @@ root
 	/dis/lib/wmclient.dis
 	/dis/lib/wmlib.dis
 	/dis/lib/wmsrv.dis
-	/dis/lib/workdir.dis
-	/dis/dossrv.dis
-	/dis/ls.dis
-	/dis/sh.dis
-	/dis/touchcal.dis
+	/dis/plumber.dis
 	/dis/wm/memory.dis
 	/dis/wm/keyboard.dis
 	/dis/wm/sh.dis
 	/dis/wm/toolbar.dis
 	/dis/wm/wm.dis
-	/dis/echo.dis
-	/dis/cat.dis
-	/dis/date.dis
-	/dis/ftest.dis
-	/dis/time.dis
-	/dis/sh/std.dis
 	
 	/lib/wmsetup
+	/lib/sh/profile
 	/icons/tk/vitasmall.bit
 	/icons/tk/task.bit
 	/icons/tk/maxf.bit

@@ -318,7 +318,7 @@ TEXT mpuinit(SB), $-4
 	/* Setup memory regions similar to Release Version */
 
 	/* Region 0 - IO registers */
-	MOVW	$(Pagesz64M | SFRbase | 1), R0
+	MOVW	$(Pagesz64M | SFRZERO | 1), R0
 	MCR		CpMPU, 0, R0, C(CpPerm), C0, 0
 
 	/* Region 1 - Main Memory */

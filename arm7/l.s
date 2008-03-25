@@ -5,7 +5,7 @@ TEXT _main(SB), $-4
 //	ADD		$(KSTACK-4), R13	/* leave 4 bytes for link */
 
 	MOVW		$0, R0			/* start with IME=0 */
-	MOVW		$(SFRbase + 0x208), R1	
+	MOVW		$(INTbase), R1	
 	MOVW		R0, (R1)
 
 	MOVW		$setR12(SB), R12 	/* static base (SB) */
