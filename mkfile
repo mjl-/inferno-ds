@@ -2,14 +2,12 @@
 
 #Configurable parameters
 
-CONF=ds				#default configuration
-CONFLIST=ds
+CONF=sds				#default configuration
+CONFLIST=ds sds
 CLEANCONFLIST=ds sds
 
 SYSTARG=$OSTARG
-#SYSTARG=Inferno
-OBJTYPE=arm
-#OBJTYPE=thumb
+OBJTYPE=arm #thumb
 INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is installed
 #end configurable parameters
 
@@ -65,10 +63,10 @@ arm7/i$O:NV:
 	mk i$O
 	mk i$O.p9
 
-REV=`{svn info | sed -n 's/Revision: /rev/p'} 
+REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$O
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
-		'Native Inferno Kernel NDS port;inferno-ds ('$REV');code.google.com/p/inferno-ds' \
+		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
 		\
 		-7 arm7/i$O -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
