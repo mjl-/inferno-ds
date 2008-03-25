@@ -78,9 +78,9 @@ link
 #	pppmedium ppp compress
 
 code
-	int main_pool_pcnt = 30;
-	int heap_pool_pcnt = 30;
-	int image_pool_pcnt = 40;
+	int main_pool_pcnt = 50;
+	int heap_pool_pcnt = 40;
+	int image_pool_pcnt = 30;
 	int cflag = 0;
 
 	int consoleprint = 1;
@@ -111,7 +111,10 @@ root
 	/usr/inferno/lib
 	/usr/inferno/lib/plumbing
 	/usr/inferno/namespace
+	/fonts/lucidasans/lsr.10
 	/fonts/lucidasans/lsr.12
+	/fonts/lucidasans/lsb.10
+	/fonts/lucidasans/unicode.6.font
 	/fonts/lucidasans/unicode.7.font
 	/fonts/pelm/unicode.8.font
 	/fonts/pelm/latin1.8
@@ -138,7 +141,7 @@ root
 	/dis/ftest.dis
 	/dis/kill.dis
 	/dis/lib
-	/dis/lib/acmewin.dis
+#	/dis/lib/acmewin.dis
 	/dis/lib/arg.dis
 	/dis/lib/bufio.dis
 	/dis/lib/chanfill.dis
@@ -152,7 +155,7 @@ root
 	/dis/lib/libc0.dis
 	/dis/lib/login.dis
 	/dis/lib/memfs.dis
-	/dis/lib/menuhit.dis
+#	/dis/lib/menuhit.dis
 	/dis/lib/newns.dis
 	/dis/lib/rand.dis
 	/dis/lib/random.dis
@@ -190,6 +193,8 @@ root
 	/dis/lib/titlebar.dis
 	/dis/lib/tkclient.dis
 	/dis/lib/translate.dis
+	/dis/lib/plumbing.dis
+	/dis/lib/plumbmsg.dis
 	/dis/lib/ubfa.dis
 	/dis/lib/url.dis
 	/dis/lib/wait.dis
@@ -211,7 +216,7 @@ root
 	/dis/os.dis
 	/dis/p.dis
 	/dis/pause.dis
-	/dis/pipefile.dis
+#	/dis/pipefile.dis
 	/dis/plumb.dis
 	/dis/plumber.dis
 	/dis/prof.dis
