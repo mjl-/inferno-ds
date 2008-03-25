@@ -149,7 +149,7 @@ void
 clockinit(void)
 {
 	m->ticks = 0;
-	if(0)timerenable(0, HZ, clockintr, 0);
+	timerenable(0, HZ, clockintr, 0);
 }
 
 void

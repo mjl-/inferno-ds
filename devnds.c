@@ -62,7 +62,7 @@ ndsreset(void)
 static void
 keysintr(Ureg*, void*)
 {
-	print("keysintr\n");
+//	print("keysintr\n");
 	intrclear(KEYbit, 0);
 //	wakeup(&powerevent);
 }
@@ -72,8 +72,10 @@ ndsattach(char* spec)
 {
 	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
 	intrenable(0, KEYbit, keysintr, nil, 0);
+	if (IPC->heartbeat > 1)
+		print("touch worked\n");
 
-	if(0)kproc("touchread", touchread, nil, 0);
+	kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 
