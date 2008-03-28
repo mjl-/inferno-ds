@@ -200,6 +200,8 @@ root
 	/dis/lib/wmlib.dis
 	/dis/lib/wmsrv.dis
 	/dis/plumber.dis
+	/dis/wm/about.dis
+	/dis/wm/date.dis
 	/dis/wm/memory.dis
 	/dis/wm/keyboard.dis
 	/dis/wm/sh.dis
@@ -208,6 +210,7 @@ root
 	
 	/lib/wmsetup
 	/lib/sh/profile
+	/icons/inferno.bit
 	/icons/tk/vitasmall.bit
 	/icons/tk/task.bit
 	/icons/tk/maxf.bit

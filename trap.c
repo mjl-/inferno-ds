@@ -142,15 +142,32 @@ intrs(Ureg *ur, ulong ibits)
 	}
 }
 
+ulong witcm(ulong);
+ulong wdtcm(ulong);
+ulong rcpctl(void);
+ulong wcpctl(ulong);
+
 /* set up interrupts */
 void
 trapinit(void)
 {
-	int v;
+	int v, cp;
 
 	INTREG->ime=0;
 	INTREG->ier=0;
 	INTREG->ipr=~0;
+
+	/* TCM stores highly accessed data: vectors, Mach0, stacks */
+	//witcm(0x00000000 | 0x20); /* ITCM start (ro) = 0, sz = 32 MB */
+	//wdtcm(KZERO | 0x0a);  /* DTCM start (rw) = KZERO, sz = 16 KB */
+
+	/* update DTCM with the contents of KZERO
+	cp = rcpctl();
+	wcpctl(cp | CpCdtcml);
+	memmove((void*)KZERO, (void*)KZERO, KSTACK+sizeof(Mach));
+	dcflush((void*)KZERO, KSTACK+sizeof(Mach));
+	wcpctl(cp);
+	*/
 
 	/* set up stacks for various exceptions */
 	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));
@@ -158,10 +175,6 @@ trapinit(void)
 	setr13(PsrMabt, m->abtstack+nelem(m->abtstack));
 	setr13(PsrMund, m->undstack+nelem(m->undstack));
 	
-	/* highly accessed data goes to TCM: vectors, Mach0, stacks, ... */
-	//witcm(0x00000000 | 0x20); /* ITCM base = 0, size = 32 MB */
-	//wdtcm(DTCMZERO | 0x0a);  /* DTCM size = DTCMZERO, size =16 KB */
-
 	/* set up exception vectors */
 	memmove(page0->vectors, vectors, sizeof(page0->vectors));
 	memmove(page0->vtable, vtable, sizeof(page0->vtable));

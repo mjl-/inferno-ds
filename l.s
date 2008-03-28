@@ -368,7 +368,7 @@ TEXT mpuinit(SB), $-4
 
 	/* Enable ICache, DCache, ITCM, DTCM */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache), R1
+	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache), R1	/* TODO CpCmpu */
 	ORR		R1, R0, R0
 	MOVW	$(CpCaltivec), R1
 	BIC		R1, R0, R0

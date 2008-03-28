@@ -51,14 +51,6 @@ Dirtab ndstab[]={
 	"touchctl",	{Qtouchctl},	0,	0644,
 };
 
-// static Point touch = Touchbase; /* what is the address of the touch screen in the nds? */
-
-static void
-ndsreset(void)
-{
-//	swi(Dssoftreset);
-}
-
 static void
 keysintr(Ureg*, void*)
 {
@@ -67,14 +59,18 @@ keysintr(Ureg*, void*)
 //	wakeup(&powerevent);
 }
 
-static Chan*
-ndsattach(char* spec)
+static void
+ndsinit(void)
 {
 	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
 	intrenable(0, KEYbit, keysintr, nil, 0);
 	if (IPC->heartbeat > 1)
 		print("touch worked\n");
+}
 
+static Chan*
+ndsattach(char* spec)
+{
 	kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
@@ -236,6 +232,7 @@ ndskeys(void)
 	return b;
 }
 
+// todo use keyintr
 static int
 tsactivity0(void *arg){
 	return (~IPC->buttons & Pdown7) == Pdown7 || (REG_KEYINPUT & 0x3FF) != 0; 
@@ -259,7 +256,7 @@ touchread(void*)
 			mousetrack(0, 0, 0, 1);
 
 		// should sleep until the pen is down
-		tsleep(&up->sleep, tsactivity0, nil, 50);
+		tsleep(&up->sleep, tsactivity0, nil, 100);
 
 		if(0)print("ts down %x %#d %d %X\n", isdown, px, py, b);
 	}
@@ -282,8 +279,8 @@ Dev ndsdevtab = {
 	'T',
 	"nds",
 
-	ndsreset,
-	devinit,
+	devreset,
+	ndsinit,
 	devshutdown,
 	ndsattach,
 	ndswalk,

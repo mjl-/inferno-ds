@@ -62,6 +62,15 @@ init()
 			err("local file system unusable");
 	}
 
+	netok := sys->bind("#l", "/net", Sys->MREPL) >= 0;
+	if(!netok){
+		netok = sys->bind("#l1", "/net", Sys->MREPL) >= 0;
+		if(netok)
+			ethername = "ether1";
+	}
+	if(netok)
+		configether();
+
 	dobind("#I", "/net", sys->MAFTER);	# IP
 	dobind("#p", "/prog", sys->MREPL);	# prog
 	dobind("#c", "/dev", sys->MREPL); 	# console

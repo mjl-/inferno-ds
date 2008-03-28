@@ -31,7 +31,7 @@
  * More accurate time
  */
  
-#define CLOCKFREQ	1678000 // this should be 0x2000000
+#define CLOCKFREQ	(0x02000000>>10) // in Hz (see TIMER_FREQ at io.h)
 #define MS2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000)) 
 #define US2TMR(t)	((ulong)(((uvlong)(t)*CLOCKFREQ)/1000000))  
 
