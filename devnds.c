@@ -51,6 +51,96 @@ Dirtab ndstab[]={
 	"touchctl",	{Qtouchctl},	0,	0644,
 };
 
+enum
+{
+	Numbtns	= 13,
+	Btn9msk = (1<<10) - 1,
+	Btn7msk = (1<<7)  - 1,
+
+	// relative to KEYINPUT (arm9)
+	Abtn	=	1<<0,
+	Bbtn	=	1<<1,
+	Selbtn	=	1<<2,
+	Startbtn=	1<<3,
+	Rightbtn=	1<<4,
+	Leftbtn	=	1<<5,
+	Upbtn	=	1<<6,
+	Downbtn	=	1<<7,
+	Rbtn	=	1<<8,
+	Lbtn	=	1<<9,
+	
+	Xbtn	=	1<<10,
+	Ybtn	=	1<<11,
+	Lclose	= 	1<<13,
+	Pdown	=	1<<16,
+
+	// relative to XKEYS (arm7 only)
+	Xbtn7	= 1<<0,
+	Ybtn7	= 1<<1,
+	Lclose7	= 1<<3,	// lid closed
+	Pdown7	= 1<<6,	// pen down
+};
+
+static	Rune	rockermap[3][Numbtns] ={
+	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
+	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
+};
+
+// TODO
+// - debug mode controled by Conf.bmap, use debugkeys to perform checks & ease debug
+// - take care of changes in buttons, penup/pendown, rockermap, handedness
+// - screen orientation switch between landscape/portrait
+
+#define kpressed(k, os, ns) ((os & (k)) && !(ns & (k)))
+#define kreleased(k, os, ns) (!(os & (k)) && (ns & (k)))
+void setlcdblight(int on);
+
+static ulong mousemod = 0;	/* updated by ndskeys to reflect mouse btns*/
+
+static void
+ndskeys(void)
+{
+	int i;
+	ulong st;
+	static ulong ost;
+
+	st = (REG_KEYINPUT & Btn9msk);
+	st |= (IPC->buttons & Btn7msk) << 10;
+
+	if(kreleased(Pdown, ost, st))
+		mousemod &= 1<<0;
+	if(kpressed(Pdown, ost, st))
+		mousemod |= 1<<0;
+
+	if(kreleased(Pdown|Lbtn, ost, st))
+		mousemod &= 1<<2;
+	if(kpressed(Pdown|Lbtn, ost, st))
+		mousemod |= 1<<2;
+
+	if(kreleased(Pdown|Rbtn, ost, st))
+		mousemod &= 1<<4;
+	if(kpressed(Pdown|Rbtn, ost, st))
+		mousemod |= 1<<4;
+
+ 	// lid controls lcd backlight
+	if(kpressed(~Lclose, ost, st))
+		setlcdblight(0);
+	if(kreleased(~Lclose, ost, st))
+		setlcdblight(1);
+
+	for (i=0; ost != st && i<nelem(rockermap[conf.bmap]); i++){
+		if (kpressed(1<<i, ost, st)){
+			kbdrepeat(0);
+			kbdputc(kbdq, rockermap[conf.bmap][i]);
+		}else if (kreleased(1<<i, ost, st)){
+			kbdrepeat(0);
+		}
+	}
+
+	ost = st;
+}
+
 static void
 keysintr(Ureg*, void*)
 {
@@ -60,10 +150,20 @@ keysintr(Ureg*, void*)
 }
 
 static void
+vblankintr()
+{
+//	print("vblankintr\n");
+	ndskeys();
+	intrclear(VBLANKbit, 0);
+}
+
+static void
 ndsinit(void)
 {
 	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
 	intrenable(0, KEYbit, keysintr, nil, 0);
+
+	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 	if (IPC->heartbeat > 1)
 		print("touch worked\n");
 }
@@ -150,115 +250,33 @@ ndswrite(Chan* c, void* a, long n, vlong)
 	return n;
 }
 
-enum
-{
-	Numbtns	= 13,
-
-	// relative to KEYINPUT (arm9)
-	Abtn	=	1<<0,
-	Bbtn	=	1<<1,
-	Selbtn	=	1<<2,
-	Startbtn=	1<<3,
-	Rightbtn=	1<<4,
-	Leftbtn	=	1<<5,
-	Upbtn	=	1<<6,
-	Downbtn	=	1<<7,
-	Rbtn	=	1<<8,
-	Lbtn	=	1<<9,
-	
-	Xbtn	=	1<<10,
-	Ybtn	=	1<<11,
-	Lclose	= 	1<<13,
-	Pdown	=	1<<16,
-
-	// relative to XKEYS (arm7 only)
-	Xbtn7	= 1<<0,
-	Ybtn7	= 1<<1,
-	Pdown7	= 1<<6,	// pen down
-	Lclose7	= 1<<3,	// lid closed
-};
-
-static	Rune	rockermap[3][Numbtns] ={
-	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
-	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
-	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
-};
-
-// TODO
-// - debug mode controled by Conf.bmap, use debugkeys to perform checks & ease debug
-// - take care of changes in buttons, penup/pendown, rockermap, handedness
-// - screen orientation switch between landscape/portrait
-
-#define kpressed(k, os, ns) (!(os & k) && (ns & k))
-#define kreleased(k, os, ns) ((os & k) && !(ns & k))
-void setlcdblight(int on);
-
-static int
-ndskeys(void)
-{
-	int i;
-	ulong st, b;
-	static ulong ost;
-
-	st = REG_KEYINPUT;
-	st |=  (~IPC->buttons & (Xbtn7|Ybtn7|Pdown7|Lclose7)) << 10;
-
-	if(kreleased(Pdown, ost, st))
-		b = 0;
-	if(kpressed(Pdown, ost, st))
-		b = 1;
-	if(b && kpressed(Lbtn, ost, st))
-		b = 2;
-	if(b && kpressed(Rbtn, ost, st))
-		b = 4;
-
- 	// lid controls lcd backlight
-	if(kpressed(Lclose, ost, st))
-		setlcdblight(0);
-	if(kreleased(Lclose, ost, st))
-		setlcdblight(1);
-	
-	for (i=0; i<nelem(rockermap[conf.bmap]); i++){
-		if (kpressed(1<<i, st, ost)){
-			if (0)print("ndskeys: %#x %c(%d)\n", st, rockermap[conf.bmap][i], i);
-			kbdrepeat(0);
-			kbdputc(kbdq, rockermap[conf.bmap][i]);
-		}else{
-			kbdrepeat(0);
-		}
-	}
-
-	ost = st;
-	return b;
-}
-
 // todo use keyintr
 static int
 tsactivity0(void *arg){
-	return (~IPC->buttons & Pdown7) == Pdown7 || (REG_KEYINPUT & 0x3FF) != 0; 
+
+	return (~IPC->buttons & Pdown7) == Pdown7;
 }
 
 static void
 touchread(void*)
 {
-	int px, py, b, isdown;
+	int px, py, isdown;
 
 	for(;;) {
 		// pointer button events change with keys
-		b = ndskeys();
 		px=IPC->touchXpx;
 		py=IPC->touchYpx;
 
 		isdown=(~IPC->buttons & Pdown7);
 		if(isdown)
-			mousetrack(b, px, py, 0);
+			mousetrack(mousemod, px, py, 0);
 		else
 			mousetrack(0, 0, 0, 1);
 
 		// should sleep until the pen is down
 		tsleep(&up->sleep, tsactivity0, nil, 100);
 
-		if(0)print("ts down %x %#d %d %X\n", isdown, px, py, b);
+		if(0)print("ts down %x %#d %d %X\n", isdown, px, py, mousemod);
 	}
 }
 

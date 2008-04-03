@@ -58,17 +58,16 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
 
-arm7/i$O:NV:
+arm7/i$CONF:NV:
 	cd arm7
-	mk i$O
-	mk i$O.p9
+	mk CONF=$CONF
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
-i$CONF.nds: i$CONF arm7/i$O
+i$CONF.nds: i$CONF arm7/i$CONF
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
 		\
-		-7 arm7/i$O -r7 $ARM7ZERO -e7 $ARM7ZERO \
+		-7 arm7/i$CONF -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES

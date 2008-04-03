@@ -111,13 +111,6 @@ serputc()
 	// dummy routine
 }
 
-static void
-vblankintr()
-{
-	print("vblank intr\n");
-	intrclear(VBLANKbit, 0);
-}
-
 #define idoc(m) if(1) uartputs(m, strlen(m))
 #define doc if(0) print
 
@@ -164,7 +157,6 @@ main(void)
 	procinit();
 	chandevreset();
 
-//	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 //	spllo();
 //	for(;;)	waitvblank();
 //	for(;;);

@@ -14,6 +14,7 @@ enum ARM9_power
 #define POWER_ALL_2D     (POWER_LCD |POWER_2D_A |POWER_2D_B)
 #define SCREEN_HEIGHT 192
 #define SCREEN_WIDTH  256
+
 //	Vram Control
 #define VRAM_CR			(*(vuint32*)0x04000240)
 #define VRAM_A_CR		(*(vuint8*)0x04000240)
@@ -28,8 +29,6 @@ enum ARM9_power
 #define VRAM_I_CR		(*(vuint8*)0x04000249)
 
 #define VRAM_ENABLE		(1<<7)
-
-
 
 typedef enum {
 	VRAM_A_LCD	=	0,
@@ -153,17 +152,10 @@ typedef enum {
 	VRAM_I_SUB_SPRITE_EXT_PALETTE = 3,
 }VRAM_I_TYPE;
 
-
-
-
 #define VRAM_E_EXT_PALETTE ((_ext_palette *)VRAM_E)
 #define VRAM_F_EXT_PALETTE ((_ext_palette *)VRAM_F)
 #define VRAM_G_EXT_PALETTE ((_ext_palette *)VRAM_G)
 #define VRAM_H_EXT_PALETTE ((_ext_palette *)VRAM_H)
-
-
-
-
 
 // Display control registers
 #define DISPLAY_CR	0x04000000
@@ -191,7 +183,6 @@ typedef enum {
 #define DISPLAY_WIN0_ON       (1 << 13)
 #define DISPLAY_WIN1_ON       (1 << 14)
 #define DISPLAY_SPR_WIN_ON    (1 << 15)
-
 
 // Main display only
 #define MODE_0_3D    (MODE_0_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)

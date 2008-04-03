@@ -301,8 +301,7 @@ TEXT mpuinit(SB), $-4
 	/* bit 15: Main Memory priority to ARM9 */
 	MOVW	$(EXMEMCNT), R0 			/* wait_cr */
 	MOVW	(R0), R1
-	BIC		$0x0080, R1, R1
-	BIC		$0x8800, R1, R1
+	BIC		$0x8880, R1, R1
 	MOVW	R1, (R0)
 	
 	/* Protection unit Setup added by Sasq */
@@ -366,12 +365,10 @@ TEXT mpuinit(SB), $-4
 	MOVW	0x36333333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
-	/* Enable ICache, DCache, ITCM, DTCM */
+	/* Enable ICache, DCache and Mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	MOVW	$(CpCitcme|CpCdtcme|CpCicache|CpCdcache), R1	/* TODO CpCmpu */
-	ORR		R1, R0, R0
-	MOVW	$(CpCaltivec), R1
-	BIC		R1, R0, R0
+	ORR		$(CpCicache|CpCdcache|CpCmpu), R0, R0
+	BIC		$(CpCaltivec), R0, R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET

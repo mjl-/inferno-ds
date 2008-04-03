@@ -1,8 +1,5 @@
 <../../../mkconfig
 
-TARGS=\
-	i$O\
-
 OFILES=\
 	l.$O\
 	div.$O\
@@ -22,12 +19,13 @@ LIBS=\
 
 ARM7ZERO=0x03800000
 CFLAGS=-wFV -I $ROOT/Inferno/arm/include -I $ROOT/include -r
-LDFLAGS=-H4 -R0 -T$ARM7ZERO
 BIN=$ROOT/$OBJDIR/bin
 
-i$O: $OFILES
+default:V: i$CONF i$CONF.p9
+
+i$CONF: $OFILES
 	$LD -o $target -H4 -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
-i$O.p9: $OFILES
+i$CONF.p9: $OFILES
 	$LD -o $target -R0 -T$ARM7ZERO -D$ARM7ZERO -l $OFILES $libs $SYSLIBS
 	ksize $target
 
@@ -36,6 +34,6 @@ syms:   $OFILES
 
 vclean:V: clean
 	rm -f syms
-	rm -f i$O i$O.p9
+	rm -f i$CONF i$CONF.p9
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE

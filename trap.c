@@ -92,7 +92,7 @@ intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 	/* Enable the interrupt by setting the enable bit */
 	INTREG->ier |= (1 << v);
 	if (v==VBLANKbit | v==HBLANKbit | v==VCOUNTbit)
-		*((ulong*)DISPSTAT) |= (1 << v);
+		*((ulong*)DISPSTAT) |= (1 << (3+v));
 
 	splx(x);
 }
@@ -142,6 +142,9 @@ intrs(Ureg *ur, ulong ibits)
 	}
 }
 
+// goes to fns.h
+ulong ritcm(void);
+ulong rdtcm(void);
 ulong witcm(ulong);
 ulong wdtcm(ulong);
 ulong rcpctl(void);
@@ -158,16 +161,15 @@ trapinit(void)
 	INTREG->ipr=~0;
 
 	/* TCM stores highly accessed data: vectors, Mach0, stacks */
-	//witcm(0x00000000 | 0x20); /* ITCM start (ro) = 0, sz = 32 MB */
-	//wdtcm(KZERO | 0x0a);  /* DTCM start (rw) = KZERO, sz = 16 KB */
+	witcm(0x00000000 | 0x20); /* ITCM start (ro) = 0, sz = 32 MB */
+	wdtcm(KZERO | 0x0a);  /* DTCM start (rw) = KZERO, sz = 16 KB */
 
-	/* update DTCM with the contents of KZERO
+	/* update DTCM with the contents of KZERO */
 	cp = rcpctl();
-	wcpctl(cp | CpCdtcml);
+	wcpctl(cp | CpCitcme|CpCdtcml|CpCdtcme);
 	memmove((void*)KZERO, (void*)KZERO, KSTACK+sizeof(Mach));
 	dcflush((void*)KZERO, KSTACK+sizeof(Mach));
-	wcpctl(cp);
-	*/
+	wcpctl(cp | CpCitcme|CpCdtcme);
 
 	/* set up stacks for various exceptions */
 	setr13(PsrMfiq, m->fiqstack+nelem(m->fiqstack));

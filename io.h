@@ -52,8 +52,8 @@ enum
 };
 
 // timer data usage:
-// TIMER_FREQ(freq, div), with freq in Hz and div is TmrdivN
-#define TIMER_FREQ(f, d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))) / (f))
+// TIMER_FREQ(div) in Hz, where div is TmrdivN
+#define TIMER_FREQ(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
 
 /* lcd */
 /* 59.73 hz */
