@@ -58,7 +58,7 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
 
-arm7/i$CONF:NV:
+arm7/i$CONF arm7/i$CONF.p9:NV:
 	cd arm7; mk CONF=$CONF
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
