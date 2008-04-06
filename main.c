@@ -95,8 +95,7 @@ machinit(void)
 	memset(m, 0, sizeof(Mach));	/* clear the mach struct */
 	m->machno = 1;
 	m->ticks = 1;
-	m->cpuhz = CLOCKFREQ;
-	//m->cputype = getcpuid()>>16;
+	m->cpuhz = 60000000;
 }
 
 void
@@ -160,7 +159,7 @@ main(void)
 //	spllo();
 //	for(;;)	waitvblank();
 //	for(;;);
-	if (0){
+	if(0){
 		for(;;)
 		print("H%x T%ld B%x t%lux "
 			"%x %d %d %d %x %x "
@@ -174,6 +173,7 @@ main(void)
 	archconsole();
 	kbdinit();
 
+	print("%ld MHz id %8.8lux\n", (m->cpuhz+500000)/1000000, getcpuid());
 	print("\nInferno %s\n", VERSION);
 	print("conf %s (%lud) jit %d\n\n", conffile, kerndate, cflag);
 

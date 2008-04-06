@@ -160,11 +160,12 @@ dldiinit(void){
 		DPRINT("io.write %lux %lux\n", &hdr.io.write, *hdr.io.write);
 		DPRINT("io.clrstat %lux %lux\n", &hdr.io.clrstat, *hdr.io.clrstat);
 		DPRINT("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
-//		while(1);
 
-//		print("isin: %d\n", hdr.io.isin());
-//		print("clrstat: %d\n", hdr.io.clrstat());
-//		print("init: %d\n", hdr.io.init());
+		print("isin: %d\n", hdr.io.isin());
+		print("clrstat: %d\n", hdr.io.clrstat());
+		print("init: %d\n", hdr.io.init());
+		print("while(1);\n");
+		// while(1);
 	}
 
 	if(0){

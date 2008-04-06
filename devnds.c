@@ -55,32 +55,35 @@ enum
 {
 	Numbtns	= 13,
 	Btn9msk = (1<<10) - 1,
-	Btn7msk = (1<<7)  - 1,
+	Btn7msk = (1<<8)  - 1,
 
 	// relative to KEYINPUT (arm9)
-	Abtn	=	1<<0,
-	Bbtn	=	1<<1,
-	Selbtn	=	1<<2,
-	Startbtn=	1<<3,
-	Rightbtn=	1<<4,
-	Leftbtn	=	1<<5,
-	Upbtn	=	1<<6,
-	Downbtn	=	1<<7,
-	Rbtn	=	1<<8,
-	Lbtn	=	1<<9,
+	Abtn	=	0,
+	Bbtn	=	1,
+	Selbtn	=	2,
+	Startbtn=	3,
+	Rightbtn=	4,
+	Leftbtn	=	5,
+	Upbtn	=	6,
+	Downbtn	=	7,
+	Rbtn	=	8,
+	Lbtn	=	9,
 	
-	Xbtn	=	1<<10,
-	Ybtn	=	1<<11,
-	Lclose	= 	1<<13,
-	Pdown	=	1<<16,
+	Xbtn	=	10,
+	Ybtn	=	11,
+	Dbgbtn	= 	13,
+	Pdown	=	16,
+	Lclose	= 	17,
 
 	// relative to XKEYS (arm7 only)
-	Xbtn7	= 1<<0,
-	Ybtn7	= 1<<1,
-	Lclose7	= 1<<3,	// lid closed
-	Pdown7	= 1<<6,	// pen down
+	Xbtn7	= 	0,
+	Ybtn7	= 	1,
+	Dbgbtn7	= 	3,	// debug btn
+	Pdown7	= 	6,	// pen down
+	Lclose7	= 	7,	// lid closed
 };
 
+// TODO use Dbgbtn7 to enable debug; by toggling Conf.bmap = 2
 static	Rune	rockermap[3][Numbtns] ={
 	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
 	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
@@ -88,7 +91,6 @@ static	Rune	rockermap[3][Numbtns] ={
 };
 
 // TODO
-// - debug mode controled by Conf.bmap, use debugkeys to perform checks & ease debug
 // - take care of changes in buttons, penup/pendown, rockermap, handedness
 // - screen orientation switch between landscape/portrait
 
@@ -96,40 +98,42 @@ static	Rune	rockermap[3][Numbtns] ={
 #define kreleased(k, os, ns) (!(os & (k)) && (ns & (k)))
 void setlcdblight(int on);
 
-static ulong mousemod = 0;	/* updated by ndskeys to reflect mouse btns*/
-
-static void
+static ulong
 ndskeys(void)
 {
-	int i;
-	ulong st;
-	static ulong ost;
+	int i, c;
+	ulong st, b = 0;
+	static ulong ost, ob = 0;
 
 	st = (REG_KEYINPUT & Btn9msk);
 	st |= (IPC->buttons & Btn7msk) << 10;
 
-	if(kreleased(Pdown, ost, st))
-		mousemod &= 1<<0;
-	if(kpressed(Pdown, ost, st))
-		mousemod |= 1<<0;
+	if (ost == st)
+		return ob;
+	
+	// mousemod
+	if (kpressed(1<<Pdown, ost, st))
+		b |= (1<<0);
+	else if (kreleased(1<<Pdown, ost, st))
+		b &= ~(1<<0);
 
-	if(kreleased(Pdown|Lbtn, ost, st))
-		mousemod &= 1<<2;
-	if(kpressed(Pdown|Lbtn, ost, st))
-		mousemod |= 1<<2;
+	if (kpressed(1<<Pdown|1<<Rbtn, ost, st))
+		b |= (1<<1);
+	else if (kreleased(1<<Pdown|1<<Rbtn, ost, st))
+		b &= ~(1<<1);
 
-	if(kreleased(Pdown|Rbtn, ost, st))
-		mousemod &= 1<<4;
-	if(kpressed(Pdown|Rbtn, ost, st))
-		mousemod |= 1<<4;
+	if (kpressed(1<<Pdown|1<<Lbtn, ost, st))
+		b |= (1<<2);
+	else if (kreleased(1<<Pdown|1<<Lbtn, ost, st))
+		b &= ~(1<<2);
 
- 	// lid controls lcd backlight
-	if(kpressed(~Lclose, ost, st))
-		setlcdblight(0);
-	if(kreleased(~Lclose, ost, st))
+	// lid controls lcd backlight
+	if(kpressed(1<<Lclose, ost, st))
 		setlcdblight(1);
+	if(kreleased(1<<Lclose, ost, st))
+		setlcdblight(0);
 
-	for (i=0; ost != st && i<nelem(rockermap[conf.bmap]); i++){
+	for (i=0; i<nelem(rockermap[conf.bmap]); i++){
 		if (kpressed(1<<i, ost, st)){
 			kbdrepeat(0);
 			kbdputc(kbdq, rockermap[conf.bmap][i]);
@@ -138,31 +142,30 @@ ndskeys(void)
 		}
 	}
 
+	ob = b;
 	ost = st;
-}
-
-static void
-keysintr(Ureg*, void*)
-{
-//	print("keysintr\n");
-	intrclear(KEYbit, 0);
-//	wakeup(&powerevent);
+	return b;
 }
 
 static void
 vblankintr()
 {
-//	print("vblankintr\n");
-	ndskeys();
+	int b;
+	static ulong ob;
+
+	b = ndskeys();
+	if(b)
+		mousetrack(b, IPC->touchXpx, IPC->touchYpx, 0);
+	else if(ob)
+		mousetrack(b, 0, 0, 1);
+	
+	ob = b;
 	intrclear(VBLANKbit, 0);
 }
 
 static void
 ndsinit(void)
 {
-	REG_KEYCNT = (1<<0) | (1<<1) | (1<<14);
-	intrenable(0, KEYbit, keysintr, nil, 0);
-
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 	if (IPC->heartbeat > 1)
 		print("touch worked\n");
@@ -171,7 +174,6 @@ ndsinit(void)
 static Chan*
 ndsattach(char* spec)
 {
-	kproc("touchread", touchread, nil, 0);
 	return devattach('T', spec);
 }
 
@@ -248,36 +250,6 @@ ndswrite(Chan* c, void* a, long n, vlong)
 		error(Ebadusefd);
 	}
 	return n;
-}
-
-// todo use keyintr
-static int
-tsactivity0(void *arg){
-
-	return (~IPC->buttons & Pdown7) == Pdown7;
-}
-
-static void
-touchread(void*)
-{
-	int px, py, isdown;
-
-	for(;;) {
-		// pointer button events change with keys
-		px=IPC->touchXpx;
-		py=IPC->touchYpx;
-
-		isdown=(~IPC->buttons & Pdown7);
-		if(isdown)
-			mousetrack(mousemod, px, py, 0);
-		else
-			mousetrack(0, 0, 0, 1);
-
-		// should sleep until the pen is down
-		tsleep(&up->sleep, tsactivity0, nil, 100);
-
-		if(0)print("ts down %x %#d %d %X\n", isdown, px, py, mousemod);
-	}
 }
 
 TransferRegion  *getIPC(void) {

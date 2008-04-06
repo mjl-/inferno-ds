@@ -36,6 +36,7 @@ void	dumpstk(ulong *);
 int	fpiarm(Ureg*);
 void	fpinit(void);
 ulong	getcallerpc(void*);
+ulong	getcpuid(void);
 void	gotopc(ulong);
 
 void	icflush(void*, ulong);

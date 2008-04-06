@@ -104,7 +104,7 @@ lcd_init(LCDmode *p)
 	ld->LCDparam = *p;
 	DPRINT("%dx%dx%d: hz=%d\n", ld->x, ld->y, ld->depth, ld->hz); /* */
 
-	ld->palette = PAL;
+	ld->palette = (ushort*)PALMEM;
 	ld->palette[0] = 0;
 	ld->upper = VIDMEMLO;
 	ld->bwid = ld->x; /* only 8 bit for now, may implement 16 bit later */
@@ -167,7 +167,7 @@ void
 dsconsinit(void)
 {
 
-	ushort *palette = ((ushort*)PAL);
+	ushort *palette = ((ushort*)PALMEM);
 	setlcdmode(ld);
 }
 

@@ -50,7 +50,7 @@ HFILES=\
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
 
-default:V: i$CONF.nds i$CONF.p9
+default:V: i$CONF.nds i$CONF.p9 i$CONF.SYM
 
 install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $INSTALLDIR/i$CONF.raw
 
@@ -59,8 +59,7 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
 
 arm7/i$CONF:NV:
-	cd arm7
-	mk CONF=$CONF
+	cd arm7; mk CONF=$CONF
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$CONF
@@ -69,11 +68,17 @@ i$CONF.nds: i$CONF arm7/i$CONF
 		\
 		-7 arm7/i$CONF -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
+	# data (loaded on ROM) can be appended (padded to 256 bytes) at end of .nds
+	# du -b i$CONF.nds | awk '{for (i=0; i < ($1%256); i++) print ""; }' >> i$CONF.nds
+	# cat $CONF.root.$O >> i$CONF.nds
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES
 	ksize $target
+
+i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
+	mksymtab $prereq > $target
 
 <../port/portmkfile
 

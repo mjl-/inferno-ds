@@ -192,6 +192,13 @@ setscreen(LCDmode *mode)
 	window.max.y = window.min.y+(Dy(window)/h)*h;
 
 	screenclear(); 
+
+	swc = swcurs_create((ulong*)gscreen->data, gscreen->width, gscreen->depth, gscreen->r, 1);
+	drawcursor((Drawcursor*)&arrow);
+//	if (swc != nil){
+//		swcurs_load(swc, &arrow);
+//		swcurs_enable(swc);
+//	}
 }
 
 void
@@ -207,14 +214,6 @@ screeninit(void)
 	if(printbufpos)
 		screenputs("", 0);
 	blanktime = 3;	/* minutes */
-
-	if(0){
-		swc = swcurs_create((ulong*)vd->fb, gscreen->width, gscreen->depth, gscreen->clipr, 0);
-		if (swc != nil){
-			swcurs_load(swc, &arrow);
-			swcurs_enable(swc);
-		}
-	}
 }
 
 uchar*

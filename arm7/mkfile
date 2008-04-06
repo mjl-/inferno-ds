@@ -1,9 +1,15 @@
 <../../../mkconfig
 
+CONF=sds				#default configuration
+SYSTARG=$OSTARG
+OBJTYPE=arm #thumb
+
+<$ROOT/mkfiles/mkfile-$SYSTARG-$OBJTYPE	#set vars based on target system
+
 OFILES=\
 	l.$O\
 	div.$O\
-	defaultARM7.$O\
+	main.$O\
 	ipc.$O\
 	spi.$O\
 	clock.$O\
@@ -19,7 +25,6 @@ LIBS=\
 
 ARM7ZERO=0x03800000
 CFLAGS=-wFV -I $ROOT/Inferno/arm/include -I $ROOT/include -r
-BIN=$ROOT/$OBJDIR/bin
 
 default:V: i$CONF i$CONF.p9
 

@@ -255,28 +255,32 @@ TEXT consputs(SB),$-4
 	SWI		0xff0000
 	RET
 
+TEXT	getcpuid(SB), $-4
+	MRC		CpMPU, 0, R0, C(CpCPUID), C(0)
+	RET
+
 TEXT rdtcm(SB), $-4
- 	MRC		CpMPU,0,R0,C(CpTCM),C1,0
+ 	MRC		CpMPU, 0, R0, C(CpTCM), C(1), 0
  	RET
  
 TEXT wdtcm(SB), $-4
- 	MCR		CpMPU,0,R0,C(CpTCM),C1,0
+ 	MCR		CpMPU, 0, R0, C(CpTCM), C(1), 0
  	RET
 
 TEXT ritcm(SB), $-4
-	MRC		CpMPU,0,R0,C(CpTCM),C1,1
+	MRC		CpMPU, 0, R0, C(CpTCM), C(1), 1
  	RET
  
 TEXT witcm(SB), $-4
-	MCR		CpMPU,0,R0,C(CpTCM),C1,1
+	MCR		CpMPU, 0, R0, C(CpTCM), C(1), 1
 	RET
 
 TEXT rcpctl(SB), $-4
-	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
+	MRC		CpMPU, 0, R0, C(CpControl), C(0), 0
  	RET
  
 TEXT wcpctl(SB), $-4
-	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
+	MCR		CpMPU, 0, R0, C(CpControl), C(0), 0
 	RET
 
 TEXT mpuinit(SB), $-4
@@ -367,7 +371,7 @@ TEXT mpuinit(SB), $-4
 
 	/* Enable ICache, DCache and Mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	ORR		$(CpCicache|CpCdcache|CpCmpu), R0, R0
+	ORR		$(CpCicache|CpCdcache), R0, R0		/* TODO CpCmpu */
 	BIC		$(CpCaltivec), R0, R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 

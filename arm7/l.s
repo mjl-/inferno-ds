@@ -19,6 +19,10 @@ TEXT _main(SB), $-4
 	MOVW		$(IWRAMTOP7 - 0x100), R13
 
 	BL		main(SB)		/* jump to kernel */
+dead:
+	B		dead
+//	BL		_div(SB)			/* hack to get _div etc loaded */
+
 
 TEXT swiDelay(SB), $-4
 	SWI	0x030000

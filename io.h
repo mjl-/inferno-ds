@@ -1,22 +1,29 @@
-#define MaxIRQbit		13			/* Maximum IRQ */
-#define VBLANKbit		0
-#define HBLANKbit		1
-#define VCOUNTbit		2
-#define TIMER0bit		3
-#define TIMER1bit		4
-#define TIMER2bit		5
-#define TIMER3bit		6
-#define UARTbit		7
-#define GDMA0		8
-#define GDMA1		9
-#define GDMA2		10
-#define GDMA3		11
-#define KEYbit			12
-#define CARTbit		13
+#define MaxIRQbit		18		/* Maximum IRQ */
+#define VBLANKbit		0		/* Vertical blank */
+#define HBLANKbit		1		/* Horizontal blank */
+#define VCOUNTbit		2		/* Vertical count */
+#define TIMER0bit		3		/* Timer 0 */
+#define TIMER1bit		4		/* Timer 1 */
+#define TIMER2bit		5		/* Timer 2 */
+#define TIMER3bit		6		/* Timer 3 */
+#define UARTbit		7		/* Comms */
+#define GDMA0		8		/* DMA 0 */
+#define GDMA1		9		/* DMA 1 */
+#define GDMA2		10		/* DMA 2 */
+#define GDMA3		11		/* DMA 3 */
+#define KEYbit			12		/* Keypad */
+#define CARTbit		13		/* CART */
+#define ARM7bit		16		/* ARM7 IPC */
+#define FSENDbit		17		/* SEND FIFO empty */
+#define FRECVbit		18		/* RECV FIFO non empty */
+
+#define DISP_VBLANKbit	3
+#define DISP_HBLANKbit	4
+#define DISP_VCOUNTbit	5
 
 /*
-  * Interrupt controller
-  */
+ * Interrupt controller
+ */
 
 #define INTREG	((IntReg *)INTbase)
 
@@ -35,7 +42,7 @@ struct IntReg {
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
 struct TimerReg {
-	ushort	data;	/*  match */
+	ushort	data;	/* match */
 	ushort	ctl;
 };
 
@@ -92,8 +99,6 @@ struct SpiReg {
 	ushort spicr;
 	ushort spidat;
 };
-
-#define PAL	((ushort*)PALMEM)
 
 #define VIDMEMHI	((ushort*)VRAMTOP)
 #define VIDMEMLO	((ushort*)VRAMZERO)

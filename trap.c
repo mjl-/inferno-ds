@@ -91,8 +91,8 @@ intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 
 	/* Enable the interrupt by setting the enable bit */
 	INTREG->ier |= (1 << v);
-	if (v==VBLANKbit | v==HBLANKbit | v==VCOUNTbit)
-		*((ulong*)DISPSTAT) |= (1 << (3+v));
+	if (VBLANKbit <= v && v <= VCOUNTbit)
+		*((ulong*)DISPSTAT) |= (1 << (DISP_VBLANKbit+v));
 
 	splx(x);
 }
@@ -166,7 +166,7 @@ trapinit(void)
 
 	/* update DTCM with the contents of KZERO */
 	cp = rcpctl();
-	wcpctl(cp | CpCitcme|CpCdtcml|CpCdtcme);
+	wcpctl(cp | CpCitcme|CpCdtcml);
 	memmove((void*)KZERO, (void*)KZERO, KSTACK+sizeof(Mach));
 	dcflush((void*)KZERO, KSTACK+sizeof(Mach));
 	wcpctl(cp | CpCitcme|CpCdtcme);
