@@ -16,17 +16,21 @@ TEXT _main(SB), $-4
 
 	MOVW		$(PsrMsys), R1		/* Switch to System mode */
 	MOVW		R1, CPSR
-	MOVW		$(IWRAMTOP7 - 0x100), R13
+	MOVW		$(IWRAMTOP7 - 0x160), R13
 
 	BL		main(SB)		/* jump to kernel */
 dead:
 	B		dead
 //	BL		_div(SB)			/* hack to get _div etc loaded */
 
+TEXT swiHalt(SB), $-4
+	SWI	0x060000
+	RET
 
 TEXT swiDelay(SB), $-4
 	SWI	0x030000
 	RET
+
 TEXT swiWaitForVBlank(SB), $-4
 	SWI	0x050000
 	RET

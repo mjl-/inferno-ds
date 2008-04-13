@@ -295,7 +295,7 @@ TEXT mpuinit(SB), $-4
 	MOVW	R1, (R0)
 
 	/* disable DTCM and protection unit */
-	MOVW	$(CpClateabt|CpCd32|CpCi32|CpCwb), R1
+	MOVW	$(CpCaltivec|CpClateabt|CpCd32|CpCi32|CpCwb), R1
 	MCR		CpMPU, 0, R1, C(CpControl), C0, 0
 	
 	/* allocate GBA+Main Memory to ARM9 */
@@ -371,7 +371,7 @@ TEXT mpuinit(SB), $-4
 
 	/* Enable ICache, DCache and Mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	ORR		$(CpCicache|CpCdcache), R0, R0		/* TODO CpCmpu */
+	ORR		$(CpCrrob|CpCicache|CpCdcache), R0, R0	/* TODO CpCmpu */
 	BIC		$(CpCaltivec), R0, R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 

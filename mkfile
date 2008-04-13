@@ -78,7 +78,7 @@ i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	ksize $target
 
 i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
-	mksymtab $prereq > $target
+	./mksymtab $prereq > $target
 
 <../port/portmkfile
 

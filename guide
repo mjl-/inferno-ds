@@ -5,7 +5,7 @@ acme -a -l ds.dump &
 Dump /usr/inferno/os/ds/ds.dump
 
 u mount /mnt/usb
-cp isds.nds /mnt/usb
+cp isds.nds /mnt/usb; sync
 u umount /mnt/usb
 
 i inm isds.p9

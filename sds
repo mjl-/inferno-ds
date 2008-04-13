@@ -17,7 +17,7 @@ dev
 #	uart
 
 	nds
-	dldi
+#	dldi
 	audio invhit
 
 ip

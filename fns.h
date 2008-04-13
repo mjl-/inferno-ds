@@ -43,9 +43,9 @@ void	icflush(void*, ulong);
 void	icflushall(void);
 #define	idlehands()			/* nothing to do in the runproc */
 void	intrenable(int, int, void (*)(Ureg*, void*), void*, char*);
-void intrclear(int, int);
-void intrmask(int, int);
-void intrunmask(int, int);
+void	intrclear(int, int);
+void	intrmask(int, int);
+void	intrunmask(int, int);
 int	iprint(char *fmt, ...);
 void	installprof(void (*)(Ureg *, int));
 int	isvalid_va(void*);
@@ -55,24 +55,18 @@ void	lcd_setbrightness(ushort);
 void	lcd_setcontrast(ushort);
 void	lcd_sethz(int);
 void	lights(ulong);
-void setled7ascii(char);
 void	links(void);
 void	mouseinit(void);
 ulong	mpuinit(void);
 void	nowriteSeg(void *, void *);
 void*	pa2va(ulong);
-int	pcmpin(int slot, int type);
-void	pcmpower(int slotno, int on);
-int	pcmpowered(int slotno);
-void	pcmsetvcc(int slotno, int vcc);
-void	pcmsetvpp(int slotno, int vpp);
-int	pcmspecial(char *idstr, ISAConf *isa);
-void	pcmspecialclose(int slotno);
-void	pcmintrenable(int, void (*)(Ureg*, void*), void*);
 void	putcsr(ulong);
 #define procsave(p)
 #define procrestore(p)
+ulong	rcpctl(void);
+ulong	rdtcm(void);
 void	remaplomem(void);
+ulong	ritcm(void);
 long	rtctime(void);
 void*	screenalloc(ulong);
 void	screeninit(void);
@@ -109,6 +103,9 @@ void	_vdabcall(void);
 void	vgaputc(char);
 void	writeBackBDC(void);
 void	writeBackDC(void);
+ulong	wcpctl(ulong);
+ulong	wdtcm(ulong);
+ulong	witcm(ulong);
 
 #define KADDR(p)	((void *) p)
 #define PADDR(v)	va2pa((void*)(v))

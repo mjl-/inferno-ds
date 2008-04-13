@@ -142,14 +142,6 @@ intrs(Ureg *ur, ulong ibits)
 	}
 }
 
-// goes to fns.h
-ulong ritcm(void);
-ulong rdtcm(void);
-ulong witcm(ulong);
-ulong wdtcm(ulong);
-ulong rcpctl(void);
-ulong wcpctl(ulong);
-
 /* set up interrupts */
 void
 trapinit(void)
@@ -166,9 +158,9 @@ trapinit(void)
 
 	/* update DTCM with the contents of KZERO */
 	cp = rcpctl();
-	wcpctl(cp | CpCitcme|CpCdtcml);
-	memmove((void*)KZERO, (void*)KZERO, KSTACK+sizeof(Mach));
-	dcflush((void*)KZERO, KSTACK+sizeof(Mach));
+	wcpctl(cp | CpCdtcml);
+	memmove((void*)KZERO, (void*)KZERO, 16*1024);
+	dcflush((void*)KZERO, 16*1024);
 	wcpctl(cp | CpCitcme|CpCdtcme);
 
 	/* set up stacks for various exceptions */

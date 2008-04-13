@@ -5,6 +5,7 @@ umount cfdisk/
 
 i mk CONF=sds
 dlditool misc/Mpcf.dldi isds.nds 
+desmume '--cflash=cfdisk.img'  isds.nds
 desmume-cli '--cflash=cfdisk.img'  isds.nds
 arm-objdump -D -m arm -b binary misc/Mpcf.dldi
 

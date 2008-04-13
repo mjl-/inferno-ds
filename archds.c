@@ -42,7 +42,7 @@ void
 archconfinit(void)
 {
 	conf.topofmem = EWRAMTOP;
-	m->cpuhz = CLOCKFREQ;
+	m->cpuhz = 60000000;
 
 }
 
