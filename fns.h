@@ -128,3 +128,12 @@ void 	microdelay(int us);
 
 void dispfont(void);
 void consputs(char *str);
+
+/* regs.c;  *sh should be named *s... */
+uchar	inb(int reg);
+ushort	insh(int reg);
+ulong	inl(int reg);
+void	outb(int reg, uchar b);
+void	outsh(int reg, ushort sh);
+void	outl(int reg, ulong l);
+

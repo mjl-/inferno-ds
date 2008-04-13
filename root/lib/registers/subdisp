@@ -1,0 +1,10 @@
+4001000	4	sub disp ctl
+4001004	4	sub disp stat
+4001006	2	sub vcount
+4001008	2	sub bg0 ctl
+401000a	2	sub bg1 ctl
+401000c	2	sub bg2 ctl
+401000e	2	sub bg3 ctl
+4001010	2	sub bg0 h off
+4001012	2	sub bg0 v off
+400106c	2	subbright

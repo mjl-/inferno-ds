@@ -1,0 +1,13 @@
+4000304	2	powerctl
+
+# fifo
+4000184	4	fifoctl
+4000188	4	fifosend
+4100000	4	fiforecv
+
+# interrupts
+4000208	2	intrme
+4000210	4	intre
+4000214	4	intrf
+
+4000204	2	exmemctl

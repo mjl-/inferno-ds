@@ -1,0 +1,13 @@
+# division
+4000280	2	divctl
+4000290	4	div numer low
+4000294	4	div numer hi
+4000298	4	div denom low
+400029c	4	div denom hi
+40002a0	4	div res low
+40002a4	4	div res hi
+40002a8	4	div rem low
+40002ac	4	div rem hi
+
+# xxx square root regs
+

@@ -9,6 +9,7 @@ dev
 	rtc
 	srv
 	dup
+	regs
 	draw screen swcursor
 	pointer
 	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
@@ -216,3 +217,13 @@ root
 	/icons/tk/task.bit
 	/icons/tk/maxf.bit
 	/icons/tk/exit.bit
+
+	/dis/lib/devpointer.dis
+	/dis/nds/touchprint.dis
+	/dis/nds/memfiddle.dis
+	/lib/registers/disp
+	/lib/registers/div
+	/lib/registers/main
+	/lib/registers/subdisp
+	/lib/registers/video
+	/lib/registers/wram

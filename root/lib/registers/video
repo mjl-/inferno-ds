@@ -1,0 +1,12 @@
+# video memory
+5000000	4	palette bg a
+5000200	4	palette obj a
+5000400	4	palette bg b
+5000600	4	palette obj b
+6000000	4	vram bg a
+6001000	4	obj tiles
+6200000	4	vram bg b
+6400000	4	vram obj a
+6600000	4	vram obj b
+6800000	4	lcd fb
+7000000	4	oam

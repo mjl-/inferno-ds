@@ -1,0 +1,37 @@
+4000000	4	disp ctl
+4000004	4	disp stat
+4000006	2	vcount
+4000008	2	bg0 ctl
+400000a	2	bg1 ctl
+400000c	2	bg2 ctl
+400000e	2	bg3 ctl
+4000010	2	bg0 h off
+4000012	2	bg0 v off
+4000014	2	bg1 h off
+4000016	2	bg1 v off
+4000018	2	bg2 h off
+400001a	2	bg2 v off
+400001c	2	bg3 h off
+400001d	2	bg3 v off
+4000028	2	bg2_x_l
+400002a	2	bg2_x_h
+400002c	2	bg2_y_l
+400002e	2	bg2_y_h
+4000020	2	bg2pa
+4000022	2	bg2pb
+4000024	2	bg2pc
+4000026	2	bg2pd
+4000040	2	win0h
+4000042	2	win1h
+4000044	2	win0v
+4000046	2	win1v
+4000048	2	winin
+400004a	2	winout
+400004c	2	mosaic
+4000050	2	blend ctl
+4000052	2	blend alpha ctl
+4000054	2	bldy
+
+4000064	4	disp cap ctl
+4000068	4	disp mmem fifo
+400006c	2	bright

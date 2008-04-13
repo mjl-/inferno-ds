@@ -1,0 +1,22 @@
+<../../../mkconfig
+
+TARG=\
+	touchprint.dis\
+	memfiddle.dis\
+
+MODULES=\
+
+SYSMODULES=\
+	bufio.m\
+	draw.m\
+	devpointer.m\
+	string.m\
+	sys.m\
+	tk.m\
+	tkclient.m\
+	wmclient.m\
+	wmsrv.m\
+
+DISBIN=$ROOT/dis/nds
+
+<$ROOT/mkfiles/mkdis

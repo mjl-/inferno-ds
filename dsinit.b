@@ -79,7 +79,8 @@ init()
 	dobind("#m", "/dev", Sys->MAFTER);	# pointer
 	dobind("#e", "/env", sys->MREPL|sys->MCREATE);	# environment
 #	dobind("#A", "/dev", Sys->MAFTER);	# optional audio
-	dobind("#T","/dev",sys->MAFTER);	# touch screen and other nds devices
+	dobind("#T", "/dev", sys->MAFTER);	# touch screen and other nds devices
+	dobind("#R", "/dev", Sys->MAFTER);	# registers
 
 	timefile: string;
 	rootsource: string;
