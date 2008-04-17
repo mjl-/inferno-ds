@@ -18,14 +18,15 @@ implement NdsMemfiddle;
 #	size of address (long, byte, short)
 # k	cycle through known addresses
 # a	add current address to list
+# d	remove current address from list
 # ns	toggle displaying names in list
 # g	get value for current address
 # ga	get values for all addresses in list
 # p	write address
+# pg	write and read address
 # ~	invert all bits
 # 1	set all bits to 1
 # 0	set all bits to 0
-# d	remove current address from list
 
 
 include "sys.m";
@@ -114,17 +115,18 @@ tkcmds := array[] of {
 "pack .ecycle .eadd .size .known -in .g1 -side left",
 
 "button .a -text a -command {send cmd add}",
+"button .del -text d -command {send cmd del}",
 "button .names -text ns -command {send cmd togglenames}",
 "button .get -text g -command {send cmd get}",
 "button .getall -text ga -command {send cmd getall}",
-"pack .a .names .get .getall -side left -in .g2",
+"pack .a .del .names .get .getall -side left -in .g2",
 
 "button .put -text p -command {send cmd put}",
+"button .putget -text pg -command {send cmd put; send cmd get}",
 "button .invert -text ~ -command {send cmd invert}",
 "button .ones -text 1 -command {send cmd ones}",
 "button .zeroes -text 0 -command {send cmd zeroes}",
-"button .del -text d -command {send cmd del}",
-"pack .put .invert .ones .zeroes .del -side left -in .g3",
+"pack .put .putget .invert .ones .zeroes -side left -in .g3",
 
 "pack .g0 .g1 .g2 .g3 -in .fiddle.ctl",
 
@@ -240,6 +242,7 @@ init(ctxt: ref Draw->Context, nil: list of string)
 			knownpathpos = (knownpathpos+1)%len knownpaths;
 			readknown();
 			if(len known > 0) {
+				knownpos = 0;
 				r.addr = known[knownpos].t0;
 				r.size = known[knownpos].t1;
 				r.name = known[knownpos].t2;
@@ -282,14 +285,18 @@ init(ctxt: ref Draw->Context, nil: list of string)
 		"put" =>
 			put();
 			tkmem();
+			tklist();
 		"invert" =>
 			r.value = ~r.value;
+			r.modmask = ~big 0;
 			tkmem();
 		"ones" =>
 			r.value = ~big 0;
+			r.modmask = ~big 0;
 			tkmem();
 		"zeroes" =>
 			r.value = big 0;
+			r.modmask = ~big 0;
 			tkmem();
 		"memsel" =>
 			index := int tk->cmd(t, ".list curselection");
@@ -354,6 +361,7 @@ tklist()
 			see = index;
 		index++;
 	}
+	tk->cmd(t, ".list selection set "+string see);
 	tk->cmd(t, ".list see "+string see);
 }
 

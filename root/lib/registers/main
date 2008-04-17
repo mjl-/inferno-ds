@@ -1,5 +1,7 @@
 4000304	2	powerctl
 
+4000180	4	ipcsync
+
 # fifo
 4000184	4	fifoctl
 4000188	4	fifosend
