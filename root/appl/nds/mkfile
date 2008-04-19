@@ -3,6 +3,8 @@
 TARG=\
 	touchprint.dis\
 	memfiddle.dis\
+	rawimage.dis\
+	imagerle.dis\
 
 MODULES=\
 
