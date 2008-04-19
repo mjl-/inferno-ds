@@ -158,7 +158,7 @@ vblankintr()
 		mousetrack(b, IPC->touchXpx, IPC->touchYpx, 0);
 	else if(ob)
 		mousetrack(b, 0, 0, 1);
-	
+
 	ob = b;
 	intrclear(VBLANKbit, 0);
 }

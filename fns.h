@@ -137,3 +137,5 @@ void	outb(int reg, uchar b);
 void	outsh(int reg, ushort sh);
 void	outl(int reg, ulong l);
 
+void	setsublcdmode(void);
+void	putlogo(uchar *addr);

@@ -29,6 +29,7 @@ OBJ=\
 	main.$O\
 	trap.$O\
 	regs.$O\
+	logo.$O\
 	$CONF.root.$O\
 	$IP\
 	$DEVS\

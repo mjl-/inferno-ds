@@ -7,6 +7,7 @@
 #include	"io.h"
 #include	<memdraw.h>
 #include	"screen.h"
+#include	"arm7/jtypes.h"
 #include	"lcdreg.h"
 #define	DPRINT	if(1)iprint
 
@@ -59,11 +60,6 @@ setlcdblight(int on)
 {
 	LcdReg *lcd = LCDREG;
 
-	if(on && (lcd->lcsr & EnableCtlr))
-		return;
-	if(!on && !(lcd->lcsr & EnableCtlr))
-		return;
-
 	/* enable/disable LCD */
 	if (on)
 		lcd->lcsr |= EnableCtlr;
@@ -85,13 +81,33 @@ setlcdmode(LCDdisplay *ld)
 	lcd->lccr = 0;	
   	
  //	sublcd->lccr = MODE_0_2D | DISPLAY_BG0_ACTIVE;
-   	power->pcr = POWER_ALL_2D;
+	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);
  	lcd->lccr = MODE_FB0;
       	vram->acr = VRAM_ENABLE|VRAM_A_LCD;
 
 	iprint("lccr=%8.8lux\n", lcd->lccr); 
 }
 static LCDdisplay main_display;	/* TO DO: limits us to a single display */
+
+void
+setsublcdmode(void)
+{
+	/* enable vram c to hold the background for the sub display */
+	VRAM_C_CR = VRAM_ENABLE|VRAM_C_SUB_BG_0x06200000;
+
+	/* enable mode 3, enable background 3 */
+	*(ulong*)SUB_DISPLAY_CR = MODE_3_2D|DISPLAY_BG3_ACTIVE;
+
+	/* set the background mode:  256x256 pixels of 16 bits each */
+	SUB_BG3_CR = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_PRIORITY(3);
+	SUB_BG3_XDX = 1 << 8;
+	SUB_BG3_XDY = SUB_BG3_YDX = 0;
+	SUB_BG3_YDY = 1 << 8;
+	SUB_BG3_CX = SUB_BG3_CY = 0;
+
+	/* copy in the image */
+	putlogo((uchar*)0x06200000);
+}
 
 Vdisplay*
 lcd_init(LCDmode *p)
@@ -166,9 +182,7 @@ cmap(ushort* palette)
 void
 dsconsinit(void)
 {
-
-	ushort *palette = ((ushort*)PALMEM);
-	setlcdmode(ld);
+	// setlcdmode(ld);
 }
 
 void
@@ -177,4 +191,3 @@ uartputs(char* s, int n) {
 	/* NOTE!: enable only for dsemu */
 	if(0) consputs(s); 
 }
-
