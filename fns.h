@@ -139,3 +139,8 @@ void	outl(int reg, ulong l);
 
 void	setsublcdmode(void);
 void	putlogo(uchar *addr);
+
+long	ldiv(long num, long denom);
+vlong	vldiv(vlong num, vlong denom);
+ulong	lsqrt(ulong p);
+ulong	vlsqrt(uvlong p);

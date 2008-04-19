@@ -30,6 +30,7 @@ OBJ=\
 	trap.$O\
 	regs.$O\
 	logo.$O\
+	math.$O\
 	$CONF.root.$O\
 	$IP\
 	$DEVS\
