@@ -180,7 +180,7 @@ setscreen(LCDmode *mode)
 	
 	memimageinit();
 	memdefont = getmemdefont();
-	memsetchan(gscreen, RGB15);	
+	memsetchan(gscreen, CHAN4(CIgnore, 1, CBlue, 5, CGreen, 5, CRed, 5));	/* xxx we need a BGR15 in /include/draw.h */
 	back = memwhite;
 	conscol = memblack;
 	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
