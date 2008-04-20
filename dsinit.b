@@ -52,7 +52,8 @@ init()
 	lightup();
 
 	localok := 0;
-	if(lfs() >= 0){
+	# temporal workaround: use lfs("#T/ndsrom")
+	if(lfs("#L/data") >= 0){
 		# let's just take a closer look
 		sys->bind("/n/local/nvfs", "/nvfs", Sys->MREPL|Sys->MCREATE);
 		(rc, nil) := sys->stat("/n/local/dis/sh.dis");
@@ -353,16 +354,16 @@ append(v: string, l: list of string): list of string
 #
 # serve local DOS or kfs file system using flash translation layer
 #
-lfs(): int
+lfs(file: string): int
 {
 #	if(!flashpart("#F/flash/flashctl", flashparts))
 #		return -1;
 #	if(!ftlinit("#F/flash/fs"))
 #		return -1;
-	if(iskfs("#L/data"))
-		return lkfs("#L/data");
+	if(iskfs(file))
+		return lkfs(file);
 	c := chan of string;
-	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: "#L/data" :: "-m" :: "/n/local" :: nil, nil);
+	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: file :: "-m" :: "/n/local" :: nil, nil);
 	if(<-c != nil)
 		return -1;
 	return 0;

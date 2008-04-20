@@ -169,6 +169,15 @@ main(void)
 			IPC->buttons, IPC->unixTime);
 	}
 
+	if(0){
+		uchar *p;
+		// Map Game Cartridge memory to ARM9
+		*((ulong*)EXMEMCNT) &= ~0x80;
+		for (p=(uchar*)ROMZERO; p < (uchar*)SRAMZERO; p++)
+			if (*p == 'B')
+				print("%08lux %ux %c %c\n", p, *p, *p, *p);
+	}
+
 	eve = strdup("inferno");
 	archconsole();
 	kbdinit();
