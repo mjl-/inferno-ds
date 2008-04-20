@@ -71,7 +71,7 @@ i$CONF.nds: i$CONF arm7/i$CONF
 		-7 arm7/i$CONF -r7 $ARM7ZERO -e7 $ARM7ZERO \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 	# data (loaded on ROM) can be appended (padded to 256 bytes) at end of .nds
-	du -b i$CONF.nds | awk '{for (i=0; i < ($1%256); i++) print ""; }' >> i$CONF.nds
+	wc -c i$CONF.nds | awk '{for (i=0; i < ($1%256); i++) print ""; }' >> i$CONF.nds
 	for i in $(seq 1 256); do echo -n B; done >> i$CONF.nds
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
