@@ -1,4 +1,4 @@
-ktzero=0x02008010;
+ktzero=0x02004010;
 
 map({"text", ktzero, map()[0][2]+ktzero - 0x1020, 0x20});
 print("$ROOT/os/ds/acidmap");

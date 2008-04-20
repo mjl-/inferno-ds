@@ -44,10 +44,11 @@
 
 #define KZERO		0x02000000
 #define MACHADDR	(KZERO+0x00002000)
-#define KTTB		(KZERO+0x00004000)
-#define KTZERO		(KZERO+0x00008010)
+#define KTTB		(KZERO+0x00004000)	/* we don't have TTB */
+#define KTZERO		(KZERO+0x00004010)
 #define KSTACK	8192			/* Size of kernel stack */
 
+#define	FLUSHMEM KTTB
 #define DCFADDR	FLUSHMEM	/* cached and buffered for cache writeback */
 #define MCFADDR	(FLUSHMEM+(1<<20))	/* cached and unbuffered for minicache writeback */
 #define UCDRAMZERO	0xC8000000	/* base of memory doubly-mapped as uncached */
@@ -83,6 +84,7 @@
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
 #define	SFRZERO		0x04000000
 #define	ROMZERO		0x08000000
+#define	SRAMZERO	0x0A000000
 #define	EXMEMCNT	0x04000204
 #define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
 

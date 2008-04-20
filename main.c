@@ -95,7 +95,7 @@ machinit(void)
 	memset(m, 0, sizeof(Mach));	/* clear the mach struct */
 	m->machno = 1;
 	m->ticks = 1;
-	m->cpuhz = 60000000;
+	m->cpuhz = 66*1000000;
 }
 
 void
@@ -282,6 +282,11 @@ kprocchild(Proc *p, void (*func)(void*), void *arg)
 
 	p->kpfun = func;
 	p->arg = arg;
+}
+
+void
+idlehands(void){
+	idle();
 }
 
 /* stubs */

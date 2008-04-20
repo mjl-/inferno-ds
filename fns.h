@@ -41,7 +41,6 @@ void	gotopc(ulong);
 
 void	icflush(void*, ulong);
 void	icflushall(void);
-#define	idlehands()			/* nothing to do in the runproc */
 void	intrenable(int, int, void (*)(Ureg*, void*), void*, char*);
 void	intrclear(int, int);
 void	intrmask(int, int);
@@ -128,14 +127,6 @@ void 	microdelay(int us);
 
 void dispfont(void);
 void consputs(char *str);
-
-/* regs.c;  *sh should be named *s... */
-uchar	inb(int reg);
-ushort	insh(int reg);
-ulong	inl(int reg);
-void	outb(int reg, uchar b);
-void	outsh(int reg, ushort sh);
-void	outl(int reg, ulong l);
 
 void	setsublcdmode(void);
 void	putlogo(uchar *addr);

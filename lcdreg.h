@@ -11,7 +11,7 @@ enum ARM9_power
 	POWER_2D_B =		1<<9,	/* Controls the power for the sub 2D core. */
 	POWER_SWAP_LCDS =	1<<15,	/* Controls which screen should use the main core. */
 };
-#define POWER_ALL_2D     (POWER_LCD |POWER_2D_A |POWER_2D_B)
+
 #define SCREEN_HEIGHT 192
 #define SCREEN_WIDTH  256
 

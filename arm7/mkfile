@@ -8,7 +8,6 @@ OBJTYPE=arm #thumb
 
 OFILES=\
 	l.$O\
-	div.$O\
 	main.$O\
 	ipc.$O\
 	spi.$O\
@@ -18,6 +17,7 @@ OFILES=\
 	touch.$O\
 	microphone.$O\
 	interrupts.$O\
+	userSettings.$O\
 
 HFILES=
 LIBS=\

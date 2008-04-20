@@ -21,11 +21,7 @@ TEXT _main(SB), $-4
 	BL		main(SB)		/* jump to kernel */
 dead:
 	B		dead
-//	BL		_div(SB)			/* hack to get _div etc loaded */
-
-TEXT swiHalt(SB), $-4
-	SWI	0x060000
-	RET
+	BL		_div(SB)			/* hack to get _div etc loaded */
 
 TEXT swiDelay(SB), $-4
 	SWI	0x030000
@@ -33,6 +29,10 @@ TEXT swiDelay(SB), $-4
 
 TEXT swiWaitForVBlank(SB), $-4
 	SWI	0x050000
+	RET
+
+TEXT swiHalt(SB), $-4
+	SWI	0x060000
 	RET
 
 TEXT swiDivide(SB), $-4
@@ -51,4 +51,8 @@ TEXT swiDivMod(SB), $-4
 	MOVM.DB.W	(R13), [R2-R3]
 	MOVW	R0, (R2)
 	MOVW	R1, (R3)
+	RET
+
+TEXT swiCRC16(SB), $-4
+	SWI	0x0E0000
 	RET

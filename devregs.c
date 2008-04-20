@@ -18,9 +18,40 @@ Dirtab regstab[]={
 	"registers",	{Qregs},		0, 0600,
 };
 
-static void
-regsinit(void)
+uchar
+inb(ulong reg)
 {
+	return *(uchar*)reg;
+}
+
+ushort
+insh(ulong reg)
+{
+	return *(ushort*)reg;
+}
+
+ulong
+inl(ulong reg)
+{
+	return *(ulong*)reg;
+}
+
+void
+outb(ulong reg, uchar b)
+{
+	*(uchar*)reg = b;
+}
+
+void
+outsh(ulong reg, ushort sh)
+{
+	*(ushort*)reg = sh;
+}
+
+void
+outl(ulong reg, ulong l)
+{
+	*(ulong*)reg = l;
 }
 
 static Chan*
@@ -73,15 +104,15 @@ regsread(Chan* c, void* a, long n, vlong offset)
 			break;
 		case 2:
 			s = insh(offset);
-			p[0] = s>>8;
-			p[1] = s>>0;
+			p[0] = s>>0;
+			p[1] = s>>8;
 			break;
 		case 4:
 			l = inl(offset);
-			p[0] = l>>24;
-			p[1] = l>>16;
-			p[2] = l>>8;
-			p[3] = l>>0;
+			p[0] = l>>0;
+			p[1] = l>>8;
+			p[2] = l>>16;
+			p[3] = l>>24;
 			break;
 		default:
 			error(Ebadusefd);
@@ -112,11 +143,11 @@ regswrite(Chan* c, void* a, long n, vlong off)
 			outb(off, b);
 			break;
 		case 2:
-			s = (p[0]<<8)|p[1];
+			s = (p[1]<<8)|p[0];
 			outsh(off, s);
 			break;
 		case 4:
-			l = (p[0]<<24)|(p[1]<<16)|(p[2]<<8)|p[3];
+			l = (p[3]<<24)|(p[2]<<16)|(p[1]<<8)|p[0];
 			outl(off, l);
 			break;
 		default:
@@ -134,7 +165,7 @@ Dev regsdevtab = {
 	"regs",
 
 	devreset,
-	regsinit,
+	devinit,
 	devshutdown,
 	regsattach,
 	regswalk,

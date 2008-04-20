@@ -227,7 +227,6 @@ TEXT	gotopc(SB), $-4
 */
 	RET
 
-
 TEXT _halt(SB), $-4
 	SWI 0x020000
 
@@ -305,7 +304,7 @@ TEXT mpuinit(SB), $-4
 	/* bit 15: Main Memory priority to ARM9 */
 	MOVW	$(EXMEMCNT), R0 			/* wait_cr */
 	MOVW	(R0), R1
-	BIC		$0x8880, R1, R1
+	BIC		$0x8880, R1
 	MOVW	R1, (R0)
 	
 	/* Protection unit Setup added by Sasq */
@@ -362,50 +361,63 @@ TEXT mpuinit(SB), $-4
 	MCR		CpMPU, 0, R0, C(CpCachebit), C0, 1
 
 	/* IAccess */
-	MOVW	0x33636333, R0
+	MOVW	$0x33636333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 3
 
 	/* DAccess */
-	MOVW	0x36333333, R0
+	MOVW	$0x36333333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
 	/* Enable ICache, DCache and Mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	ORR		$(CpCrrob|CpCicache|CpCdcache), R0, R0	/* TODO CpCmpu */
-	BIC		$(CpCaltivec), R0, R0
+	ORR		$(CpCrrob|CpCicache|CpCdcache), R0	/* TODO CpCmpu */
+	BIC		$(CpCaltivec), R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET
 
 /*
- *	 icache: clean and invalidate all
+ * flush (invalidate) the whole icache
  */
 TEXT icflushall(SB), $-4
+_icflushall:
 	MOVW	$0, R0
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 0 /* clean i-cache and branch buffer */
 	CPWAIT
 	RET
 
 /*
- *	icache: invalidate a range
+ * icache: invalidate part of i-cache and invalidate branch target buffer
  */
 TEXT icflush(SB), $-4
-	ADD		R0, R1, R1
-	BIC		$(CACHELINESZ - 1), R0, R0
-.icinvalidate:
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 1
+	MOVW		4(FP), R1
+	CMP		$(ICACHESZ/2), R1
+	BGE		_icflushall
+	ADD		R0, R1
+	BIC		$(CACHELINESZ-1), R0
+icflush1:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 1	/* clean entry */
 	ADD		$CACHELINESZ, R0
 	CMP		R0, R1
-	BLT		.icinvalidate
+	BLO		icflush1
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(13), 1	/* invalidate branch target buffer */
 	CPWAIT
 	RET
 
 /*
- *	dcache: clean and invalidate all
+ * write back the whole data cache and drain write buffer
  */
 TEXT dcflushall(SB), $-4
-	MOVW	$0, R0
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 0
+_dcflushall:
+	MOVW		$(DCFADDR), R0
+	ADD		$DCACHESZ, R0, R1
+dcflushall1:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1	/* clean and flush entry */
+	ADD		$CACHELINESZ, R0
+	CMP		R1, R0
+	BNE		dcflushall1
+	MOVW		$0, R0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 0	/* flush data cache */
 	CPWAIT
 	RET
 
@@ -413,13 +425,16 @@ TEXT dcflushall(SB), $-4
  *	dcache: clean and invalidate a range
  */
 TEXT dcflush(SB), $-4
-	ADD		R0, R1, R1
-	BIC		$(CACHELINESZ - 1), R0, R0
-.flush:
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1
+	CMP		$(DCACHESZ/2), R1
+	BGE		_dcflushall
+	ADD		R0, R1
+	BIC		$(CACHELINESZ-1), R0
+dcflush1:
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 1	/* clean entry */
 	ADD		$CACHELINESZ, R0
 	CMP		R0, R1
-	BLT		.flush
+	BLO		dcflush1
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(10), 4	/* drain write buffer */
 	CPWAIT
 	RET
 
@@ -436,3 +451,11 @@ TEXT dcinval(SB), $-4
 	BLT		.dcinvalidate
 	CPWAIT
 	RET
+/*
+ *	idle: enter low power mode
+ */
+TEXT	idle(SB), $-4
+	MOVW		$0, R0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(0), 4 /* wait for interrupt */
+	RET
+

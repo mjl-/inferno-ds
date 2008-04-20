@@ -15,9 +15,9 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
-KTZERO=0x02008010
+KTZERO=0x02004010
 ARM7ZERO=0x03800000
-KDZERO=$KTZERO #8010
+KDZERO=$KTZERO
 
 OBJ=\
 	l.$O\
@@ -28,7 +28,6 @@ OBJ=\
 	defont.$O\
 	main.$O\
 	trap.$O\
-	regs.$O\
 	logo.$O\
 	math.$O\
 	$CONF.root.$O\

@@ -42,7 +42,7 @@ void
 archconfinit(void)
 {
 	conf.topofmem = EWRAMTOP;
-	m->cpuhz = 60000000;
+	m->cpuhz = 66*1000000;
 
 }
 

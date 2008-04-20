@@ -161,27 +161,29 @@ dldiinit(void){
 		DPRINT("io.clrstat %lux %lux\n", &hdr.io.clrstat, *hdr.io.clrstat);
 		DPRINT("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
 
+if(0){ /* fix calling elf-arm code */
+		uchar sect[SECTSZ];
+
 		print("isin: %d\n", hdr.io.isin());
 		print("clrstat: %d\n", hdr.io.clrstat());
 		print("init: %d\n", hdr.io.init());
+		print("deinit: %d\n", hdr.io.deinit());
+
 		print("while(1);\n");
 		// while(1);
-	}
-
-	if(0){
-	uchar sect[SECTSZ];
 	
-	ret =hdr.io.read(0, 1, sect);
-	print("ret: %d\n", ret);
+		ret =hdr.io.read(0, 1, sect);
+		print("ret: %d\n", ret);
 
-	for(i=0; i < sizeof(sect); i++){
-		if(1)
+		for(i=0; i < sizeof(sect); i++){
+			if(1)
 			print("%x,", sect[i]);
-		if(0 && sect[i] == 0xaa || sect[i] == 0x55)
-			print("%d %x\n", i, sect[i]);
-	}
-	print("fi\n");
-	while(1);
+			if(0 && sect[i] == 0xaa || sect[i] == 0x55)
+				print("%d %x\n", i, sect[i]);
+		}
+		print("while(1);\n");
+		while(1);
+}
 	}
 }
 

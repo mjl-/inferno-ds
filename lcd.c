@@ -60,6 +60,7 @@ setlcdblight(int on)
 {
 	LcdReg *lcd = LCDREG;
 
+	// see 'Power Management Device' in gbatek.txt
 	/* enable/disable LCD */
 	if (on)
 		lcd->lcsr |= EnableCtlr;

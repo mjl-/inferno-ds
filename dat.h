@@ -231,3 +231,8 @@ enum {
 };
 
 #define	swcursor	1
+
+//enum {
+//	Screenwidth =	256,
+//	Screenheight =	192,
+//};

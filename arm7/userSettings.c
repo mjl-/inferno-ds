@@ -22,15 +22,14 @@
 			distribution.
 
 ---------------------------------------------------------------------------------*/
+#include <u.h>
+#include "../mem.h"
+#include <kern.h>
 
-#include <nds/arm7/serial.h>
-#include <nds/system.h>
-#include <string.h>
-
-
-void readUserSettings() {
+#include "nds.h"
 
 
+void readUserSettings(void) {
 	PERSONAL_DATA slot1;
 	PERSONAL_DATA slot2;
 
@@ -38,28 +37,31 @@ void readUserSettings() {
 	short slot1CRC, slot2CRC;
 
 	uint32 userSettingsBase;
-	readFirmware( 0x20, &userSettingsBase,2);
-	
-	uint32 slot1Address = userSettingsBase * 8;
-	uint32 slot2Address = userSettingsBase * 8 + 0x100;
-	
-	readFirmware( slot1Address , &slot1, sizeof(PERSONAL_DATA));
-	readFirmware( slot2Address , &slot2, sizeof(PERSONAL_DATA));
-	readFirmware( slot1Address + 0x70, &slot1count, 2);
-	readFirmware( slot2Address + 0x70, &slot2count, 2);
-	readFirmware( slot1Address + 0x72, &slot1CRC, 2);
-	readFirmware( slot2Address + 0x72, &slot2CRC, 2);
+	uint32 slot1Address, slot2Address;
+	short calc1CRC, calc2CRC;
 
-	 default to slot 1 user Settings
+	/* default to slot 1 user Settings */
 	void *currentSettings = &slot1;
 	
-	short calc1CRC = swiCRC16( 0xffff, &slot1, sizeof(PERSONAL_DATA));
-	short calc2CRC = swiCRC16( 0xffff, &slot2, sizeof(PERSONAL_DATA));
+	readFirmware( 0x20, &userSettingsBase, 2);
+	
+	slot1Address = userSettingsBase * 8;
+	slot2Address = userSettingsBase * 8 + 0x100;
+	
+	readFirmware(slot1Address , &slot1, sizeof(PERSONAL_DATA));
+	readFirmware(slot2Address , &slot2, sizeof(PERSONAL_DATA));
+	readFirmware(slot1Address + 0x70, &slot1count, 2);
+	readFirmware(slot2Address + 0x70, &slot2count, 2);
+	readFirmware(slot1Address + 0x72, &slot1CRC, 2);
+	readFirmware(slot2Address + 0x72, &slot2CRC, 2);
 
-	 bail out if neither slot is valid
+	calc1CRC = swiCRC16( 0xffff, &slot1, sizeof(PERSONAL_DATA));
+	calc2CRC = swiCRC16( 0xffff, &slot2, sizeof(PERSONAL_DATA));
+
+	/* bail out if neither slot is valid */
 	if ( calc1CRC != slot1CRC && calc2CRC != slot2CRC) return;
 	
-	 if both slots are valid pick the most recent
+	/* if both slots are valid pick the most recent */
 	if ( calc1CRC == slot1CRC && calc2CRC == slot2CRC ) { 
 		currentSettings = (slot2count == (( slot2count + 1 ) & 0x7f) ? &slot2 : &slot1);
 	} else {
@@ -67,5 +69,4 @@ void readUserSettings() {
 			currentSettings = &slot2;
 	}
 	memcpy ( PersonalData, currentSettings, sizeof(PERSONAL_DATA));
-	
 }

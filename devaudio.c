@@ -121,6 +121,8 @@ audioread(Chan *c, void *vp, long n, vlong offset)
 	return n;
 }
 
+// TODO: provive audio write support,
+// in order to play some audio files from devroot
 static long
 audiowrite(Chan *c, void *vp, long n, vlong)
 {

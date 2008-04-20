@@ -200,10 +200,12 @@ touchReadXY(touchPosition *tp)
 {
 	int16 dmaxy, dmaxx, dmax;
 	u8 error, errloc, usedstylus, i;
+	uint32 oldIME;
+
+#ifdef ARM7DIVFIXED
 	static int tscinit = 0;
 	static s32 xscale, yscale;
 	static s32 xoff, yoff;
-	uint32 oldIME;
 	s16 px,py;
 	PERSONAL_DATA *pd=PersonalData;
 
@@ -212,12 +214,10 @@ touchReadXY(touchPosition *tp)
 		yscale=((pd->calY2px-pd->calY1px)<<(19-15))/((pd->calY2)-(pd->calY1));
 		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<(19-15)))/2;
 		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<(19-15)))/2;
-//		xscale=3512
-//		xoff=0;
-//		yscale=36000;
-//		yoff=0;
 		tscinit=1;
 	}
+#endif
+
 	oldIME = REG_IME;
 	REG_IME = 0;
 	usedstylus = chkstylus();
@@ -259,6 +259,7 @@ touchReadXY(touchPosition *tp)
 			break;
 		}
 
+#ifdef ARMDIVFIXED
 		// TODO get this right; ie: tp->x / 15 hangs arm7 cpu
 //		px=(tp->x*xscale-xoff+xscale/2)>>19;
 //		py=(tp->y*yscale-yoff+yscale/2)>>19;
@@ -275,6 +276,10 @@ touchReadXY(touchPosition *tp)
 			py=Scrheight-1;
 		tp->px=px;
 		tp->py=py; 
+
+		tp->px = tp->x;
+		tp->py = tp->y;
+#endif
 	}else{
 		errloc = 3;
 		tp->x = 0;

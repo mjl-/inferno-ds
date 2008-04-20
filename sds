@@ -20,6 +20,7 @@ dev
 	nds
 #	dldi
 	audio invhit
+#	tinyfs
 
 ip
 #	il
@@ -148,6 +149,8 @@ root
 	/dis/date.dis
 	/dis/time.dis
 	/dis/ftest.dis
+	/dis/mdb.dis
+	/dis/read.dis
 	/dis/lib/readdir.dis
 	/dis/lib/workdir.dis
 	/dis/lib/daytime.dis
@@ -155,6 +158,7 @@ root
 	/dis/lib/env.dis
 	/dis/lib/ssl.dis
 	/dis/lib/bufio.dis
+	/dis/lib/dis.dis
 
 # dhcp
 	/dis/lib/dhcpclient.dis
@@ -218,12 +222,18 @@ root
 	/icons/tk/maxf.bit
 	/icons/tk/exit.bit
 
-	/dis/lib/devpointer.dis
-	/dis/nds/touchprint.dis
-	/dis/nds/memfiddle.dis
-	/lib/registers/disp
-	/lib/registers/div
-	/lib/registers/main
-	/lib/registers/subdisp
-	/lib/registers/video
-	/lib/registers/wram
+	/icons/tinytk/task.bit
+	/icons/tinytk/maxf.bit
+	/icons/tinytk/exit.bit
+	/icons/tinytk/help.bit
+	/icons/tinytk/ok.bit
+
+#	/dis/lib/devpointer.dis
+#	/dis/nds/touchprint.dis
+#	/dis/nds/memfiddle.dis
+#	/lib/registers/disp
+#	/lib/registers/div
+#	/lib/registers/main
+#	/lib/registers/subdisp
+#	/lib/registers/video
+#	/lib/registers/wram

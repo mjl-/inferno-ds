@@ -117,7 +117,7 @@ enum ARM7_power
 };
 
 
-void readUserSettings();
+void readUserSettings(void);
 
 
 //	User's DS settings.
@@ -128,18 +128,22 @@ void readUserSettings();
 */
 #pragma hjdicks 1
 #pragma packed 1
-typedef struct _user_data  _user_data;
-struct _user_data {
-    	ulong langnscr;			//	User's language and screen. GBA screen selection (lower screen if set, otherwise upper screen).
-    	ushort defaultBrightness;	//	Brightness level at power on, dslite.
-    	uchar autoMode;		//	The DS should boot from the DS cart or GBA cart automatically if one is inserted.
-    	ushort RESERVED1;	//	???
-	uchar settingsLost;	//	User Settings Lost (0=Normal, 1=Prompt/Settings Lost)
-	uchar RESERVED2[6];			//	???
-  } ;
-  
+
+/* 
+  packed_struct {
+    unsigned language                   : 3;    //!<    User's language.
+    unsigned gbaScreen                  : 1;    //!<    GBA screen selection (lower screen if set, otherwise upper screen).
+    unsigned defaultBrightness  : 2;    //!<    Brightness level at power on, dslite.
+    unsigned autoMode                   : 1;    //!<    The DS should boot from the DS cart or GBA cart automatically if one is inserted.
+    unsigned RESERVED1                  : 2;    //!<    ???
+        unsigned settingsLost           : 1;    //!<    User Settings Lost (0=Normal, 1=Prompt/Settings Lost)
+        unsigned RESERVED2                      : 6;    //!<    ???
+  } _user_data;
+ */
+
 typedef struct tPERSONAL_DATA {
-  u8 RESERVED0[2];			//	??? (0x05 0x00).
+  u8 version;
+  u8 color;
 
   u8 theme;					//	The user's theme color (0-15).
   u8 birthMonth;			//	The user's birth month (1-12).
@@ -157,7 +161,8 @@ typedef struct tPERSONAL_DATA {
   u8 alarmMinute;			//	What minute the alarm clock is set to (0-59).
        //     0x027FFCD3  alarm minute
 
-  u8 RESERVED2[4];			//	???
+  u8 RESERVED2[2];			//	???
+  u16 alarmOn;
       //     0x027FFCD4  ??
 
   u16 calX1;				//	Touchscreen calibration: first X touch
@@ -170,8 +175,8 @@ typedef struct tPERSONAL_DATA {
   u8 calX2px;				//	Touchscreen calibration: second X touch pixel
   u8 calY2px;				//	Touchscreen calibration: second Y touch pixel
 
-	
-  _user_data;
+  u16 flags;				//	Described above: see struct _user_data
+
   u16	RESERVED3;
   u32	rtcOffset;
   u32	RESERVED4;

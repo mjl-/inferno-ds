@@ -4,6 +4,7 @@
 #include	"dat.h"
 #include	"fns.h"
 #include	"io.h"
+#include	"lcdreg.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
 
@@ -17,6 +18,9 @@ enum {
 	Qctl,
 	Qinfo,
 	Qtouchctl,
+	Qfw,
+	Qrom,
+	Qsram,
 };
 
 enum {
@@ -48,7 +52,10 @@ Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,
 	"ndsctl",	{Qctl},		0,		0600,
 	"ndsinfo",	{Qinfo},	0,		0600,
-	"touchctl",	{Qtouchctl},	0,	0644,
+	"touchctl",	{Qtouchctl},	0,		0644,
+	"ndsfw",	{Qfw},		0,		0400,
+	"ndsrom",	{Qrom},		0,		0600,
+	"ndssram",	{Qsram},		0,		0600,
 };
 
 enum
@@ -85,8 +92,8 @@ enum
 
 // TODO use Dbgbtn7 to enable debug; by toggling Conf.bmap = 2
 static	Rune	rockermap[3][Numbtns] ={
-	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
-	{'\n', Del, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
+	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
 	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
 };
 
@@ -134,6 +141,8 @@ ndskeys(void)
 		setlcdblight(0);
 
 	for (i=0; i<nelem(rockermap[conf.bmap]); i++){
+		if (i == Lbtn || i == Rbtn)
+			continue;
 		if (kpressed(1<<i, ost, st)){
 			kbdrepeat(0);
 			kbdputc(kbdq, rockermap[conf.bmap][i]);
@@ -148,17 +157,39 @@ ndskeys(void)
 }
 
 static void
-vblankintr()
+vblankintr(Ureg *, void *)
 {
 	int b;
 	static ulong ob;
+	int x, y;
+	PERSONAL_DATA *pd = PersonalData;
 
 	b = ndskeys();
+
+#ifdef ARMDIVFIXED
 	if(b)
 		mousetrack(b, IPC->touchXpx, IPC->touchYpx, 0);
 	else if(ob)
 		mousetrack(b, 0, 0, 1);
+#endif
 
+	if(b) {
+		x = (int)((IPC->touchX - (int)pd->calX1) * ((int)pd->calX2px - (int)pd->calX1px) / ((int)pd->calX2 - (int)pd->calX1)) + pd->calX1px - 1;
+		y = (int)((IPC->touchY - (int)pd->calY1) * ((int)pd->calY2px - (int)pd->calY1px) / ((int)pd->calY2 - (int)pd->calY1)) + pd->calY1px - 1;
+
+		if(x < 0)
+			x = 0;
+		else if(x > SCREEN_WIDTH-1)
+			x = SCREEN_WIDTH-1;
+		if(y < 0)
+			y = 0;
+		else if(y > SCREEN_HEIGHT-1)
+			y = SCREEN_HEIGHT-1;
+
+		mousetrack(b, x, y, 0);
+	} else if(ob)
+		mousetrack(b, 0, 0, 1);
+	
 	ob = b;
 	intrclear(VBLANKbit, 0);
 }
@@ -166,9 +197,11 @@ vblankintr()
 static void
 ndsinit(void)
 {
+	// TODO complete ndstab[Qrom].length,
+	// to respect mem available in the ROM cartridge
+	// add checks to see if we're not overriding anything valuable
+
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
-	if (IPC->heartbeat > 1)
-		print("touch worked\n");
 }
 
 static Chan*
@@ -201,12 +234,37 @@ ndsclose(Chan*)
 {
 }
 
+
+/* settings flags */
+enum {
+	Nickmax	= 10,
+	Msgmax	= 26,
+
+	LJapanese = 0,
+	LEnglish,
+	LFrench,
+	LGerman,
+	LItalian,
+	LSpanish,
+	LChinese,
+	LOther,
+	Langmask	= 7,
+	Gbalowerscreen	= 1<<3,
+	Backlightshift	= 4,
+	Backlightmask	= 3,
+	Autostart	= 1<<6,
+	Nosettings	= 1<<9,
+};
+
 static long
 ndsread(Chan* c, void* a, long n, vlong offset)
 {
 	char *tmp, buf[64];
 	uchar reply[12];
 	int v, t, l;
+	char *p, *e;
+	int i;
+	PERSONAL_DATA *pd = PersonalData;
 
 	switch((ulong)c->qid.path){
 	case Qdir:
@@ -220,13 +278,55 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			nexterror();
 		}
 		v = IPC->battery;
-		t = 0xff; // read console type, version from firmware
-		snprint(tmp, READSTR, "ds type: %x %s\nbattery: %d %s\n",
-			t, (t == 0xff? "NDS" : "NDS-lite"), v, (v? "high" : "low"));
+		l = IPC->temperature;
+		t = *((uchar*)0x1d); // read console type, version from firmware
+		snprint(tmp, READSTR,
+			"ds type: %x %s\n"
+			"battery: %d %s\n"
+			"temperature: %d\n",
+			t, (t == 0xff? "NDS" : "NDS-lite"), v, (v? "high" : "low"), l);
 		n = readstr(offset, a, n, tmp);
 		poperror();
 		free(tmp);
 		break;
+	case Qfw:
+		tmp = p = malloc(1024);
+		if(waserror()) {
+			free(tmp);
+			nexterror();
+		}
+		e = tmp+1024;
+
+		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pd->version, pd->theme, pd->birthMonth, pd->birthDay);
+		p = seprint(p, e, "nick %S\n", pd->name);
+		p = seprint(p, e, "msg %S\n", pd->message);
+		p = seprint(p, e, "alarm hour %d min %d on %d\n", pd->alarmHour, pd->alarmMinute, pd->alarmOn);
+		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pd->calX1, pd->calY1, pd->calX2, pd->calY2);
+		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pd->calX1px, pd->calY1px, pd->calX2px, pd->calY2px);
+		p = seprint(p, e, "flags 0x%02ux lang %d backlight %d", pd->flags,
+			pd->flags&Langmask, (pd->flags>>Backlightshift)&Backlightmask);
+		if(pd->flags & Gbalowerscreen)
+			seprint(p, e, " gbalowerscreen");
+		if(pd->flags & Autostart)
+			seprint(p, e, " autostart");
+		if(pd->flags & Nosettings)
+			seprint(p, e, " nosettings");
+		seprint(p, e, "\n");
+
+		n = readstr(offset, a, n, tmp);
+
+		poperror();
+		free(tmp);
+
+		break;
+
+	case Qrom:
+		memcpy(a, (void*)(ROMZERO+offset), n);
+		break;
+	case Qsram:
+		memcpy(a, (void*)(SRAMZERO+offset), n);
+		break;
+		
 		
 	default:
 		n=0;
@@ -236,16 +336,26 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 }
 
 static long
-ndswrite(Chan* c, void* a, long n, vlong)
+ndswrite(Chan* c, void* a, long n, vlong offset)
 {
 	char cmd[64], op[32], *fielnds[6];
 	int nf;
+
 	switch((ulong)c->qid.path){
 	case Qctl:
 		break;
 	case Qtouchctl:
 		break;
 //		return touchctl(a, n);
+
+	case Qrom:
+		memcpy((void*)(ROMZERO+offset), a, n);
+		break;
+	case Qsram:
+		memcpy((void*)(SRAMZERO+offset), a, n);
+		break;
+		
+		
 	default:
 		error(Ebadusefd);
 	}
