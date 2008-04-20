@@ -76,15 +76,15 @@ struct LcdReg {
 #define VRAMREG	((VramReg*)VRAM)
 typedef struct VramReg VramReg;
 struct VramReg {
-	ulong acr;
-	ulong bcr;
-	ulong ccr;
-	ulong dcr;
-	ulong ecr;
-	ulong fcr;
-	ulong gcr;
-	ulong hcr;
-	ulong icr;
+	uchar acr;
+	uchar bcr;
+	uchar ccr;
+	uchar dcr;
+	uchar ecr;
+	uchar fcr;
+	uchar gcr;
+	uchar hcr;
+	uchar icr;
 };
 
 #define POWERREG ((PowerReg*)POWER)

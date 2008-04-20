@@ -151,10 +151,10 @@ typedef struct tPERSONAL_DATA {
 
   u8 RESERVED1[1];			//	???
 
-  s16 name[10];				//	The user's name in UTF-16 format.
+  Rune name[10];			//	The user's name in UTF-16 format.
   u16 nameLen;				//	The length of the user's name in characters.
 
-  s16 message[26];			//	The user's message.
+  Rune message[26];			//	The user's message.
   u16 messageLen;			//	The length of the user's message in characters.
 
   u8 alarmHour;				//	What hour the alarm clock is set to (0-23).

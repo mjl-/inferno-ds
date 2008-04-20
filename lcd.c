@@ -71,17 +71,13 @@ setlcdblight(int on)
 static void
 setlcdmode(LCDdisplay *ld)
 {
-	LCDmode *p;
-	LcdReg *sublcd = SUBLCDREG;
 	LcdReg *lcd = LCDREG;
 	VramReg *vram = VRAMREG;
 	PowerReg *power = POWERREG;
-	p = (LCDmode*)&ld->Vmode;
 
 	setlcdblight(0);
 	lcd->lccr = 0;	
   	
- //	sublcd->lccr = MODE_0_2D | DISPLAY_BG0_ACTIVE;
 	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);
  	lcd->lccr = MODE_FB0;
       	vram->acr = VRAM_ENABLE|VRAM_A_LCD;
@@ -93,11 +89,14 @@ static LCDdisplay main_display;	/* TO DO: limits us to a single display */
 void
 setsublcdmode(void)
 {
+	VramReg *vram = VRAMREG;
+	LcdReg *sublcd = SUBLCDREG;
+
 	/* enable vram c to hold the background for the sub display */
-	VRAM_C_CR = VRAM_ENABLE|VRAM_C_SUB_BG_0x06200000;
+	vram->ccr = VRAM_ENABLE|VRAM_C_SUB_BG_0x06200000;
 
 	/* enable mode 3, enable background 3 */
-	*(ulong*)SUB_DISPLAY_CR = MODE_3_2D|DISPLAY_BG3_ACTIVE;
+	sublcd->lccr = MODE_3_2D|DISPLAY_BG3_ACTIVE;
 
 	/* set the background mode:  256x256 pixels of 16 bits each */
 	SUB_BG3_CR = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_PRIORITY(3);
@@ -113,7 +112,6 @@ setsublcdmode(void)
 Vdisplay*
 lcd_init(LCDmode *p)
 {
-	int palsize;
 	int fbsize;
 
 	ld = &main_display;

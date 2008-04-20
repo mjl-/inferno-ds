@@ -265,6 +265,8 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	char *p, *e;
 	int i;
 	PERSONAL_DATA *pd = PersonalData;
+	Rune name[nelem(pd->name)+1];
+	Rune message[nelem(pd->message)+1];
 
 	switch((ulong)c->qid.path){
 	case Qdir:
@@ -297,9 +299,13 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		}
 		e = tmp+1024;
 
+		memmove(name, pd->name, sizeof pd->name);
+		name[pd->nameLen] = 0;
+		memmove(message, pd->message, sizeof pd->message);
+		message[pd->messageLen] = 0;
 		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pd->version, pd->theme, pd->birthMonth, pd->birthDay);
-		p = seprint(p, e, "nick %S\n", pd->name);
-		p = seprint(p, e, "msg %S\n", pd->message);
+		p = seprint(p, e, "nick %S\n", name);
+		p = seprint(p, e, "msg %S\n", message);
 		p = seprint(p, e, "alarm hour %d min %d on %d\n", pd->alarmHour, pd->alarmMinute, pd->alarmOn);
 		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pd->calX1, pd->calY1, pd->calX2, pd->calY2);
 		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pd->calX1px, pd->calY1px, pd->calX2px, pd->calY2px);
@@ -321,10 +327,10 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		break;
 
 	case Qrom:
-		memcpy(a, (void*)(ROMZERO+offset), n);
+		memmove(a, (void*)(ROMZERO+offset), n);
 		break;
 	case Qsram:
-		memcpy(a, (void*)(SRAMZERO+offset), n);
+		memmove(a, (void*)(SRAMZERO+offset), n);
 		break;
 		
 		
@@ -349,10 +355,10 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 //		return touchctl(a, n);
 
 	case Qrom:
-		memcpy((void*)(ROMZERO+offset), a, n);
+		memmove((void*)(ROMZERO+offset), a, n);
 		break;
 	case Qsram:
-		memcpy((void*)(SRAMZERO+offset), a, n);
+		memmove((void*)(SRAMZERO+offset), a, n);
 		break;
 		
 		
