@@ -285,8 +285,11 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		snprint(tmp, READSTR,
 			"ds type: %x %s\n"
 			"battery: %d %s\n"
-			"temperature: %d\n",
-			t, (t == 0xff? "NDS" : "NDS-lite"), v, (v? "high" : "low"), l);
+			"temperature: %d.%d\n",
+			t, (t == 0xff? "NDS" : "NDS-lite"), 
+			v, (v? "high" : "low"),
+			l>>12, l & (1<<13 -1));
+
 		n = readstr(offset, a, n, tmp);
 		poperror();
 		free(tmp);

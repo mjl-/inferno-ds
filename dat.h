@@ -204,8 +204,6 @@ struct TouchCal {
 
 extern TouchCal touchcal;
 
-
-
 enum {
 	VMODE_MONO = 0x0001,    /* monochrome display */
 	VMODE_COLOR = 0x0002,   /* color (RGB) display */
@@ -220,19 +218,4 @@ enum {
 	VMODE_BIGEND = 0x8000,	/* big endian pixel layout */
 };
 
-/*
- *	Interface to PCMCIA stubs
- */
-enum {
-	/* argument to pcmpin() */
-	PCMready,
-	PCMeject,
-	PCMstschng,
-};
-
 #define	swcursor	1
-
-//enum {
-//	Screenwidth =	256,
-//	Screenheight =	192,
-//};

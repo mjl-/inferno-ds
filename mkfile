@@ -16,7 +16,7 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
 KTZERO=0x02004010
-ARM7ZERO=0x03800000
+KTZERO7=0x03800000
 KDZERO=$KTZERO
 
 OBJ=\
@@ -68,8 +68,9 @@ i$CONF.nds: i$CONF arm7/i$CONF
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
 		\
-		-7 arm7/i$CONF -r7 $ARM7ZERO -e7 $ARM7ZERO \
+		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
+	
 	# data (loaded on ROM) can be appended (padded to 256 bytes) at end of .nds
 	wc -c i$CONF.nds | awk '{for (i=0; i < ($1%256); i++) print ""; }' >> i$CONF.nds
 	for i in $(seq 1 256); do echo -n B; done >> i$CONF.nds

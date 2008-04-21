@@ -164,7 +164,7 @@ main(void)
 		print("H%x T%ld B%x t%lux "
 			"%x %d %d %d %x %x "
 			"b%d t%ld\n",
-			IPC->heartbeat, IPC->temperature/4096, IPC->battery, m->ticks,
+			IPC->heartbeat, IPC->temperature>>12, IPC->battery, m->ticks,
 			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
 			IPC->buttons, IPC->unixTime);
 	}

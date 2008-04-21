@@ -39,31 +39,31 @@
 	use new register definitions
 	
 	Revision 1.4  2005/09/04 16:28:04  wntrmute
-	place irqTable in ewram
+	place Irq in ewram
 	Revision 1.3  2005/09/03 17:09:35  wntrmute
 	added interworking aware interrupt dispatcher
 ---------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
+#include <kern.h>
 #include "nds.h"
 
-typedef struct IntTable IntTable;
-IntTable irqTable[MAX_INTERRUPTS];
+IrqEntry Irq[MAX_INTERRUPTS];
 
-void irqset(int mask, IntFn handler) {
+void irqset(int v, IntFn r) {
 	int i;
 
-	for(i=0; i<MAX_INTERRUPTS; i++) 
-		if(mask == (1<<i)) 
+	for(i=0; i < nelem(Irq); i++) 
+		if(v == (1<<i)) 
 			break;
-			
-	if (i == MAX_INTERRUPTS)
+		
+	if (i == nelem(Irq))
 		return;
 
-	irqTable[i].handler	= handler;
-	irqTable[i].mask	= mask;
+	Irq[i].r	= r;
+	Irq[i].v	= v;
 
-	irqen(mask);
+	irqen(v);
 }
 
 static void
@@ -74,11 +74,13 @@ irqhandler(void){
 	oime = REG_IME;
 	REG_IME = 0;
 	ibits = REG_IF;
-	for(i=0; i<MAX_INTERRUPTS; i++){
-		if (ibits & (1<<i) && irqTable[i].handler){
-			irqTable[i].handler();
+	for(i=0; i < nelem(Irq) && ibits; i++){
+		if (ibits & (1<<i)){
+			if (Irq[i].r){
+				Irq[i].r();
+				ibits &= ~(1<<i);
+			}
 		}
-		ibits &= ~(1<<i);
 	}
 
 	// ack. unhandled ints
@@ -91,38 +93,39 @@ irqhandler(void){
 
 void irqInit(void) {
 	int i;
-	// Set all interrupts to dummy functions.
-	for(i = 0; i < MAX_INTERRUPTS; i++){
-		irqTable[i].handler = 0;
-		irqTable[i].mask = (1<<i);
-	}
 	
+	REG_IME = 0;
+	REG_IE = 0;
+	REG_IF = ~0;
 	*(ulong*)INTHAND7 = (ulong)irqhandler;
-	REG_IE = 0;				// disable all interrupts
-	REG_IF = ~0;			// clear all pending interrupts
-//	REG_IME = 1;			// enable global interrupt
+
+	// Set all interrupts to dummy functions.
+	for(i = 0; i < nelem(Irq); i++){
+		Irq[i].r = 0;
+		Irq[i].v = (1<<i);
+	}
 }
 
-void irqClear(int mask) {
+void irqClear(int v) {
 	int i;
-	for (i=0; i<MAX_INTERRUPTS; i++)
-		if (irqTable[i].mask == (1<<i))
+	for (i=0; i<nelem(Irq); i++)
+		if (Irq[i].v == (1<<i))
 			break;
 			
-	if (i == MAX_INTERRUPTS)
+	if (i == nelem(Irq))
 		return;
 
-	irqTable[i].mask = 0;
-	irqTable[i].handler = 0;
+	Irq[i].v = 0;
+	Irq[i].r = 0;
 	
-	irqDisable(mask);
+	irqDisable(v);
 }
 
-void irqInitHandler(IntFn handler) {
+void irqInitHandler(IntFn r) {
 	REG_IME = 0;
 	REG_IF = ~0;
 	REG_IE = 0;
-	*(ulong*)INTHAND7 = (ulong)handler;
+	*(ulong*)INTHAND7 = (ulong)r;
 //	REG_IME = 1;
 }
 

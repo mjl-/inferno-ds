@@ -143,10 +143,10 @@ enum IME_VALUE {
 	IME_ENABLE = 1,	/*!< Enable all interrupts not masked out in REG_IE */
 };
 
-typedef struct IntTable IntTable;
-struct IntTable{
-	IntFn handler;
-	u32 mask;
+typedef struct IrqEntry IrqEntry;
+struct IrqEntry{
+	IntFn r;
+	u32 v;
 };
 
 void irqInit(void);
