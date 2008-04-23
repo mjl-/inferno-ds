@@ -92,7 +92,7 @@ intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 	/* Enable the interrupt by setting the enable bit */
 	INTREG->ier |= (1 << v);
 	if (VBLANKbit <= v && v <= VCOUNTbit)
-		*((ulong*)DISPSTAT) |= (1 << (DISP_VBLANKbit+v));
+		LCDREG->lcsr |= (1 << (DISP_VBLANKbit+v));
 
 	splx(x);
 }

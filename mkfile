@@ -71,9 +71,10 @@ i$CONF.nds: i$CONF arm7/i$CONF
 		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 	
-	# data (loaded on ROM) can be appended (padded to 256 bytes) at end of .nds
-	wc -c i$CONF.nds | awk '{for (i=0; i < ($1%256); i++) print ""; }' >> i$CONF.nds
-	for i in $(seq 1 256); do echo -n B; done >> i$CONF.nds
+	# append rom data at end of .nds
+	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
+	echo -n ROMZERO9 >> i$CONF.nds
+	cat ds.kfs >> i$CONF.nds
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c

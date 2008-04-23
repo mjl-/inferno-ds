@@ -53,7 +53,7 @@ init()
 
 	localok := 0;
 	# temporal workaround: use lfs("#T/ndsrom")
-	if(lfs("#L/data") >= 0){
+	if(lfs("#T/ndsrom") >= 0){
 		# let's just take a closer look
 		sys->bind("/n/local/nvfs", "/nvfs", Sys->MREPL|Sys->MCREATE);
 		(rc, nil) := sys->stat("/n/local/dis/sh.dis");

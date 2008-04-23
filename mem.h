@@ -84,7 +84,9 @@
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */
 #define	SFRZERO		0x04000000
 #define	ROMZERO		0x08000000
+#define	ROMTOP		0x09FFFFFF
 #define	SRAMZERO	0x0A000000
+#define	SRAMTOP		0x0A00FFFF
 #define	EXMEMCNT	0x04000204
 #define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
 

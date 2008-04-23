@@ -103,6 +103,51 @@ struct SpiReg {
 #define VIDMEMHI	((ushort*)VRAMTOP)
 #define VIDMEMLO	((ushort*)VRAMZERO)
 
+/* NDS file header info */
+typedef struct NDShdr NDShdr;
+struct NDShdr{
+	char gtitle[12];
+	char gcode[4];
+	char mcode[2];
+	uchar unitcode;	
+	uchar devtype;		
+	uchar devcapa;
+	uchar rserv1[10];
+	uchar romver;
+	uchar rserv2;
+	ulong romoff9;
+	ulong entry9;
+	ulong ram9;
+	ulong size9;
+	ulong romoff7;
+	ulong entry7;
+	ulong ram7;
+	ulong fntoff;
+	ulong fntsz;
+	ulong fatoff;
+	ulong fatsz;
+	ulong ovloff9;
+	ulong ovlsz9;
+	ulong ovloff7;
+	ulong ovlsz7;
+	ulong romctl1;
+	ulong romctl2;
+	ulong iconoff;
+	ushort sacrc;
+	ushort romctl3;
+	ulong arm9;
+	ulong arm7;
+	ulong magic1;
+	ulong magic2;
+	ulong appeoff;
+	ulong romhdrsz;
+	uchar rserv3[24];
+	ulong rserv4[3];
+	ulong rserv5;
+	ushort logocrc;
+	ushort hdrcrc;
+};
+
 typedef struct Ipc Ipc;
 struct Ipc {
 	ulong cr;

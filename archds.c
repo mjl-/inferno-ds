@@ -38,12 +38,12 @@ archpowerup(void)
 	;
 }
 
+
 void
 archconfinit(void)
 {
 	conf.topofmem = EWRAMTOP;
 	m->cpuhz = 66*1000000;
-
 }
 
 void
@@ -94,19 +94,6 @@ archether(int ctlno, Ether *ether)
 	return 1;
 }
 
-/*
-void
-archconsole(void)
-{
-	uartspecial(0, 115200, 'n', &kbdq, &printq, kbdcr2nl);
-}
-
-void
-archuartpower(int port, int on)
-{
-
-}
-*/
 void
 archreboot(void)
 {

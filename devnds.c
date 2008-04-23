@@ -13,6 +13,8 @@
 #include	"arm7/touch.h"
 #include	"arm7/system.h"
 
+#define	DPRINT if(0)print
+
 enum {
 	Qdir,
 	Qctl,
@@ -108,7 +110,7 @@ void setlcdblight(int on);
 static ulong
 ndskeys(void)
 {
-	int i, c;
+	int i;
 	ulong st, b = 0;
 	static ulong ost, ob = 0;
 
@@ -197,9 +199,33 @@ vblankintr(Ureg *, void *)
 static void
 ndsinit(void)
 {
-	// TODO complete ndstab[Qrom].length,
-	// to respect mem available in the ROM cartridge
-	// add checks to see if we're not overriding anything valuable
+	NDShdr *dsh = (NDShdr*)ROMZERO;
+	ulong hasrom, hassram;
+	char *p;
+
+	// Map Game Cartridge memory to ARM9
+	*((ulong*)EXMEMCNT) &= ~0x80;
+
+	hassram = (memcmp((void*)&dsh->rserv4, "SRAM_V", 6) == 0);
+	if (hassram)
+		conf.bsram = SRAMZERO;
+
+	hasrom = (memcmp((void*)&dsh->rserv5, "PASS", 4) == 0);
+	if (hasrom)
+	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
+		if (memcmp(p, "ROMZERO9", 8) == 0)
+			break;
+
+	conf.brom = (ulong)p + 8;
+	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
+	DPRINT("sram %ld rom %ld @ brom: %08lx %.8s\n",
+		hassram, hasrom, conf.brom, (char*)p);
+
+	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
+		if (memcmp(p, "kfs wren device\n", 16) == 0){
+			DPRINT("rom @ %08lux has %.16s\n", p, p);
+			break;
+		}
 
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 }
@@ -263,7 +289,7 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	uchar reply[12];
 	int v, t, l;
 	char *p, *e;
-	int i;
+	int i, len;
 	PERSONAL_DATA *pd = PersonalData;
 	Rune name[nelem(pd->name)+1];
 	Rune message[nelem(pd->message)+1];
@@ -329,14 +355,25 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 
 		break;
 
-	case Qrom:
-		memmove(a, (void*)(ROMZERO+offset), n);
+ 	case Qrom:
+		len = ROMTOP - conf.brom;
+		if(offset < 0 || offset >= len)
+			return 0;
+		if(offset+n > len)
+			n = len - offset;
+		DPRINT("ndsread rom w %llux off %lld n %ld\n", (conf.brom+offset), offset, n);
+ 		memmove(a, (void*)(conf.brom+offset), n);
+ 		break;
+
+ 	case Qsram:
+		len = SRAMTOP - conf.bsram;
+		if(offset < 0 || offset >= len)
+			return 0;
+		if(offset+n > len)
+			n = len - offset;
+ 		memmove(a, (void*)(conf.bsram+offset), n);
 		break;
-	case Qsram:
-		memmove(a, (void*)(SRAMZERO+offset), n);
-		break;
-		
-		
+
 	default:
 		n=0;
 		break;
@@ -348,7 +385,7 @@ static long
 ndswrite(Chan* c, void* a, long n, vlong offset)
 {
 	char cmd[64], op[32], *fielnds[6];
-	int nf;
+	int nf, len;
 
 	switch((ulong)c->qid.path){
 	case Qctl:
@@ -357,14 +394,23 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		break;
 //		return touchctl(a, n);
 
-	case Qrom:
-		memmove((void*)(ROMZERO+offset), a, n);
-		break;
-	case Qsram:
-		memmove((void*)(SRAMZERO+offset), a, n);
-		break;
-		
-		
+ 	case Qrom:
+		len = ROMTOP - conf.brom;
+		if(offset < 0 || offset >= len)
+			return 0;
+		if(offset+n > len)
+			n = len - offset;
+		memmove((void*)(conf.brom+offset), a, n);
+ 		break;
+
+ 	case Qsram:
+		len = SRAMTOP - conf.bsram;
+		if(offset < 0 || offset >= len)
+			return 0;
+		if(offset+n > len)
+			n = len - offset;
+ 		memmove((void*)(conf.bsram+offset), a, n);
+
 	default:
 		error(Ebadusefd);
 	}

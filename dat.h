@@ -31,6 +31,9 @@ struct Conf
 	ulong	cpuspeed;
 	ulong	pagetable;
 
+	int		bsram;			/* start of SRAM memory */
+	int		brom;			/* start of ROM data memory */
+
 	int		bmap;			/* buttons map selection */
 	int		useminicache;		/* screen.c/lcd.c */
 	int		cansetbacklight;	/* screen.c/lcd.c */

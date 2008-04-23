@@ -11,29 +11,13 @@
 #include	"lcdreg.h"
 #define	DPRINT	if(1)iprint
 
-enum {
-	/* lccr */
-/*	Mode0 = 0x0, */
-	Mode0 = 0x10000,
-	Mode3 = 0x3,
-	Mode4 = 0x4,	/* only use mode 3 for Inferno for now */
-	Mode5 = 0x5,	/* only use mode 3 for Inferno for now */
-	
-	Modefb = 0x00020000,
-
-	Bg0enable = 0x100,
-	Bg1enable = 0x200,
-	Bg2enable = 0x400,
-	/* lcsr */
-	EnableCtlr =~0x7
+enum
+{
+	EnableCtlr =~0x7	/* lcsr */
 };
+
 #define Scrbase(n) (((n)*0x800)+0x6000000)
 #define Cbase(n) (((n)*0x4000)+0x6000000)
-
-ushort *bg0map = (ushort*)Scrbase(31);
-
-
-
 
 typedef struct {
 	Vdisplay;
@@ -60,7 +44,8 @@ setlcdblight(int on)
 {
 	LcdReg *lcd = LCDREG;
 
-	// see 'Power Management Device' in gbatek.txt
+	// TODO: fix see 'Power Management Device' in gbatek.txt
+	
 	/* enable/disable LCD */
 	if (on)
 		lcd->lcsr |= EnableCtlr;
@@ -79,12 +64,12 @@ setlcdmode(LCDdisplay *ld)
 	lcd->lccr = 0;	
   	
 	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);
- 	lcd->lccr = MODE_FB0;
+ 	lcd->lccr = MODE_FB(0);
       	vram->acr = VRAM_ENABLE|VRAM_A_LCD;
 
 	iprint("lccr=%8.8lux\n", lcd->lccr); 
 }
-static LCDdisplay main_display;	/* TO DO: limits us to a single display */
+static LCDdisplay main_display;	/* TODO: limits us to a single display */
 
 void
 setsublcdmode(void)
@@ -96,10 +81,10 @@ setsublcdmode(void)
 	vram->ccr = VRAM_ENABLE|VRAM_C_SUB_BG_0x06200000;
 
 	/* enable mode 3, enable background 3 */
-	sublcd->lccr = MODE_3_2D|DISPLAY_BG3_ACTIVE;
+	sublcd->lccr = MODE_2D(3)|DISPLAY_BG_ACTIVE(3);
 
 	/* set the background mode:  256x256 pixels of 16 bits each */
-	SUB_BG3_CR = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_PRIORITY(3);
+	SUB_BG_CR(3) = BG_BMP16_256x256 | BG_BMP_BASE(0) | BG_PRIORITY(3);
 	SUB_BG3_XDX = 1 << 8;
 	SUB_BG3_XDY = SUB_BG3_YDX = 0;
 	SUB_BG3_YDY = 1 << 8;

@@ -15,20 +15,29 @@ enum ARM9_power
 #define SCREEN_HEIGHT 192
 #define SCREEN_WIDTH  256
 
-//	Vram Control
-#define VRAM_CR			(*(vuint32*)0x04000240)
-#define VRAM_A_CR		(*(vuint8*)0x04000240)
-#define VRAM_B_CR		(*(vuint8*)0x04000241)
-#define VRAM_C_CR		(*(vuint8*)0x04000242)
-#define VRAM_D_CR		(*(vuint8*)0x04000243)
-#define VRAM_E_CR		(*(vuint8*)0x04000244)
-#define VRAM_F_CR		(*(vuint8*)0x04000245)
-#define VRAM_G_CR		(*(vuint8*)0x04000246)
-#define WRAM_CR			(*(vuint8*)0x04000247)
-#define VRAM_H_CR		(*(vuint8*)0x04000248)
-#define VRAM_I_CR		(*(vuint8*)0x04000249)
-
 #define VRAM_ENABLE		(1<<7)
+
+/*
+ * TODO:
+ *
+ * VRAM_MAIN_BG(bank, addr) for:
+ * 	- bank in {A, B, C, D}
+ * 	- addr in {0x06000000, 0x06020000, 0x06040000, 0x06060000}
+ * should give the results presented below
+ *
+ * VRAM_TEXTURE_SLOT(bank, slot) for:
+ * 	- bank in {A, B, C, D}
+ * 	- slot in {0, 1, 2, 3}
+ *
+ * VRAM_MAIN_SPRITE(bank, addr) for:
+ * 	- bank in {A, B}
+ * 	- addr in {0x06400000, 0x0642000, ...}
+ *
+ * same goes for 
+ * 	{SUB}_BG[0-3]_{CR, X0, Y0, XDX, XDY, YDX, YDY, CX, CY}
+ * 	DISPLAY_BG[0-3]_ACTIVE
+ * 	MODE_[0-5]_2D
+ */
 
 typedef enum {
 	VRAM_A_LCD	=	0,
@@ -157,46 +166,29 @@ typedef enum {
 #define VRAM_G_EXT_PALETTE ((_ext_palette *)VRAM_G)
 #define VRAM_H_EXT_PALETTE ((_ext_palette *)VRAM_H)
 
-// Display control registers
-#define DISPLAY_CR	0x04000000
-#define SUB_DISPLAY_CR	0x04001000
-#define DISPSTAT	0x04000004
+#define	ENABLE_2D	0x10000
+#define	ENABLE_3D	0x00008
 
-#define MODE_0_2D      0x10000
-#define MODE_1_2D      0x10001
-#define MODE_2_2D      0x10002
-#define MODE_3_2D      0x10003
-#define MODE_4_2D      0x10004
-#define MODE_5_2D      0x10005
+/* set display to 2d mode n in [1-6] */
+#define MODE_2D(n)	(ENABLE_2D|n)
 
 // main display only
-#define MODE_6_2D      0x10006
 #define MODE_FIFO      (3<<16)
 
-#define ENABLE_3D    (1<<3)
+/* set bg active iwth nbg in [0-3] */
+#define	DISPLAY_BG_ACTIVE(nbg)	(1 << (8 + (nbg)))
 
-#define DISPLAY_BG0_ACTIVE    (1 << 8)
-#define DISPLAY_BG1_ACTIVE    (1 << 9)
-#define DISPLAY_BG2_ACTIVE    (1 << 10)
-#define DISPLAY_BG3_ACTIVE    (1 << 11)
 #define DISPLAY_SPR_ACTIVE    (1 << 12)
+
 #define DISPLAY_WIN0_ON       (1 << 13)
 #define DISPLAY_WIN1_ON       (1 << 14)
 #define DISPLAY_SPR_WIN_ON    (1 << 15)
 
-// Main display only
-#define MODE_0_3D    (MODE_0_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_1_3D    (MODE_1_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_2_3D    (MODE_2_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_3_3D    (MODE_3_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_4_3D    (MODE_4_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_5_3D    (MODE_5_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
-#define MODE_6_3D    (MODE_6_2D | DISPLAY_BG0_ACTIVE | ENABLE_3D)
+/* set main display to 3d mode number n in [1-6] */
+#define	MODE_3D(n)	(ENABLE_3D|ENABLE_2D|DISPLAY_BG_ACTIVE(0)|n)
 
-#define MODE_FB0    (0x00020000)
-#define MODE_FB1    (0x00060000)
-#define MODE_FB2	(0x000A0000)
-#define MODE_FB3	(0x000E0000)
+/* set display to fb mode n in [0-3] */
+#define MODE_FB(n)    	(0x20000 + (0x40000 * n))
 
 #define DISPLAY_SPR_HBLANK	   (1 << 23)
 
@@ -236,17 +228,11 @@ typedef enum {
 #define BRIGHTNESS     (*(vuint16*)0x0400006C)
 #define SUB_BRIGHTNESS (*(vuint16*)0x0400106C)
 
-#define BGCTRL			((vuint16*)0x04000008)
-#define BG0_CR		(*(vuint16*)0x04000008)
-#define BG1_CR		(*(vuint16*)0x0400000A)
-#define BG2_CR		(*(vuint16*)0x0400000C)
-#define BG3_CR		(*(vuint16*)0x0400000E)
+#define BGCTRL		((vuint16*)0x04000008)
+#define BG_CR(n)	(*(vuint16*)(0x04000008 + (2 * n))) /* n in [0-3]*/
 
-#define BGCTRL_SUB		((vuint16*)0x04001008)
-#define SUB_BG0_CR     (*(vuint16*)0x04001008)
-#define SUB_BG1_CR     (*(vuint16*)0x0400100A)
-#define SUB_BG2_CR     (*(vuint16*)0x0400100C)
-#define SUB_BG3_CR     (*(vuint16*)0x0400100E)
+#define BGCTRL_SUB	((vuint16*)0x04001008)
+#define SUB_BG_CR(n)	(*(vuint16*)(0x04001008 + (2 * n))) /* n in [0-3]*/
 
 #define BG_256_COLOR   (BIT(7))
 #define BG_16_COLOR    (0)
@@ -254,11 +240,8 @@ typedef enum {
 #define BG_MOSAIC_ON   (BIT(6))
 #define BG_MOSAIC_OFF  (0)
 
+/* set bg priority to n in [0-3] */
 #define BG_PRIORITY(n) (n)
-#define BG_PRIORITY_0  (0)
-#define BG_PRIORITY_1  (1)
-#define BG_PRIORITY_2  (2)
-#define BG_PRIORITY_3  (3)
 
 #define BG_TILE_BASE(base) ((base) << 2)
 #define BG_MAP_BASE(base)  ((base) << 8)
