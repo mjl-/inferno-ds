@@ -40,6 +40,8 @@ HFILES=\
 	clock.h\
 	touch.h\
 	wifi.h\
+	dat.h\
+	fns.h\
 	../fifo.h\
 
 LIBS=\

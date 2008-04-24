@@ -1,6 +1,7 @@
 #include <u.h>
 #include "../mem.h"
 #include <kern.h>
+#include "dat.h"
 #include "fns.h"
 #include "nds.h"
 #include "../fifo.h"
@@ -14,6 +15,8 @@ void poweron(int);
 extern char bdata[];
 extern char edata[];
 extern char end[];
+
+int ndstype;
 
 void 
 memtest(char *a, char c, int n, int read){
@@ -43,6 +46,12 @@ outsh(ulong addr, ushort v)
 	*(ushort*)addr = v;
 }
 
+void
+outl(ulong addr, ulong v)
+{
+	*(ulong*)addr = v;
+}
+
 ushort
 insh(ulong addr)
 {
@@ -62,20 +71,28 @@ fifoget(void)
 }
 
 void
+fifoput(ulong cmd, ulong v)
+{
+	outl(Fifosend, cmd|v<<Fcmdwidth);
+}
+
+void
 fiforecvintr(void)
 {
-	ulong v;
-	ulong param;
+	ulong v, vv;
+	uchar buf[1];
 
 	if(insh(Fifoctl) & FifoRempty)
 		return;
 
-	v = fifoget();
-	param = v>>Fcmdwidth;
-	switch(v&Fcmdmask) {
+	vv = fifoget();
+	v = vv>>Fcmdwidth;
+	switch(vv&Fcmdmask) {
 	case F9brightness:
-		/* xxx only supported by ds lite, have to detect it */
-		if(0) brightset(param);
+		readFirmware(FWconsoletype, buf, sizeof buf);
+		ndstype = buf[0];
+		if(ndstype == Dslite)
+			brightset(v);
 		break;
 	}
 

@@ -5,7 +5,7 @@
 #include "fifo.h"
 #include "io.h"
 
-extern void (*fiforecv)(ulong);
+extern void fiforecv(ulong);
 
 static QLock getl, putl;
 static Rendez getr, putr;
