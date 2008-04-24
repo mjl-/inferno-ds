@@ -38,6 +38,7 @@ void	fpinit(void);
 ulong	getcallerpc(void*);
 ulong	getcpuid(void);
 void	gotopc(ulong);
+void	idle(void);
 
 void	icflush(void*, ulong);
 void	icflushall(void);

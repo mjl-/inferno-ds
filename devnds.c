@@ -207,11 +207,11 @@ ndsinit(void)
 	// Map Game Cartridge memory to ARM9
 	*((ulong*)EXMEMCNT) &= ~0x80;
 
-	hassram = (memcmp((void*)&dsh->rserv4, "SRAM_V", 6) == 0);
+	hassram = memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0;
 	if (hassram)
 		conf.bsram = SRAMZERO;
 
-	hasrom = (memcmp((void*)&dsh->rserv5, "PASS", 4) == 0);
+	hasrom = memcmp((void*)dsh->rserv5, "PASS", 4) == 0;
 	if (hasrom)
 	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
 		if (memcmp(p, "ROMZERO9", 8) == 0)
@@ -219,7 +219,7 @@ ndsinit(void)
 
 	conf.brom = (ulong)p + 8;
 	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
-	print("sram %ld @ bsram: %08lux rom %ld @ brom: %08lx\n",
+	print("sram %lud @ bsram: %08x rom %lud @ brom: %08x\n",
 		hassram, conf.bsram, hasrom, conf.brom);
 
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
@@ -280,14 +280,11 @@ enum {
 static long
 ndsread(Chan* c, void* a, long n, vlong offset)
 {
-	char *tmp, buf[64];
-	uchar reply[12];
+	char *tmp;
 	int v, t, l;
 	char *p, *e;
-	int i, len;
+	int len;
 	PERSONAL_DATA *pd = PersonalData;
-	Rune name[nelem(pd->name)+1];
-	Rune message[nelem(pd->message)+1];
 
 	switch((ulong)c->qid.path){
 	case Qdir:
@@ -323,13 +320,9 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		}
 		e = tmp+1024;
 
-		memmove(name, pd->name, sizeof pd->name);
-		name[pd->nameLen] = 0;
-		memmove(message, pd->message, sizeof pd->message);
-		message[pd->messageLen] = 0;
 		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pd->version, pd->theme, pd->birthMonth, pd->birthDay);
-		p = seprint(p, e, "nick %S\n", name);
-		p = seprint(p, e, "msg %S\n", message);
+		p = seprint(p, e, "nick %.*S\n", pd->nameLen, pd->name);
+		p = seprint(p, e, "msg %.*S\n", pd->messageLen, pd->message);
 		p = seprint(p, e, "alarm hour %d min %d on %d\n", pd->alarmHour, pd->alarmMinute, pd->alarmOn);
 		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pd->calX1, pd->calY1, pd->calX2, pd->calY2);
 		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pd->calX1px, pd->calY1px, pd->calX2px, pd->calY2px);
