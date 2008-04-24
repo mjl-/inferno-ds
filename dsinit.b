@@ -1,7 +1,4 @@
-#
-# ds
-#
-# TO DO: rtc, touch screen, fat fs
+# TO DO: rtc, fat fs
 
 implement Init;
 
@@ -143,10 +140,9 @@ dobind(f, t: string, flags: int)
 
 lightup()
 {
-	# backlight
 	fd := sys->open("#T/ndsctl", Sys->OWRITE);
 	if(fd != nil)
-		sys->fprint(fd, "light 1 1 0x80");
+		sys->fprint(fd, "brightness 1");
 }
 
 #
