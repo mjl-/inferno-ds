@@ -73,3 +73,8 @@ void readFirmware(uint32 address, void * destination, uint32 size) {
 	REG_SPICNT = 0;
 }
 
+void
+brightset(int v)
+{
+	writePowerManagement(PM_BACKLIGHT_REG, v&Brightmask);
+}

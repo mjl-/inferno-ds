@@ -30,6 +30,7 @@ OBJ=\
 	trap.$O\
 	logo.$O\
 	math.$O\
+	fifo.$O\
 	$CONF.root.$O\
 	$IP\
 	$DEVS\
@@ -80,6 +81,7 @@ HFILES=\
 	fpi.h\
 	screen.h\
 	lcdreg.h\
+	fifo.h\
 
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}

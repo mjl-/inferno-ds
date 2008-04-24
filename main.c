@@ -8,6 +8,7 @@
 #include "version.h"
 #include "arm7/jtypes.h"
 #include "arm7/ipc.h"
+#include "fifo.h"
 
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
@@ -114,6 +115,13 @@ serputc()
 #define doc if(0) print
 
 void
+fiforecv(ulong v)
+{
+	switch(v&Fcmdmask) {
+	}
+}
+
+void
 main(void)
 {
 	//char *p, *g, *ep;
@@ -155,6 +163,9 @@ main(void)
 	links();
 	procinit();
 	chandevreset();
+
+	doc("fifoinit...\n");
+	fifoinit();
 
 //	spllo();
 //	for(;;)	waitvblank();

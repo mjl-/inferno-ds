@@ -7,6 +7,7 @@
 #include	"lcdreg.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
+#include	"fifo.h"
 
 #include 	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
@@ -378,12 +379,23 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 static long
 ndswrite(Chan* c, void* a, long n, vlong offset)
 {
-	char cmd[64], op[32], *fielnds[6];
+	char cmd[64], *fields[6];
 	int nf, len;
 
 	switch((ulong)c->qid.path){
 	case Qctl:
-		break;
+		if(n >= sizeof cmd)
+			error(Etoobig);
+		memmove(cmd, a, n);
+		cmd[n] = 0;
+		nf = getfields(cmd, fields, nelem(fields), 1, " \n");
+		if(nf != 2)
+			error(Ebadarg);
+		if(strcmp(fields[0], "brightness") == 0)
+			fifoput(F9brightness, atoi(fields[1]));
+		else
+			error(Ebadarg);
+ 		break;
 	case Qtouchctl:
 		break;
 //		return touchctl(a, n);

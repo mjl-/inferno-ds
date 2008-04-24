@@ -1,7 +1,9 @@
 #include <u.h>
 #include "../mem.h"
 #include <kern.h>
+#include "fns.h"
 #include "nds.h"
+#include "../fifo.h"
 
 s32 getFreeSoundChannel(void);
 void VblankHandler(void);
@@ -34,6 +36,60 @@ enum
 	MaxRange = 30,
 };
 
+
+void
+outsh(ulong addr, ushort v)
+{
+	*(ushort*)addr = v;
+}
+
+ushort
+insh(ulong addr)
+{
+	return *(ushort*)addr;
+}
+
+ulong
+inl(ulong addr)
+{
+	return *(ulong*)addr;
+}
+
+ulong
+fifoget(void)
+{
+	return inl(Fiforecv);
+}
+
+void
+fiforecvintr(void)
+{
+	ulong v;
+	ulong param;
+
+	if(insh(Fifoctl) & FifoRempty)
+		return;
+
+	v = fifoget();
+	param = v>>Fcmdwidth;
+	switch(v&Fcmdmask) {
+	case F9brightness:
+		/* xxx only supported by ds lite, have to detect it */
+		if(0) brightset(param);
+		break;
+	}
+
+	REG_IF = IRQ_FIFO_NOT_EMPTY;
+}
+
+void
+fifoinit(void)
+{
+	outsh(Fifoctl, FifoRirq|Fifoenable|FifoTflush);
+	irqset(IRQ_FIFO_NOT_EMPTY, fiforecvintr);
+}
+
+
 void
 trapinit(void)
 {
@@ -57,6 +113,8 @@ trapinit(void)
 	setytrig(80);
 	irqset(IRQ_VCOUNT, VcountHandler);
 	irqen(IRQ_VCOUNT);
+
+	fifoinit();
 
 	REG_IME = 1;
 }

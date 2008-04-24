@@ -86,10 +86,12 @@
 // Fixme: does this stuff really belong in serial.h?
 
 // Power management registers
-#define PM_CONTROL_REG    0
-#define PM_BATTERY_REG    1
-#define PM_AMPLIFIER_REG  2
-#define PM_READ_REGISTER (1<<7)
+#define PM_CONTROL_REG         0
+#define PM_BATTERY_REG         1
+#define PM_AMPLIFIER_REG       2
+#define PM_AMPLIFIER_GAIN_REG  3
+#define PM_BACKLIGHT_REG       4
+#define PM_READ_REGISTER       (1<<7)
 
 // PM control register bits - power control
 #define PM_SOUND_AMP         BIT(0)     Power the sound hardware (needed to hear stuff in GBA mode too)
@@ -105,6 +107,13 @@
 #define PM_LED_SLEEP  (2<<4)   Blinking, mostly off
 #define PM_LED_BLINK  (3<<4)   Blinking, mostly on
 
+enum {
+	Brightlow,
+	Brightmedium,
+	Brighthigh,
+	Brightmax,
+	Brightmask =	0x3,
+};
 
 #define PM_AMP_OFFSET  2
 #define PM_AMP_ON      1
