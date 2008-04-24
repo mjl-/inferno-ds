@@ -71,7 +71,7 @@ i$CONF.nds: i$CONF arm7/i$CONF
 		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
 	
-	# append rom data at end of .nds
+	# append rom data at end of .nds (see root/dis/mkkfs)
 	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
 	echo -n ROMZERO9 >> i$CONF.nds
 	cat ds.kfs >> i$CONF.nds

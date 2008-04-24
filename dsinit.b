@@ -87,20 +87,20 @@ init()
 	cfd := sys->open("/dev/consctl", Sys->OWRITE);
 	if(cfd != nil)
 		sys->fprint(cfd, "rawon");
-#	for(;;){
-#		(rootsource, timefile) = askrootsource(localok, netok);
-#		if(rootsource == nil)
-#			break;	# internal
-#		(rc, nil) := sys->stat(rootsource+"/dis/sh.dis");
-#		if(rc < 0)
-#			err("%s has no shell");
-#		else if(sys->bind(rootsource, "/", Sys->MAFTER) < 0)
-#			sys->print("can't bind %s on /: %r\n", rootsource);
-#		else{
-#			sys->bind(rootsource+"/dis", "/dis", Sys->MBEFORE|Sys->MCREATE);
-#			break;
-#		}
-#	}
+	for(;;){
+		(rootsource, timefile) = askrootsource(localok, netok);
+		if(rootsource == nil)
+			break;	# internal
+		(rc, nil) := sys->stat(rootsource+"/dis/sh.dis");
+		if(rc < 0)
+			err("%s has no shell");
+		else if(sys->bind(rootsource, "/", Sys->MAFTER) < 0)
+			sys->print("can't bind %s on /: %r\n", rootsource);
+		else{
+			sys->bind(rootsource+"/dis", "/dis", Sys->MBEFORE|Sys->MCREATE);
+			break;
+		}
+	}
 	cfd = nil;
 
 	setsysname("ds");			# set system name
@@ -113,7 +113,6 @@ init()
 	sys->chdir("/");
 
 	user := rdenv("user", "inferno");
-	sys->print("user %s init()\n", user);
 	if(userok(user)){
 		start("wm/wm", nil);
 		exit;

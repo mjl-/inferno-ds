@@ -1,0 +1,12 @@
+#!/dis/sh.dis -n
+
+proto=/os/ds/root/lib/proto/dsproto
+kfs=/os/ds/ds.kfs
+archfs=/os/ds/ds.archfs
+
+disk/mkfs -a $proto > $archfs
+zeros 1024 32768 > $kfs
+mount -c {disk/kfs -r $kfs} /n/kfs
+disk/mkext -u -d /n/kfs < $archfs
+unmount /n/kfs
+

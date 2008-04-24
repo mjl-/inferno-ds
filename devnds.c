@@ -218,14 +218,8 @@ ndsinit(void)
 
 	conf.brom = (ulong)p + 8;
 	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
-	DPRINT("sram %ld rom %ld @ brom: %08lx %.8s\n",
-		hassram, hasrom, conf.brom, (char*)p);
-
-	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
-		if (memcmp(p, "kfs wren device\n", 16) == 0){
-			DPRINT("rom @ %08lux has %.16s\n", p, p);
-			break;
-		}
+	print("sram %ld @ bsram: %08lux rom %ld @ brom: %08lx\n",
+		hassram, conf.bsram, hasrom, conf.brom);
 
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 }
