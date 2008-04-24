@@ -25,6 +25,19 @@
 #include "../mem.h"
 #include "nds.h"
 
+
+static void
+MIC_On(void)
+{
+	PM_SetAmp(PM_AMP_ON);
+}
+
+static void
+MIC_Off(void)
+{
+	PM_SetAmp(PM_AMP_OFF);
+}
+
 void 
 PM_SetAmp(u8 control) 
 {
@@ -52,9 +65,11 @@ MIC_ReadData() {
 	res2 = REG_SPIDATA;
 	return (((res & 0x7F) << 1) | ((res2>>7)&1));
 }
+
 static u8* micbuf = 0;
 static int micbuflen = 0;
 static int curlen = 0;
+
 void 
 StartRecording(u8* buffer, int length) 
 {
@@ -66,6 +81,7 @@ StartRecording(u8* buffer, int length)
 	TIMER0_DATA = 0xF7CF;
 	TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1 | TIMER_IRQ_REQ;
 }
+
 int 
 StopRecording() 
 {
@@ -74,6 +90,7 @@ StopRecording()
 	micbuf = 0;
 	return curlen;
 }
+
 void	
 ProcessMicrophoneTimerIRQ() 
 {

@@ -66,20 +66,3 @@ int StopRecording(void);
 void ProcessMicrophoneTimerIRQ();
 
 void PM_SetAmp(u8 control);
-
-
-// Turn the microphone on 
-
-static  void MIC_On(void) {
-  PM_SetAmp(PM_AMP_ON);
-}
-
-// Turn the microphone off 
-
-static  void MIC_Off(void) {
-
-  PM_SetAmp(PM_AMP_OFF);
-}
-
-
-
