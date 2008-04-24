@@ -23,7 +23,24 @@ OFILES=\
 	interrupts.$O\
 	userSettings.$O\
 
-HFILES=
+HFILES=\
+	../mem.h\
+	nds.h\
+	jtypes.h\
+	bios.h\
+	card.h\
+	dma.h\
+	interrupts.h\
+	ipc.h\
+	memory.h\
+	system.h\
+	serial.h\
+	timers.h\
+	audio.h\
+	clock.h\
+	touch.h\
+	wifi.h\
+
 LIBS=\
 	kern\
 

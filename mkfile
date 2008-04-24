@@ -39,6 +39,36 @@ OBJ=\
 	$MISC\
 	$OTHERS\
 
+ARM7SRC=\
+	arm7/l.s\
+	arm7/div.s\
+	arm7/main.c\
+	arm7/ipc.c\
+	arm7/spi.c\
+	arm7/clock.c\
+	arm7/system.c\
+	arm7/serial.c\
+	arm7/touch.c\
+	arm7/microphone.c\
+	arm7/interrupts.c\
+	arm7/userSettings.c\
+	mem.h\
+	arm7/nds.h\
+	arm7/jtypes.h\
+	arm7/bios.h\
+	arm7/card.h\
+	arm7/dma.h\
+	arm7/interrupts.h\
+	arm7/ipc.h\
+	arm7/memory.h\
+	arm7/system.h\
+	arm7/serial.h\
+	arm7/timers.h\
+	arm7/audio.h\
+	arm7/clock.h\
+	arm7/touch.h\
+	arm7/wifi.h\
+
 LIBNAMES=${LIBS:%=lib%.a}
 LIBDIRS=$LIBS
 
@@ -48,6 +78,8 @@ HFILES=\
 	fns.h\
 	io.h\
 	fpi.h\
+	screen.h\
+	lcdreg.h\
 
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
@@ -60,17 +92,15 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
 	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
 
-arm7/i$CONF arm7/i$CONF.p9:NV:
+arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
 	cd arm7; mk CONF=$CONF
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$CONF
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
-		\
 		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
 		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
-	
 	# append rom data at end of .nds (see root/dis/mkkfs)
 	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
 	echo -n ROMZERO9 >> i$CONF.nds
