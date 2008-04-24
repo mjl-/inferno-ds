@@ -21,7 +21,7 @@ void	outl(int reg, ulong l);
 
 
 void
-fifoinit(void)
+fifolink(void)
 {
 	outsh(Fifoctl, FifoTirq|FifoRirq|Fifoenable|FifoTflush);
 	intrenable(0, FSENDbit, fifosendintr, nil, "fifosend");

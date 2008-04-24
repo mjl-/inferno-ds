@@ -164,9 +164,6 @@ main(void)
 	procinit();
 	chandevreset();
 
-	doc("fifoinit...\n");
-	fifoinit();
-
 //	spllo();
 //	for(;;)	waitvblank();
 //	for(;;);

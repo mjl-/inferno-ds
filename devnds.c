@@ -207,11 +207,12 @@ ndsinit(void)
 	// Map Game Cartridge memory to ARM9
 	*((ulong*)EXMEMCNT) &= ~0x80;
 
-	hassram = memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0;
+	hassram = (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0) &&
+		(memcmp((void*)dsh->rserv5, "PASS", 4) == 0);
 	if (hassram)
 		conf.bsram = SRAMZERO;
 
-	hasrom = memcmp((void*)dsh->rserv5, "PASS", 4) == 0;
+	hasrom = (dsh->romhdrsz == 0x200);
 	if (hasrom)
 	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
 		if (memcmp(p, "ROMZERO9", 8) == 0)
@@ -219,7 +220,7 @@ ndsinit(void)
 
 	conf.brom = (ulong)p + 8;
 	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
-	print("sram %lud @ bsram: %08x rom %lud @ brom: %08x\n",
+	print("ndsinit: sram %lud @ %08x rom %lud @ %08x\n",
 		hassram, conf.bsram, hasrom, conf.brom);
 
 	intrenable(0, VBLANKbit, vblankintr, 0, 0);
@@ -403,6 +404,10 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
  		break;
 
  	case Qsram:
+		/* check before overriding anyone else's memory */
+		if (!conf.bsram)
+			return 0;
+
 		len = SRAMTOP - conf.bsram;
 		if(offset < 0 || offset >= len)
 			return 0;

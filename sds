@@ -19,7 +19,7 @@ dev
 
 	nds
 #	dldi
-	audio invhit
+	audio
 #	tinyfs
 
 ip
@@ -78,12 +78,15 @@ port
 	xalloc
 
 link	
+	fifo
 #	lcd
 #	ether589
 #	ethertdk
 #	pppmedium ppp compress
 
 misc
+	logo
+	invhit
 
 code
 	int main_pool_pcnt = 50;

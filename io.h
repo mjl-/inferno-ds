@@ -143,7 +143,7 @@ struct NDShdr{
 	ulong romhdrsz;
 	uchar rserv3[24];
 	ulong rserv4[3];
-	ulong rserv5;
+	ulong rserv5[1];
 	ushort logocrc;
 	ushort hdrcrc;
 };

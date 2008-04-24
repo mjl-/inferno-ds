@@ -28,9 +28,7 @@ OBJ=\
 	defont.$O\
 	main.$O\
 	trap.$O\
-	logo.$O\
 	math.$O\
-	fifo.$O\
 	$CONF.root.$O\
 	$IP\
 	$DEVS\
