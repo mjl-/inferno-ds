@@ -7,11 +7,9 @@ OBJTYPE=arm #thumb
 <$ROOT/mkfiles/mkfile-$SYSTARG-$OBJTYPE	#set vars based on target system
 
 KTZERO7=0x03800000
-KDZERO7=$KTZERO7
 
 OFILES=\
 	l.$O\
-	div.$O\
 	main.$O\
 	ipc.$O\
 	spi.$O\
@@ -52,9 +50,10 @@ CFLAGS=-wFV -I $ROOT/Inferno/arm/include -I $ROOT/include -r
 default:V: i$CONF i$CONF.p9
 
 i$CONF: $OFILES
-	$LD -o $target -H4 -R0 -T$KTZERO7 -D$KDZERO7 -l $OFILES $libs $SYSLIBS
+	$LD -o $target -H0 -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
+
 i$CONF.p9: $OFILES
-	$LD -o $target -R0 -T$KTZERO7 -D$KDZERO7 -l $OFILES $libs $SYSLIBS
+	$LD -o $target -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
 	ksize $target
 
 syms:   $OFILES

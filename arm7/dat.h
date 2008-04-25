@@ -11,4 +11,3 @@ enum {
 	Dsique =	FWique,
 };
 extern int ndstype;
-

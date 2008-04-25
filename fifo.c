@@ -69,11 +69,10 @@ fiforecvintr(Ureg*, void*)
 {
 	ulong v;
 
-	if(insh(Fifoctl) & FifoRempty)
-		return;
-
-	v = inl(Fiforecv);
-	fiforecv(v);
+	while(!(insh(Fifoctl) & FifoRempty)) {
+		v = inl(Fiforecv);
+		fiforecv(v);
+	}
 	intrclear(FRECVbit, 0);
 }
 

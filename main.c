@@ -9,6 +9,8 @@
 #include "arm7/jtypes.h"
 #include "arm7/ipc.h"
 #include "fifo.h"
+#include <keyboard.h>
+
 
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
@@ -114,10 +116,55 @@ serputc()
 #define idoc(m) if(1) uartputs(m, strlen(m))
 #define doc if(0) print
 
+
+// TODO use Dbgbtn7 to enable debug; by toggling Conf.bmap = 2
+static	Rune	rockermap[3][Numbtns] ={
+	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
+	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
+};
+
+/*
+ * TODO
+ * - take care of changes in buttons, penup/pendown, rockermap, handedness
+ * - screen orientation switch between landscape/portrait
+ */
+
 void
-fiforecv(ulong v)
+fiforecv(ulong vv)
 {
-	switch(v&Fcmdmask) {
+	ulong v;
+	int i;
+
+	v = vv>>Fcmdwidth;
+	switch(vv&Fcmdmask) {
+	case F7keyup:
+		/* lid controls lcd backlight */
+		/*
+		if(kpressed(1<<Lclose, ost, st))
+			setlcdblight(1);
+		if(kreleased(1<<Lclose, ost, st))
+			setlcdblight(0);
+		*/
+
+		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
+			if(i == Lbtn || i == Rbtn)
+				continue;
+			else if(v & (1<<i))
+				kbdputc(kbdq, rockermap[conf.bmap][i]);
+		break;
+	case F7keydown:
+		/* xxx use for repeat, use for mouse mod, Lclose */
+		break;
+	case F7mousedown:
+		//print("mousedown %lux %lud %lud\n", v, v&0xff, (v>>8)&0xff);
+		mousetrack(1, v&0xff, (v>>8)&0xff, 0);
+		break;
+	case F7mouseup:
+		mousetrack(0, 0, 0, 1);
+		break;
+	default:
+		break;
 	}
 }
 

@@ -6,6 +6,10 @@ enum {
 	F9brightness =	0,
 
 	/* from arm7 to arm9 */
+	F7keyup,
+	F7keydown,
+	F7mousedown,
+	F7mouseup,
 };
 
 

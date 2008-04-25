@@ -201,13 +201,14 @@ touchReadXY(touchPosition *tp)
 	int16 dmaxy, dmaxx, dmax;
 	u8 error, errloc, usedstylus, i;
 	uint32 oldIME;
+	int x, y;
+	PERSONAL_DATA *pd=PersonalData;
 
 #ifdef ARM7DIVFIXED
 	static int tscinit = 0;
 	static s32 xscale, yscale;
 	static s32 xoff, yoff;
 	s16 px,py;
-	PERSONAL_DATA *pd=PersonalData;
 
 	if (!tscinit) {
 		xscale=((pd->calX2px - pd->calX1px)<<(19-15))/(pd->calX2 - pd->calX1);
@@ -260,6 +261,7 @@ touchReadXY(touchPosition *tp)
 		}
 
 #ifdef ARMDIVFIXED
+if(0) {
 		// TODO get this right; ie: tp->x / 15 hangs arm7 cpu
 //		px=(tp->x*xscale-xoff+xscale/2)>>19;
 //		py=(tp->y*yscale-yoff+yscale/2)>>19;
@@ -280,6 +282,21 @@ touchReadXY(touchPosition *tp)
 		tp->px = tp->x;
 		tp->py = tp->y;
 #endif
+
+		x = (int)((tp->x - (int)pd->calX1) * ((int)pd->calX2px - (int)pd->calX1px) / ((int)pd->calX2 - (int)pd->calX1)) + pd->calX1px - 1;
+		y = (int)((tp->y - (int)pd->calY1) * ((int)pd->calY2px - (int)pd->calY1px) / ((int)pd->calY2 - (int)pd->calY1)) + pd->calY1px - 1;
+
+		if(x < 0)
+			x = 0;
+		else if(x > Scrwidth-1)
+			x = Scrwidth-1;
+		if(y < 0)
+			y = 0;
+		else if(y > Scrheight-1)
+			y = Scrheight-1;
+
+		tp->px = x;
+		tp->py = y;
 	}else{
 		errloc = 3;
 		tp->x = 0;

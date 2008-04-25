@@ -71,6 +71,15 @@ fifoget(void)
 }
 
 void
+nbfifoput(ulong cmd, ulong v)
+{
+	if(insh(Fifoctl) & FifoTfull)
+		return;
+	outl(Fifosend, cmd|v<<Fcmdwidth);
+}
+
+
+void
 fifoput(ulong cmd, ulong v)
 {
 	outl(Fifosend, cmd|v<<Fcmdwidth);
@@ -82,18 +91,17 @@ fiforecvintr(void)
 	ulong v, vv;
 	uchar buf[1];
 
-	if(insh(Fifoctl) & FifoRempty)
-		return;
-
-	vv = fifoget();
-	v = vv>>Fcmdwidth;
-	switch(vv&Fcmdmask) {
-	case F9brightness:
-		readFirmware(FWconsoletype, buf, sizeof buf);
-		ndstype = buf[0];
-		if(ndstype == Dslite)
-			brightset(v);
-		break;
+	while(!(insh(Fifoctl) & FifoRempty)) {
+		vv = fifoget();
+		v = vv>>Fcmdwidth;
+		switch(vv&Fcmdmask) {
+		case F9brightness:
+			readFirmware(FWconsoletype, buf, sizeof buf);
+			ndstype = buf[0];
+			if(ndstype == Dslite)
+				brightset(v);
+			break;
+		}
 	}
 
 	REG_IF = IRQ_FIFO_NOT_EMPTY;
@@ -124,14 +132,22 @@ trapinit(void)
 	
 	irqInit();
 	initclkirq();
+
+	fifoinit();
+
+/*
 	irqset(IRQ_VBLANK, VblankHandler);
 	irqen(IRQ_VBLANK);
-	
+*/
+
+	irqset(IRQ_VBLANK, VcountHandler);
+	irqen(IRQ_VBLANK);
+
+/*
 	setytrig(80);
 	irqset(IRQ_VCOUNT, VcountHandler);
 	irqen(IRQ_VCOUNT);
-
-	fifoinit();
+*/
 
 	REG_IME = 1;
 }
@@ -166,17 +182,48 @@ VcountHandler(void)
 {
 	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
-	static int lastpress = -1;
-	uint16 press, x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
+	static ushort lastxypress = ~0;
+	static ushort lastbpress = ~0;
+	ushort xypress, bpress;
+	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
 	int i, t1, t2;
 	uint32 temp;
 	uint8 ct[sizeof(IPC->time.curtime)];
+	ulong mask, changed, up;
 
 	// Update the heartbeat
 	heartbeat++;
 
-	press = REG_KEYXY;
-	if (!((press^lastpress) & Pendown)) {
+	xypress = REG_KEYXY;
+	if((~xypress & Pendown)) {
+		touchReadXY(&tp);
+		nbfifoput(F7mousedown, tp.px|tp.py<<8);
+	} else if((~lastxypress & Pendown)) {
+		nbfifoput(F7mouseup, 0);
+	}
+	lastxypress = xypress;
+
+	bpress = REG_KEYINPUT;
+	changed = bpress^lastbpress;
+	mask = 1;
+	up = 0;
+	for(i = 0; changed && i < 10; i++) {
+		if(mask & changed) {
+			if(bpress&(1<<i))
+				up |= 1<<i;
+			changed &= ~(1<<i);
+		}
+		mask <<= 1;
+	}
+	lastbpress = bpress;
+	if(up)
+		nbfifoput(F7keyup, up);
+
+/*
+	if((press^lastpress) & Pendown) {
+		lastpress = press;
+		press |= Pendown;
+	} else {
 		touchReadXY(&tp);
 		if ( tp.x == 0 || tp.y == 0 ) {
 			press |= Pendown;
@@ -189,12 +236,11 @@ VcountHandler(void)
 			z1 = tp.z1;
 			z2 = tp.z2;
 		}
-	} else {
-		lastpress = press;
-		press |= Pendown;
 	}
+*/
 	
 	// Read the time
+/*
 	rtcGetTime((uint8 *)ct);
 	BCDToInteger((uint8 *)&(ct[1]), 7);
 
@@ -202,8 +248,10 @@ VcountHandler(void)
 	batt = touchRead(Tscgetbattery);
 	aux  = touchRead(Tscgetaux);
 	temp = touchReadTemperature(&t1, &t2);
+*/
 
 	// Update the IPC struct
+/*
 	IPC->heartbeat 		= heartbeat;
 	IPC->touchX			= x; // x/14-24
 	IPC->touchY			= y; // y/18-12
@@ -217,12 +265,15 @@ VcountHandler(void)
 	IPC->tdiode1		= t1;
 	IPC->tdiode2		= t2;
 	IPC->temperature	= temp;
+*/
 	
+/*
 	for(i=0; i<sizeof(ct); i++) {
 		IPC->time.curtime[i] = ct[i];
 	}
 
 	DMTEST((char*)(IPC), 0x60, 1, 0);
+*/
 	
 	// ack. ints
 	REG_IF = IRQ_VCOUNT;

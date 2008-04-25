@@ -17,7 +17,6 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 
 KTZERO=0x02004010
 KTZERO7=0x03800000
-KDZERO=$KTZERO
 
 OBJ=\
 	l.$O\
@@ -40,7 +39,6 @@ OBJ=\
 
 ARM7SRC=\
 	arm7/l.s\
-	arm7/div.s\
 	arm7/main.c\
 	arm7/ipc.c\
 	arm7/spi.c\
@@ -67,6 +65,8 @@ ARM7SRC=\
 	arm7/clock.h\
 	arm7/touch.h\
 	arm7/wifi.h\
+	arm7/dat.h\
+	arm7/fns.h\
 
 LIBNAMES=${LIBS:%=lib%.a}
 LIBDIRS=$LIBS
@@ -90,7 +90,7 @@ install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $IN
 
 i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target  -H4  -T$KTZERO    -l $OBJ $CONF.$O $LIBFILES
+	$LD -o $target -H0 -T$KTZERO -l $OBJ $CONF.$O $LIBFILES
 
 arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
 	cd arm7; mk CONF=$CONF
@@ -108,7 +108,7 @@ i$CONF.nds: i$CONF arm7/i$CONF
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target -R0 -T$KTZERO -D$KDZERO   -l $OBJ $CONF.$O $LIBFILES
+	$LD -o $target -R4 -T$KTZERO -l $OBJ $CONF.$O $LIBFILES
 	ksize $target
 
 i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
