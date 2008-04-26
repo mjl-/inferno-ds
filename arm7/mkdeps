@@ -1,0 +1,41 @@
+# workaround to not maintain mkfiles in sync
+# NOTE: maybe it's not a very good idea, but works for now
+
+$AWK -v 'conf='$CONF '
+	BEGIN{
+		if(ARGC < 2)
+			exit
+
+		if (split(ARGV[1], fields, "/"))
+			dir=fields[1]
+		else
+			exit
+	}
+
+	/^[O|H]FILES=/ {collect=1; next}
+
+	/^[ 	]*$/ {collect=0}
+	
+	collect {
+		if(match($1, ".+.\\$O")){
+			cfile=$1
+			sub("\\$O", "c", cfile)
+			if(system("test -e " dir"/"cfile) == 0)
+				deps[n++]=dir"/"cfile
+
+			sfile=$1
+			sub("\\$O", "s", sfile)
+			if(system("test -e " dir"/"sfile) == 0)
+				deps[n++]=dir"/"sfile
+		}else{
+			deps[n++]=dir"/"$1
+		}
+	}
+
+	END{
+		print "ARM7SRC=\\"
+		for (i=0; i < n; i++)
+			print "	"deps[i]
+		print ""
+	}
+' $*

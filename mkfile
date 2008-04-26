@@ -37,36 +37,7 @@ OBJ=\
 	$MISC\
 	$OTHERS\
 
-ARM7SRC=\
-	arm7/l.s\
-	arm7/main.c\
-	arm7/ipc.c\
-	arm7/spi.c\
-	arm7/clock.c\
-	arm7/system.c\
-	arm7/serial.c\
-	arm7/touch.c\
-	arm7/microphone.c\
-	arm7/interrupts.c\
-	arm7/userSettings.c\
-	mem.h\
-	arm7/nds.h\
-	arm7/jtypes.h\
-	arm7/bios.h\
-	arm7/card.h\
-	arm7/dma.h\
-	arm7/interrupts.h\
-	arm7/ipc.h\
-	arm7/memory.h\
-	arm7/system.h\
-	arm7/serial.h\
-	arm7/timers.h\
-	arm7/audio.h\
-	arm7/clock.h\
-	arm7/touch.h\
-	arm7/wifi.h\
-	arm7/dat.h\
-	arm7/fns.h\
+<| arm7/mkdeps arm7/mkfile # sets $ARM7SRC
 
 LIBNAMES=${LIBS:%=lib%.a}
 LIBDIRS=$LIBS
@@ -121,8 +92,6 @@ i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
 
 clock.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
 devether.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
-devsapcm.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
-fault386.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
 main.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
 trap.$O:	$ROOT/Inferno/$OBJTYPE/include/ureg.h
 
