@@ -134,6 +134,7 @@ void
 fiforecv(ulong vv)
 {
 	ulong v;
+	static uchar mouse = 0;
 	int i;
 
 	v = vv>>Fcmdwidth;
@@ -148,17 +149,23 @@ fiforecv(ulong vv)
 		*/
 
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
-			if(i == Lbtn || i == Rbtn)
-				continue;
+			if(i == Lbtn)
+				mouse &= ~(1<<2);
+			else if(i == Rbtn)
+				mouse &= ~(1<<1);
 			else if(v & (1<<i))
 				kbdputc(kbdq, rockermap[conf.bmap][i]);
 		break;
 	case F7keydown:
-		/* xxx use for repeat, use for mouse mod, Lclose */
+		/* xxx use for repeat, Lclose */
+		if(v&(1<<Lbtn))
+			mouse |= 1<<2;
+		if(v&(1<<Rbtn))
+			mouse |= 1<<1;
 		break;
 	case F7mousedown:
 		//print("mousedown %lux %lud %lud\n", v, v&0xff, (v>>8)&0xff);
-		mousetrack(1, v&0xff, (v>>8)&0xff, 0);
+		mousetrack(mouse ? mouse : 1, v&0xff, (v>>8)&0xff, 0);
 		break;
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);

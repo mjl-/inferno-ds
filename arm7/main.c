@@ -181,7 +181,7 @@ vblankintr(void)
 	static ushort lastbpress = ~0;
 	ushort xypress, bpress;
 	int i;
-	ulong mask, changed, up;
+	ulong mask, changed, up, down;
 #ifdef notyet
 	uint8 ct[sizeof(IPC->time.curtime)];
 	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
@@ -203,11 +203,13 @@ vblankintr(void)
 	bpress = REG_KEYINPUT;
 	changed = bpress^lastbpress;
 	mask = 1;
-	up = 0;
+	down = up = 0;
 	for(i = 0; changed && i < 10; i++) {
 		if(mask & changed) {
 			if(bpress&(1<<i))
 				up |= 1<<i;
+			else
+				down |= 1<<i;
 			changed &= ~(1<<i);
 		}
 		mask <<= 1;
@@ -215,6 +217,8 @@ vblankintr(void)
 	lastbpress = bpress;
 	if(up)
 		nbfifoput(F7keyup, up);
+	if(down)
+		nbfifoput(F7keydown, down);
 
 	vblankaudio();
 
