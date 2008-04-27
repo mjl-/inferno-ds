@@ -7,8 +7,8 @@
 #include "../fifo.h"
 
 s32 getFreeSoundChannel(void);
-void VblankHandler(void);
-void VcountHandler(void);
+void vblankintr(void);
+void vblankaudio(void);
 void poweron(int);
 
 /* So we can initialize our own data section and bss */
@@ -135,12 +135,7 @@ trapinit(void)
 
 	fifoinit();
 
-/*
-	irqset(IRQ_VBLANK, VblankHandler);
-	irqen(IRQ_VBLANK);
-*/
-
-	irqset(IRQ_VBLANK, VcountHandler);
+	irqset(IRQ_VBLANK, vblankintr);
 	irqen(IRQ_VBLANK);
 
 /*
@@ -178,27 +173,29 @@ main(int argc, char ** argv)
 }
 
 void
-VcountHandler(void)
+vblankintr(void)
 {
 	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
 	static ushort lastxypress = ~0;
 	static ushort lastbpress = ~0;
 	ushort xypress, bpress;
-	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
-	int i, t1, t2;
-	uint32 temp;
-	uint8 ct[sizeof(IPC->time.curtime)];
+	int i;
 	ulong mask, changed, up;
+#ifdef notyet
+	uint8 ct[sizeof(IPC->time.curtime)];
+	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
+	int t1, t2;
+	uint32 temp;
+#endif
 
-	// Update the heartbeat
 	heartbeat++;
 
 	xypress = REG_KEYXY;
-	if((~xypress & Pendown)) {
+	if(~xypress & Pendown) {
 		touchReadXY(&tp);
 		nbfifoput(F7mousedown, tp.px|tp.py<<8);
-	} else if((~lastxypress & Pendown)) {
+	} else if(~lastxypress & Pendown) {
 		nbfifoput(F7mouseup, 0);
 	}
 	lastxypress = xypress;
@@ -218,6 +215,8 @@ VcountHandler(void)
 	lastbpress = bpress;
 	if(up)
 		nbfifoput(F7keyup, up);
+
+	vblankaudio();
 
 /*
 	if((press^lastpress) & Pendown) {
@@ -276,8 +275,8 @@ VcountHandler(void)
 */
 	
 	// ack. ints
-	REG_IF = IRQ_VCOUNT;
-	*(ulong*)IRQCHECK7 = IRQ_VCOUNT;
+	REG_IF = IRQ_VBLANK;
+	*(ulong*)IRQCHECK7 = IRQ_VBLANK;
 }
 
 void 
@@ -303,7 +302,8 @@ getFreeSoundChannel()
 }
 
 void
-VblankHandler(void){
+vblankaudio(void)
+{
 	u32 i;
 	TransferSound *snd = IPC->soundData;
 
