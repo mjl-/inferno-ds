@@ -21,10 +21,10 @@
 ---------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
+#include "../io.h"
 #include <kern.h>
-
 #include "nds.h"
-//#include <time.h>
+#include "fns.h"
 
 #define RTC_DELAY 48
 #define CS_0    (1<<6)
@@ -37,13 +37,17 @@
 #define SIO_in  (1)
 
 void 
-BCDToInteger(uint8 * data, uint32 length) {
+BCDToInteger(uint8 * data, uint32 length)
+{
 	u32 i;
 	for (i = 0; i < length; i++) {
 		data[i] = (data[i] & 0xF) + ((data[i] & 0xF0)>>4)*10;
 	}
 }
-void integerToBCD(uint8 * data, uint32 length) {
+
+void
+integerToBCD(uint8 * data, uint32 length)
+{
 	u32 i;
 	for (i = 0; i < length; i++) {
 		int high, low;
@@ -51,7 +55,10 @@ void integerToBCD(uint8 * data, uint32 length) {
 		data[i] = (high<<4) | low;
 	}
 }
-void rtcTransaction(uint8 * cmd, uint32 cmdLength, uint8 * res, uint32 resLength) {
+
+void
+rtcTransaction(uint8 * cmd, uint32 cmdLength, uint8 * res, uint32 resLength)
+{
 	uint32 bit;
 	uint8 data;
 	
@@ -91,6 +98,7 @@ void rtcTransaction(uint8 * cmd, uint32 cmdLength, uint8 * res, uint32 resLength
 	RTC_CR8 = CS_0 | SCK_1;
 	swiDelay(RTC_DELAY);
 }
+
 void 
 rtcReset(void) 
 {
@@ -104,7 +112,10 @@ rtcReset(void)
 		rtcTransaction(cmd, 2, 0, 0);
 	}
 }
-void rtcGetTimeAndDate(uint8 * time) {
+
+void
+rtcGetTimeAndDate(uint8 * time)
+{
 	uint8 cmd, status;
 	cmd = READ_TIME_AND_DATE;
 	rtcTransaction(&cmd, 1, time, 7);
@@ -116,7 +127,10 @@ void rtcGetTimeAndDate(uint8 * time) {
 	}
 	BCDToInteger(time,7);
 }
-void rtcSetTimeAndDate(uint8 * time) {
+
+void
+rtcSetTimeAndDate(uint8 * time)
+{
 	uint8 cmd[8];
 	
 	int i;
@@ -126,7 +140,10 @@ void rtcSetTimeAndDate(uint8 * time) {
 	cmd[0] = WRITE_TIME_AND_DATE;
 	rtcTransaction(cmd, 8, 0, 0);
 }
-void rtcGetTime(uint8 * time) {
+
+void
+rtcGetTime(uint8 * time)
+{
 	uint8 cmd, status;
 	cmd = READ_TIME;
 	rtcTransaction(&cmd, 1, time, 3);
@@ -138,7 +155,10 @@ void rtcGetTime(uint8 * time) {
 	}
 	BCDToInteger(time,3);
 }
-void rtcSetTime(uint8 * time) {
+
+void
+rtcSetTime(uint8 * time)
+{
 	uint8 cmd[4];
 	
 	int i;
@@ -148,7 +168,10 @@ void rtcSetTime(uint8 * time) {
 	cmd[0] = WRITE_TIME;
 	rtcTransaction(cmd, 4, 0, 0);
 }
-void syncRTC() {
+
+void
+syncRTC(void)
+{
 	if (++IPC->time.rtc.seconds == 60 ) {
 		IPC->time.rtc.seconds = 0;
 		if (++IPC->time.rtc.minutes == 60) {
@@ -160,14 +183,17 @@ void syncRTC() {
 	}
 	
 	IPC->unixTime++;
+	intrclear(UARTbit, 0);
 }
 
-void initclkirq(void) {
+void
+initclkirq(void)
+{
 	uint8 cmd[4];
 	struct Tm currentTime;
 	
 	REG_RCNT = 0x8100;
-	irqset(IRQ_NETWORK, syncRTC);
+	intrenable(UARTbit, syncRTC, 0);
 	rtcReset();
 	cmd[0] = READ_STATUS_REG2;
 	rtcTransaction(cmd, 1, &cmd[1], 1);

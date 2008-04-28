@@ -22,8 +22,10 @@
 ---------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
+#include "../io.h"
 #include "nds.h"
-//#include <stdlib.h>
+#include "dat.h"
+
 static u8 wastouched = 0;
 static u8 nrange1 = 0;
 static u8 nrange2 = 0;
@@ -72,8 +74,8 @@ uint16
 touchRead(uint32 cmd) 
 {
 	uint16 res, res2;
-	uint32 oldIME = REG_IME;
-	REG_IME=0;
+	uint32 oldIME = INTREG->ime;
+	INTREG->ime=0;
 	busywait();
 	REG_SPICNT=Spien|Spi2mhz|Spitouch|Spicont; //0x8A01;
 	REG_SPIDATA=cmd;
@@ -85,7 +87,7 @@ touchRead(uint32 cmd)
 	REG_SPIDATA=0;
 	busywait();
 	res2=REG_SPIDATA>>3;
-	REG_IME=oldIME;
+	INTREG->ime=oldIME;
 	return ((res & 0x7F) << 5) | res2;
 }
 uint32 touchReadTemperature(int * t1, int * t2) {
@@ -203,24 +205,23 @@ touchReadXY(touchPosition *tp)
 	uint32 oldIME;
 	int x, y;
 	PERSONAL_DATA *pd=PersonalData;
+	s16 px, py;
 
-#ifdef ARM7DIVFIXED
-	static int tscinit = 0;
-	static s32 xscale, yscale;
-	static s32 xoff, yoff;
-	s16 px,py;
+	static char tscinit=0;
+	static int xscale, yscale;
+	static int xoffset, yoffset;
 
-	if (!tscinit) {
-		xscale=((pd->calX2px - pd->calX1px)<<(19-15))/(pd->calX2 - pd->calX1);
-		yscale=((pd->calY2px-pd->calY1px)<<(19-15))/((pd->calY2)-(pd->calY1));
-		xoff=((pd->calX1+pd->calX2)*xscale-((pd->calX1px+pd->calX2px)<<(19-15)))/2;
-		yoff=((pd->calY1+pd->calY2)*yscale-((pd->calY1px+pd->calY2px)<<(19-15)))/2;
-		tscinit=1;
+	if (!tscinit){
+		xscale = ((pd->calX2px - pd->calX1px) << 19) / ((pd->calX2) - (pd->calX1));
+		yscale = ((pd->calY2px - pd->calY1px) << 19) / ((pd->calY2) - (pd->calY1));
+                
+		xoffset = ((pd->calX1 + pd->calX2) * xscale  - ((pd->calX1px + pd->calX2px) << 19))/2;
+		yoffset = ((pd->calY1 + pd->calY2) * yscale  - ((pd->calY1px + pd->calY2px) << 19))/2;
+		tscinit = 1;
 	}
-#endif
 
-	oldIME = REG_IME;
-	REG_IME = 0;
+	oldIME = INTREG->ime;
+	INTREG->ime = 0;
 	usedstylus = chkstylus();
 	if(usedstylus){
 		errloc=0;
@@ -260,13 +261,10 @@ touchReadXY(touchPosition *tp)
 			break;
 		}
 
-#ifdef ARMDIVFIXED
-if(0) {
-		// TODO get this right; ie: tp->x / 15 hangs arm7 cpu
-//		px=(tp->x*xscale-xoff+xscale/2)>>19;
-//		py=(tp->y*yscale-yoff+yscale/2)>>19;
-		px = tp->x>>(19-15);
-		py = tp->y>>(19-15);
+//		px = tp->x;
+//		py = tp->y;
+		px=(tp->x * xscale - xoffset + xscale / 2)>>19;
+		py=(tp->y * yscale - yoffset + yscale / 2)>>19;
 
 		if(px<0)
 			px=0;
@@ -276,27 +274,9 @@ if(0) {
 			px=Scrwidth-1;
 		if(py > Scrheight-1)
 			py=Scrheight-1;
+
 		tp->px=px;
 		tp->py=py; 
-
-		tp->px = tp->x;
-		tp->py = tp->y;
-#endif
-
-		x = (int)((tp->x - (int)pd->calX1) * ((int)pd->calX2px - (int)pd->calX1px) / ((int)pd->calX2 - (int)pd->calX1)) + pd->calX1px - 1;
-		y = (int)((tp->y - (int)pd->calY1) * ((int)pd->calY2px - (int)pd->calY1px) / ((int)pd->calY2 - (int)pd->calY1)) + pd->calY1px - 1;
-
-		if(x < 0)
-			x = 0;
-		else if(x > Scrwidth-1)
-			x = Scrwidth-1;
-		if(y < 0)
-			y = 0;
-		else if(y > Scrheight-1)
-			y = Scrheight-1;
-
-		tp->px = x;
-		tp->py = y;
 	}else{
 		errloc = 3;
 		tp->x = 0;
@@ -304,6 +284,6 @@ if(0) {
 		wastouched = 0;
 	}
 	UpdateRange(&range, dmax, errloc, wastouched);
-	REG_IME = oldIME;
-	return ;
+	INTREG->ime = oldIME;
+	return;
 }

@@ -44,7 +44,7 @@
 
 #define KZERO		0x02000000
 #define MACHADDR	(KZERO+0x00002000)
-#define KTTB		(KZERO+0x00004000)	/* we don't have TTB */
+#define KTTB		(KZERO+0x00004000)      /* we don't have TTB */
 #define KTZERO		(KZERO+0x00004010)
 #define KSTACK	8192			/* Size of kernel stack */
 
@@ -89,13 +89,19 @@
 #define	SRAMTOP		0x0A00FFFF
 #define	EXMEMCNT	0x04000204
 #define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
+#define	DTCMSIZE	(16*1024)
 
-#define INTbase	(SFRZERO + 0x208)
+/*
+ * Base registers
+ */
+#define INTbase		(SFRZERO + 0x208)
 #define TIMERbase	(SFRZERO + 0x100)
+#define DMAbase		(SFRZERO + 0x0b0)
 
 /*
  * ARM7 specific
  */
+#define	KSTACK7		256
 #define	IWRAMZERO7	0x03800000
 #define	IWRAMTOP7	0x0380FFF0
 #define	INTHAND7	(SFRZERO - 4)

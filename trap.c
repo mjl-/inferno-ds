@@ -98,16 +98,6 @@ intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 }
 
 static void
-trapv(int off, void (*f)(void))
-{
-	ulong *vloc;
-	int offset;
-	vloc = (ulong *)(off+0xFFFF0000);
-	offset = (((ulong *) f) - vloc)-2;
-	*vloc = (0xea << 24) | offset;
-}
-
-static void
 maskallints(void)
 {
 	INTREG->ier = 0x0;	/* disable all interrupts */
@@ -159,8 +149,8 @@ trapinit(void)
 	/* update DTCM with the contents of KZERO */
 	cp = rcpctl();
 	wcpctl(cp | CpCdtcml);
-	memmove((void*)KZERO, (void*)KZERO, 16*1024);
-	dcflush((void*)KZERO, 16*1024);
+	memmove((void*)KZERO, (void*)KZERO, DTCMSIZE);
+	dcflush((void*)KZERO, DTCMSIZE);
 	wcpctl(cp | CpCitcme|CpCdtcme);
 
 	/* set up stacks for various exceptions */

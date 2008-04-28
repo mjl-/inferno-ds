@@ -1,5 +1,6 @@
 #include <u.h>
 #include "../mem.h"
+#include "../io.h"
 #include <kern.h>
 #include "dat.h"
 #include "fns.h"
@@ -104,23 +105,19 @@ fiforecvintr(void)
 		}
 	}
 
-	REG_IF = IRQ_FIFO_NOT_EMPTY;
+	intrclear(FRECVbit, 0);
 }
 
-void
-fifoinit(void)
-{
-	outsh(Fifoctl, FifoRirq|Fifoenable|FifoTflush);
-	irqset(IRQ_FIFO_NOT_EMPTY, fiforecvintr);
-}
-
-
-void
-trapinit(void)
+#define DMTEST if(0)memtest
+int 
+main(void)
 {
 	int16 dmax;
 	u8 err;
-	REG_IME = 0;
+	
+	INTREG->ime = 0;
+
+	memset(edata, 0, end-edata); 		/* clear the BSS */
 
 	readFirmware(0x03FE00,PersonalData,sizeof(PersonalData));
 	poweron(POWER_SOUND);
@@ -129,36 +126,21 @@ trapinit(void)
 	/* dummy read to enable the touchpad PENIRQ */
 	dmax = MaxRetry; err = MaxRange;
 	readtsc(TscgetX, &dmax, &err);
-	
-	irqInit();
-	initclkirq();
-
-	fifoinit();
-
-	irqset(IRQ_VBLANK, vblankintr);
-	irqen(IRQ_VBLANK);
-
-/*
-	setytrig(80);
-	irqset(IRQ_VCOUNT, VcountHandler);
-	irqen(IRQ_VCOUNT);
-*/
-
-	REG_IME = 1;
-}
-
-
-#define DMTEST if(0)memtest
-int 
-main(int argc, char ** argv)
-{
-	USED(argc, argv);
-
-	memset(edata, 0, end-edata); 		/* clear the BSS */
 
 	DMTEST((char*)(IPC), 0x10, 1, 0);
 
 	trapinit();
+	initclkirq();
+
+	outsh(Fifoctl, FifoRirq|Fifoenable|FifoTflush);
+	intrenable(FRECVbit, fiforecvintr, 0);
+
+	intrenable(VBLANKbit, vblankintr, 0);
+
+/*
+	setytrig(80);
+	intrenable(VCOUNTbit, VcountHandler, 0);
+*/
 
 	DMTEST((char*)(IPC), 0x20, 1, 0);
 
@@ -279,8 +261,7 @@ vblankintr(void)
 */
 	
 	// ack. ints
-	REG_IF = IRQ_VBLANK;
-	*(ulong*)IRQCHECK7 = IRQ_VBLANK;
+	intrclear(VBLANKbit, 0);
 }
 
 void 
@@ -324,7 +305,6 @@ vblankaudio(void)
 	DMTEST((char*)(IPC), 0x50, 1, 0);
 	
 	// ack. ints
-	REG_IF = IRQ_VBLANK;
-	*(ulong*)IRQCHECK7 = IRQ_VBLANK;
+	intrclear(VBLANKbit, 0);
 }
 

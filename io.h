@@ -1,31 +1,39 @@
-#define MaxIRQbit		18		/* Maximum IRQ */
-#define VBLANKbit		0		/* Vertical blank */
-#define HBLANKbit		1		/* Horizontal blank */
-#define VCOUNTbit		2		/* Vertical count */
-#define TIMER0bit		3		/* Timer 0 */
-#define TIMER1bit		4		/* Timer 1 */
-#define TIMER2bit		5		/* Timer 2 */
-#define TIMER3bit		6		/* Timer 3 */
-#define UARTbit		7		/* Comms */
-#define GDMA0		8		/* DMA 0 */
-#define GDMA1		9		/* DMA 1 */
-#define GDMA2		10		/* DMA 2 */
-#define GDMA3		11		/* DMA 3 */
-#define KEYbit			12		/* Keypad */
-#define CARTbit		13		/* CART */
-#define ARM7bit		16		/* ARM7 IPC */
-#define FSENDbit		17		/* SEND FIFO empty */
-#define FRECVbit		18		/* RECV FIFO non empty */
-
-#define DISP_VBLANKbit	3
-#define DISP_HBLANKbit	4
-#define DISP_VCOUNTbit	5
 
 /*
  * Interrupt controller
  */
 
 #define INTREG	((IntReg *)INTbase)
+
+#define	MaxIRQbit	24		/* Maximum IRQ */
+
+#define	VBLANKbit	0		/* Vertical blank */
+#define	HBLANKbit	1		/* Horizontal blank */
+#define	VCOUNTbit	2		/* Vertical count */
+#define	TIMER0bit		3		/* Timer 0 */
+#define	TIMER1bit		4		/* Timer 1 */
+#define	TIMER2bit		5		/* Timer 2 */
+#define	TIMER3bit		6		/* Timer 3 */
+#define	UARTbit		7		/* Serial/Comms */
+#define	GDMA0		8		/* DMA 0 */
+#define	GDMA1		9		/* DMA 1 */
+#define	GDMA2		10		/* DMA 2 */
+#define	GDMA3		11		/* DMA 3 */
+#define	KEYbit		12		/* Keypad */
+#define	CARTbit		13		/* CART */
+#define	ARM7bit		16		/* ARM7 IPC */
+#define	FSENDbit		17		/* SEND FIFO empty */
+#define	FRECVbit		18		/* RECV FIFO non empty */
+#define	CARDbit		19		
+#define	CARDLINEbit	20
+#define	GEOMFIFObit	21		/* geometry FIFO */
+#define	LIDbit		22
+#define	SPIbit		23		/* SPI */
+#define	WIFIbit		24		/* WIFI */
+
+#define DISP_VBLANKbit	3
+#define DISP_HBLANKbit	4
+#define DISP_VCOUNTbit	5
 
 typedef struct IntReg IntReg;
 struct IntReg {
@@ -35,9 +43,48 @@ struct IntReg {
 	ulong	ipr;	// Interrupt Pending
 };
 
-/* uarts? */
+/* 
+ * Dma controller
+ */
 
-/* timers */
+#define DMAREG	((DmaReg*)DMAbase)
+typedef struct DmaReg DmaReg;
+struct DmaReg {
+	ulong	src;
+	ulong	dst;
+	ulong	ctl;
+};
+
+enum
+{
+	Dmaena		= 1<<31,		/* enable dma channel */
+	Dmabusy		= 1<<31,		/* is dma channel busy */
+	Dmairq		= 1<<30,		/* request an interrupt on dma */
+
+	Dmastartnow	= 0,
+	Dmastartcard	= 5<<27,
+	Dmastartfifo	=  7<<27,
+	
+	Dma16bit		= 0,
+	Dma32bit		= 1<<26,
+	
+	Dmasrcinc	= 0,
+	Dmasrcdec	= 1<<23,
+	Dmasrcfix	= 1<<24,
+	
+	Dmadstinc	= 0,
+	Dmadstdec	= 1<<21,
+	Dmadstfix	= 1<<22,
+	Dmadstrst	= 3<<21,
+	
+	Dmatxwords	= (Dmaena|Dma32bit|Dmastartnow),
+	Dmatxhwords	= (Dmaena|Dma16bit|Dmastartnow),
+	Dmafifo		= (Dmaena|Dma32bit|Dmadstfix|Dmastartfifo)
+};
+
+/* 
+ * Timers control
+ */
 
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
@@ -58,12 +105,14 @@ enum
 	Tmrdiv1024=(3),		//	set timer freq to (33.514 / 1024) Mhz.
 };
 
-// timer data usage:
-// TIMER_FREQ(div) in Hz, where div is TmrdivN
-#define TIMER_FREQ(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
+/* usage: 
+ * tmr->data = TIMER_BASE(div) / Hz, where div is TmrdivN 
+ */ 
+#define TIMER_BASE(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
 
-/* lcd */
-/* 59.73 hz */
+/* 
+ * Lcd control (59.73 hz)
+ */
 
 #define LCDREG		((LcdReg*)LCD)
 #define SUBLCDREG		((LcdReg*)SUBLCD)
@@ -152,6 +201,7 @@ typedef struct Ipc Ipc;
 struct Ipc {
 	ulong cr;
 };
+
 void _halt(void);
 void _reset(void);
 void _waitvblank(void);

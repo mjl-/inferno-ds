@@ -1,29 +1,25 @@
 #include "../mem.h"
 
-#define KSTACK7	256
-
 TEXT _startup(SB), $-4
 	MOVW		$setR12(SB), R12 	/* static base (SB) */
-//	MOVW		$Mach0(SB), R13
-//	ADD		$(KSTACK7-4), R13	/* leave 4 bytes for link */
-
-//	MOVW		$(PsrDirq|PsrDfiq|PsrMsvc), R1	/* Switch to System mode */
-//	MOVW		R1, CPSR
 
 	MOVW		$(PsrMirq), R1		/* Switch to IRQ mode */
 	MOVW		R1, CPSR
-	MOVW		$(IWRAMTOP7 - 0x60), R13
+	MOVW		$Mach0(SB), R13
+	ADD		$(KSTACK7-4), R13	/* leave 4 bytes for link */
 
 	MOVW		$(PsrMsys), R1		/* Switch to System mode */
 	MOVW		R1, CPSR
-	MOVW		$(IWRAMTOP7 - 0x160), R13
+	MOVW		$Mach1(SB), R13
+	ADD		$(KSTACK7-4), R13	/* leave 4 bytes for link */
 
 	BL		main(SB)		/* jump to kernel */
 dead:
 	B		dead
 	BL		_div(SB)			/* hack to get _div etc loaded */
 
-//GLOBL 		Mach0(SB), $KSTACK7
+GLOBL 		Mach0(SB), $KSTACK7
+GLOBL 		Mach1(SB), $KSTACK7
 
 TEXT swiDelay(SB), $-4
 	SWI	0x030000

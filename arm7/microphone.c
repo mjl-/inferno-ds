@@ -23,6 +23,7 @@
 ---------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
+#include "../io.h"
 #include "nds.h"
 
 
@@ -77,15 +78,16 @@ StartRecording(u8* buffer, int length)
 	micbuflen = length;
 	curlen = 0;
 	MIC_On();
+	
 //	 Setup a 16kHz timer
-	TIMER0_DATA = 0xF7CF;
-	TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1 | TIMER_IRQ_REQ;
+	TIMERREG->data = TIMER_BASE(Tmrdiv1) / 16000;
+	TIMERREG->ctl = Tmrena | Tmrdiv1 | Tmrirq;
 }
 
 int 
 StopRecording() 
 {
-	TIMER0_CR &= ~TIMER_ENABLE;
+	TIMERREG->ctl &= ~Tmrena;
 	MIC_Off();
 	micbuf = 0;
 	return curlen;

@@ -1,12 +1,35 @@
 #!/dis/sh.dis -n
+# usage:
+#   cd /usr/inferno; svn export . /tmp/inferno/;
+# and from emu:
+#   cd /os/ds
+#   root/dis/mkkfs root/lib/proto/dsproto /n/local/tmp/inferno
+load std
 
-proto=/os/ds/root/lib/proto/dsproto
-kfs=/os/ds/ds.kfs
-archfs=/os/ds/ds.archfs
+fn usage{
+	echo 'usage: mkkfs proto destdir'
+	raise $1
+}
 
-disk/mkfs -a $proto > $archfs
+if{~ $#* 0 1}{
+	usage
+}
+if{! ftest -r $1}{
+	usage 'no proto file'
+}
+if{! ftest -d $2}{
+	usage 'no dest dir'
+}
+
+proto=$1
+destdir=$2
+archfs=`{basename $proto | sed 's/proto$//'}^.archfs
+kfs=`{basename $proto | sed 's/proto$//'}^.kfs
+
+disk/mkfs -a -s / $proto > $archfs
 zeros 1024 32768 > $kfs
 mount -c {disk/kfs -r $kfs} /n/kfs
 disk/mkext -u -d /n/kfs < $archfs
 unmount /n/kfs
 
+mv $archfs $kfs $destdir

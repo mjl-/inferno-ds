@@ -10,4 +10,5 @@ enum {
 	Dslite =	FWdslite,
 	Dsique =	FWique,
 };
+
 extern int ndstype;
