@@ -84,32 +84,28 @@ fiforecv(ulong vv)
 	v = vv>>Fcmdwidth;
 	switch(vv&Fcmdmask) {
 	case F7keyup:
-		/* lid controls lcd backlight */
-		/*
-		if(kpressed(1<<Lclose, ost, st))
-			setlcdblight(1);
-		if(kreleased(1<<Lclose, ost, st))
-			setlcdblight(0);
-		*/
+		if(v&(1<<Lclose))
+			print("lid close up\n");
 
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
 			if(i == Lbtn)
-				mouse &= ~(1<<2);
+				mouse &= Button3;
 			else if(i == Rbtn)
-				mouse &= ~(1<<1);
+				mouse &= Button2;
 			else if(v & (1<<i))
 				kbdputc(kbdq, rockermap[conf.bmap][i]);
 		break;
 	case F7keydown:
-		/* xxx use for repeat, Lclose */
 		if(v&(1<<Lbtn))
-			mouse |= 1<<2;
+			mouse |= Button3;
 		if(v&(1<<Rbtn))
-			mouse |= 1<<1;
+			mouse |= Button2;
+		if(v&(1<<Lclose))
+			print("lid close down\n");
 		break;
 	case F7mousedown:
 		//print("mousedown %lux %lud %lud\n", v, v&0xff, (v>>8)&0xff);
-		mousetrack(mouse ? mouse : 1, v&0xff, (v>>8)&0xff, 0);
+		mousetrack(mouse ? mouse : Button1, v&0xff, (v>>8)&0xff, 0);
 		break;
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);
@@ -316,7 +312,14 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			error(Ebadarg);
 		if(strcmp(fields[0], "brightness") == 0)
 			fifoput(F9brightness, atoi(fields[1]));
-		else
+		else if(strcmp(fields[0], "lcd") == 0) {
+			if(strcmp(fields[1], "on") == 0)
+				setlcdblight(1);
+			else if(strcmp(fields[1], "off") == 0)
+				setlcdblight(0);
+			else
+				error(Ebadarg);
+		} else
 			error(Ebadarg);
  		break;
 	case Qtouchctl:

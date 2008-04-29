@@ -152,16 +152,17 @@ vblankintr(void)
 	lastxypress = xypress;
 
 	bpress = REG_KEYINPUT;
+	bpress |= (xypress & (1<<Xbtn7|1<<Ybtn7|1<<Lclose7)) << (Xbtn-Xbtn7);
 	changed = bpress^lastbpress;
 	mask = 1;
 	down = up = 0;
-	for(i = 0; changed && i < 10; i++) {
-		if(mask & changed) {
-			if(bpress&(1<<i))
-				up |= 1<<i;
+	for(i = 0; changed && i < Lmax; i++) {
+		if(mask&changed) {
+			if(bpress&mask)
+				up |= mask;
 			else
-				down |= 1<<i;
-			changed &= ~(1<<i);
+				down |= mask;
+			changed &= ~mask;
 		}
 		mask <<= 1;
 	}

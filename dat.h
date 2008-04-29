@@ -254,3 +254,9 @@ enum
 	Pdown7	= 	6,	// pen down
 	Lclose7	= 	7,	// lid closed
 };
+
+enum {
+	Button1 =	1<<0,
+	Button2 =	1<<1,
+	Button3 =	1<<2,
+};
