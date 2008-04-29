@@ -1,14 +1,12 @@
 #!/dis/sh.dis -n
-# usage:
-#   cd /usr/inferno; svn export . /tmp/inferno/;
-# and from emu:
-#   cd /os/ds
-#   root/dis/mkkfs root/lib/proto/dsproto /n/local/tmp/inferno
+# generate a suitable kfs(4) filesystem from proto
+# uses fs(1) to filter out .svn dirs in $kfs,
+# see lab-74-effective-inferno from Caerwyn's IPN
 load std
 
 fn usage{
-	echo 'usage: mkkfs proto destdir'
-	raise $1
+	echo 'usage: mkkfs proto file.kfs'
+	raise $*
 }
 
 if{~ $#* 0 1}{
@@ -17,19 +15,14 @@ if{~ $#* 0 1}{
 if{! ftest -r $1}{
 	usage 'no proto file'
 }
-if{! ftest -d $2}{
-	usage 'no dest dir'
+if{no $2}{
+	usage 'no file.kfs'
 }
 
 proto=$1
-destdir=$2
-archfs=`{basename $proto | sed 's/proto$//'}^.archfs
-kfs=`{basename $proto | sed 's/proto$//'}^.kfs
+kfs=$2
 
-disk/mkfs -a -s / $proto > $archfs
 zeros 1024 32768 > $kfs
 mount -c {disk/kfs -r $kfs} /n/kfs
-disk/mkext -u -d /n/kfs < $archfs
+fs write /n/kfs '{filter {not {match .svn}} {proto '^$proto^'}}'
 unmount /n/kfs
-
-mv $archfs $kfs $destdir
