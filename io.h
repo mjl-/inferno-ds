@@ -43,6 +43,54 @@ struct IntReg {
 	ulong	ipr;	// Interrupt Pending
 };
 
+/*
+ * Fifo controller
+ */
+
+#define	FIFObase	0x04000184
+#define	FIFOend		0x04100000
+#define FIFOREG	((FifoReg*)FIFObase)
+typedef struct FifoReg FifoReg;
+struct FifoReg {
+	ushort	ctl;
+	ulong	send;
+	uchar	pad1[FIFOend - FIFObase - 2*sizeof(ulong)];
+	ulong	recv;
+};
+
+enum
+{
+	FifoTempty =	1<<0,
+	FifoTfull =	1<<1,
+	FifoTirq =	1<<2,
+	FifoTflush =	1<<3,
+	FifoRempty =	1<<8,
+	FifoRfull =	1<<9,
+	FifoRirq =	1<<10,
+	Fifoerror =	1<<14,
+	Fifoenable =	1<<15,
+};
+
+
+/*
+ * Fifo message types
+ */
+
+enum
+{
+	Fcmdwidth =	4,
+	Fcmdmask =	(1<<Fcmdwidth)-1,
+
+	/* from arm9 to arm7 */
+	F9brightness =	0,
+
+	/* from arm7 to arm9 */
+	F7keyup,
+	F7keydown,
+	F7mousedown,
+	F7mouseup,
+};
+
 /* 
  * Dma controller
  */

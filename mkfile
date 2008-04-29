@@ -50,7 +50,6 @@ HFILES=\
 	fpi.h\
 	screen.h\
 	lcdreg.h\
-	fifo.h\
 
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
@@ -75,7 +74,7 @@ i$CONF.nds: i$CONF arm7/i$CONF # $CONF.kfs
 	# append rom data at end of .nds (see root/dis/mkkfs)
 	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
 	echo -n ROMZERO9 >> i$CONF.nds
-	cat $CONF.kfs >> i$CONF.nds
+	# cat $CONF.kfs >> i$CONF.nds
 
 $CONF.kfs: root/lib/proto/$CONF'proto'
 	emu /os/ds/root/dis/mkkfs /os/ds/$prereq `{pwd}

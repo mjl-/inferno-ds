@@ -8,7 +8,6 @@
 #include "version.h"
 #include "arm7/jtypes.h"
 #include "arm7/ipc.h"
-#include "fifo.h"
 #include <keyboard.h>
 
 

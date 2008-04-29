@@ -37,7 +37,6 @@ HFILES=\
 	touch.h\
 	dat.h\
 	fns.h\
-	../fifo.h\
 
 LIBS=\
 	kern\

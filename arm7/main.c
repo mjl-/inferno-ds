@@ -5,7 +5,6 @@
 #include "dat.h"
 #include "fns.h"
 #include "nds.h"
-#include "../fifo.h"
 
 s32 getFreeSoundChannel(void);
 void vblankintr(void);
@@ -42,48 +41,18 @@ enum
 
 
 void
-outsh(ulong addr, ushort v)
-{
-	*(ushort*)addr = v;
-}
-
-void
-outl(ulong addr, ulong v)
-{
-	*(ulong*)addr = v;
-}
-
-ushort
-insh(ulong addr)
-{
-	return *(ushort*)addr;
-}
-
-ulong
-inl(ulong addr)
-{
-	return *(ulong*)addr;
-}
-
-ulong
-fifoget(void)
-{
-	return inl(Fiforecv);
-}
-
-void
 nbfifoput(ulong cmd, ulong v)
 {
-	if(insh(Fifoctl) & FifoTfull)
+	if(FIFOREG->ctl & FifoTfull)
 		return;
-	outl(Fifosend, cmd|v<<Fcmdwidth);
+	FIFOREG->send = (cmd|v<<Fcmdwidth);
 }
 
 
 void
 fifoput(ulong cmd, ulong v)
 {
-	outl(Fifosend, cmd|v<<Fcmdwidth);
+	FIFOREG->send = (cmd|v<<Fcmdwidth);
 }
 
 void
@@ -92,8 +61,8 @@ fiforecvintr(void)
 	ulong v, vv;
 	uchar buf[1];
 
-	while(!(insh(Fifoctl) & FifoRempty)) {
-		vv = fifoget();
+	while(!(FIFOREG->ctl & FifoRempty)) {
+		vv = FIFOREG->recv;
 		v = vv>>Fcmdwidth;
 		switch(vv&Fcmdmask) {
 		case F9brightness:
@@ -132,7 +101,7 @@ main(void)
 	trapinit();
 	initclkirq();
 
-	outsh(Fifoctl, FifoRirq|Fifoenable|FifoTflush);
+	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
 	intrenable(FRECVbit, fiforecvintr, 0);
 
 	intrenable(VBLANKbit, vblankintr, 0);
@@ -305,6 +274,6 @@ vblankaudio(void)
 	DMTEST((char*)(IPC), 0x50, 1, 0);
 	
 	// ack. ints
-	intrclear(VBLANKbit, 0);
+	// intrclear(VBLANKbit, 0);
 }
 

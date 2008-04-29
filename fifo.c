@@ -2,7 +2,6 @@
 #include "../port/lib.h"
 #include "dat.h"
 #include "fns.h"
-#include "fifo.h"
 #include "io.h"
 
 extern void fiforecv(ulong);
@@ -11,19 +10,12 @@ static QLock getl, putl;
 static Rendez getr, putr;
 
 
-/* xxx find a soluation to in* and out*.  now abusing functions from devregs.c */
-uchar	inb(int reg);
-ushort	insh(int reg);
-ulong	inl(int reg);
-void	outb(int reg, uchar b);
-void	outsh(int reg, ushort sh);
-void	outl(int reg, ulong l);
-
-
 void
 fifolink(void)
 {
-	outsh(Fifoctl, FifoTirq|FifoRirq|Fifoenable|FifoTflush);
+	print("fifolink: %lux %lux %lux\n", &FIFOREG->ctl, &FIFOREG->send, &FIFOREG->recv);
+
+	FIFOREG->ctl = (FifoTirq|FifoRirq|Fifoenable|FifoTflush);
 	intrenable(0, FSENDbit, fifosendintr, nil, "fifosend");
 	intrenable(0, FRECVbit, fiforecvintr, nil, "fiforecv");
 }
@@ -31,13 +23,13 @@ fifolink(void)
 static int
 fifocanput(void*)
 {
-	return (insh(Fifoctl) & FifoTfull) == 0;
+	return (FIFOREG->ctl & FifoTfull) == 0;
 }
 
 static int
 fifocanget(void*)
 {
-	return (insh(Fifoctl) & FifoRempty) == 0;
+	return (FIFOREG->ctl & FifoRempty) == 0;
 }
 
 void
@@ -45,7 +37,7 @@ fifoput(ulong cmd, ulong param)
 {
 	qlock(&putl);
 	sleep(&putr, fifocanput, nil);
-	outl(Fifosend, cmd|param<<Fcmdwidth);
+	FIFOREG->send = (cmd|param<<Fcmdwidth);
 	qunlock(&putl);
 }
 
@@ -56,7 +48,7 @@ fifoget(ulong *param)
 
 	qlock(&getl);
 	sleep(&getr, fifocanget, nil);
-	r = inl(Fiforecv);
+	r = FIFOREG->recv;
 	qunlock(&getl);
 
 	if(param != nil)
@@ -69,8 +61,8 @@ fiforecvintr(Ureg*, void*)
 {
 	ulong v;
 
-	while(!(insh(Fifoctl) & FifoRempty)) {
-		v = inl(Fiforecv);
+	while(!(FIFOREG->ctl & FifoRempty)) {
+		v = FIFOREG->recv;
 		fiforecv(v);
 	}
 	intrclear(FRECVbit, 0);
@@ -79,7 +71,7 @@ fiforecvintr(Ureg*, void*)
 void
 fifosendintr(Ureg*, void*)
 {
-	if(insh(Fifoctl) & FifoTfull)
+	if(FIFOREG->ctl & FifoTfull)
 		return;
 
 	wakeup(&putr);

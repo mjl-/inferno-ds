@@ -7,7 +7,6 @@
 #include	"lcdreg.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
-#include	"fifo.h"
 
 #include 	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
@@ -123,7 +122,7 @@ fiforecv(ulong vv)
 static void
 vblankintr(Ureg *, void *)
 {
-	/* xxx nothing to do */
+	/* TODO: update lcd/screen fb on vblank */
 	intrclear(VBLANKbit, 0);
 }
 
