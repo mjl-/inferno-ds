@@ -314,9 +314,9 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			fifoput(F9brightness, atoi(fields[1]));
 		else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
-				setlcdblight(1);
+				blankscreen(0);
 			else if(strcmp(fields[1], "off") == 0)
-				setlcdblight(0);
+				blankscreen(1);
 			else
 				error(Ebadarg);
 		} else

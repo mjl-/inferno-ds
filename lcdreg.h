@@ -2,15 +2,6 @@
 #define RGB5(r,g,b)  ((r)|((g)<<5)|((b)<<10))
 #define RGB8(r,g,b)  (((r)>>3)|(((g)>>3)<<5)|(((b)>>3)<<10))
 #define VRAM_OFFSET(n)	((n)<<3)
-enum ARM9_power
-{
-	POWER_LCD =		1<<0,	/* Controls the power for both LCD screens. */
-	POWER_2D_A =		1<<1,	/* Controls the power for the main 2D core. */
-	POWER_MATRIX = 		1<<2,	/* Controls the power for the 3D matrix. */
-	POWER_3D_CORE = 	1<<3,	/* Controls the power for the main 3D core. */
-	POWER_2D_B =		1<<9,	/* Controls the power for the sub 2D core. */
-	POWER_SWAP_LCDS =	1<<15,	/* Controls which screen should use the main core. */
-};
 
 #define SCREEN_HEIGHT 192
 #define SCREEN_WIDTH  256

@@ -39,20 +39,6 @@ lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 			(b>>(32-5));
 }
 
-void
-setlcdblight(int on)
-{
-	LcdReg *lcd = LCDREG;
-
-	// TODO: fix see 'Power Management Device' in gbatek.txt
-	
-	/* enable/disable LCD */
-	if (on)
-		lcd->lcsr |= EnableCtlr;
-	else
-		lcd->lcsr &= ~EnableCtlr;
-}
-
 static void
 setlcdmode(LCDdisplay *ld)
 {
@@ -60,7 +46,6 @@ setlcdmode(LCDdisplay *ld)
 	VramReg *vram = VRAMREG;
 	PowerReg *power = POWERREG;
 
-	setlcdblight(0);
 	lcd->lccr = 0;	
   	
 	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);
@@ -125,14 +110,13 @@ lcd_flush(void)
 void
 blankscreen(int blank)
 {
-	LcdReg *lcd = LCDREG;
-	if(blank)
-		lcd->lcsr |= ~EnableCtlr;
-	else
-		lcd->lcsr |= EnableCtlr;			
-}
-void cmap(ushort* palette);
+	PowerReg *power = POWERREG;
 
+	if(blank)
+		power->pcr &= ~(POWER_LCD);
+	else
+		power->pcr |= POWER_LCD;
+}
 
 #define RGB15(r,g,b)	((r)|(g<<5)|(b<<10))
 void

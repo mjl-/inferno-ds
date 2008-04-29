@@ -58,12 +58,13 @@ int	archlcdmode(LCDmode*);
 Vdisplay	*lcd_init(LCDmode*);
 void	lcd_setcolor(ulong, ulong, ulong, ulong);
 void	lcd_flush(void);
-void flushmemscreen(Rectangle r);
+void	flushmemscreen(Rectangle r);
 
-extern void	blankscreen(int);
-extern void	drawblankscreen(int);
+void	blankscreen(int);
+void	drawblankscreen(int);
+Point	mousexy(void);
+
 extern ulong blanktime;
-extern Point mousexy(void);
 
 // needed by port/swcursor.c
 enum
@@ -84,4 +85,3 @@ void swcurs_hide(SWcursor*);
 void swcurs_unhide(SWcursor*);
 void swcurs_load(SWcursor*, Cursor*);
 void swcurs_update(int, int, int, int);
-

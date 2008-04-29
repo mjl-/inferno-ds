@@ -190,6 +190,16 @@ struct PowerReg {
 	ushort pcr;
 };
 
+enum {
+	POWER_LCD =		1<<0,
+	POWER_2D_A =		1<<1,
+	POWER_MATRIX = 		1<<2,
+	POWER_3D_CORE = 	1<<3,
+	POWER_2D_B =		1<<9,
+	POWER_SWAP_LCDS =	1<<15,
+};
+
+
 #define SPIREG ((PowerReg*)SPI)
 typedef struct SpiReg SpiReg;
 struct SpiReg {
@@ -255,4 +265,3 @@ void _reset(void);
 void _waitvblank(void);
 void _stop(void);
 void _clearregs(void);
-
