@@ -8,6 +8,7 @@ void	archflashwp(int);
 void	archreboot(void);
 void	archreset(void);
 void	archconsole(void);
+void	blankscreen(int);
 void	catchDref(char *s, void *v);
 void	catchDval(char *s, ulong v, ulong m);
 void	catchIref(char *s, void *a);
@@ -39,6 +40,7 @@ ulong	getcallerpc(void*);
 ulong	getcpuid(void);
 void	gotopc(ulong);
 void	idle(void);
+void	idlehands(void);
 
 void	icflush(void*, ulong);
 void	icflushall(void);

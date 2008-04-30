@@ -13,8 +13,6 @@ static Rendez getr, putr;
 void
 fifolink(void)
 {
-	print("fifolink: %lux %lux %lux\n", &FIFOREG->ctl, &FIFOREG->send, &FIFOREG->recv);
-
 	FIFOREG->ctl = (FifoTirq|FifoRirq|Fifoenable|FifoTflush);
 	intrenable(0, FSENDbit, fifosendintr, nil, "fifosend");
 	intrenable(0, FRECVbit, fiforecvintr, nil, "fiforecv");

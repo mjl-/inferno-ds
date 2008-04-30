@@ -203,7 +203,6 @@ touchReadXY(touchPosition *tp)
 	int16 dmaxy, dmaxx, dmax;
 	u8 error, errloc, usedstylus, i;
 	uint32 oldIME;
-	int x, y;
 	PERSONAL_DATA *pd=PersonalData;
 	s16 px, py;
 
@@ -261,8 +260,6 @@ touchReadXY(touchPosition *tp)
 			break;
 		}
 
-//		px = tp->x;
-//		py = tp->y;
 		px=(tp->x * xscale - xoffset + xscale / 2)>>19;
 		py=(tp->y * yscale - yoffset + yscale / 2)>>19;
 

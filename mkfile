@@ -77,7 +77,7 @@ i$CONF.nds: i$CONF arm7/i$CONF i$CONF.kfs
 	cat i$CONF.kfs >> i$CONF.nds
 
 i$CONF.kfs: root/lib/proto/$CONF'proto'
-	emu /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
+	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c

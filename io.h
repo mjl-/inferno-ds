@@ -255,6 +255,50 @@ struct NDShdr{
 	ushort hdrcrc;
 };
 
+
+/* 
+ * Input Buttons
+ */
+enum
+{
+	Numbtns	= 13,
+	Btn9msk = (1<<10) - 1,
+	Btn7msk = (1<<8)  - 1,
+
+	// relative to KEYINPUT (arm9)
+	Abtn	=	0,
+	Bbtn	=	1,
+	Selbtn	=	2,
+	Startbtn=	3,
+	Rightbtn=	4,
+	Leftbtn	=	5,
+	Upbtn	=	6,
+	Downbtn	=	7,
+	Rbtn	=	8,
+	Lbtn	=	9,
+	
+	Xbtn	=	10,
+	Ybtn	=	11,
+	Dbgbtn	= 	13,
+	Pdown	=	16,
+	Lclose	= 	17,
+	Maxbtns,
+
+	// relative to XKEYS (arm7 only)
+	Xbtn7	= 	0,
+	Ybtn7	= 	1,
+	Dbgbtn7	= 	3,	// debug btn
+	Pdown7	= 	6,	// pen down
+	Lclose7	= 	7,	// lid closed
+};
+
+enum
+{
+	Button1 =	1<<0,
+	Button2 =	1<<1,
+	Button3 =	1<<2,
+};
+
 typedef struct Ipc Ipc;
 struct Ipc {
 	ulong cr;

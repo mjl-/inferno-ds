@@ -128,9 +128,9 @@ vblankintr(void)
 {
 	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
-	static ushort lastxypress = ~0;
-	static ushort lastbpress = ~0;
-	ushort xypress, bpress;
+	static ulong lastxypress = ~0;
+	static ulong lastbpress = ~0;
+	ulong xypress, bpress;
 	int i;
 	ulong mask, changed, up, down;
 #ifdef notyet
@@ -152,11 +152,11 @@ vblankintr(void)
 	lastxypress = xypress;
 
 	bpress = REG_KEYINPUT;
-	bpress |= (xypress & (1<<Xbtn7|1<<Ybtn7|1<<Lclose7)) << (Xbtn-Xbtn7);
+	bpress |= (xypress & (1<<Xbtn7|1<<Ybtn7|1<<Pdown7|1<<Lclose7)) << (Xbtn-Xbtn7);
 	changed = bpress^lastbpress;
 	mask = 1;
 	down = up = 0;
-	for(i = 0; changed && i < Lmax; i++) {
+	for(i = 0; changed && i < Maxbtns; i++) {
 		if(mask&changed) {
 			if(bpress&mask)
 				up |= mask;

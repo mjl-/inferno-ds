@@ -12,20 +12,3 @@ enum {
 };
 
 extern int ndstype;
-
-
-/* keys */
-enum {
-	Xbtn =		10,
-	Ybtn =		11,
-	Dbgbtn =	13,
-	Pdown =		16,
-	Lclose =	17,
-	Lmax,
-
-	Xbtn7 =		0,
-	Ybtn7 =		1,
-	Dbgbtn7 =	3,
-	Pdown7 =	6,
-	Lclose7 =	7,
-};

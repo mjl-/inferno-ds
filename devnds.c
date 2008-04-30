@@ -78,7 +78,7 @@ void
 fiforecv(ulong vv)
 {
 	ulong v;
-	static uchar mouse = 0;
+	static uchar mousemod = 0;
 	int i;
 
 	v = vv>>Fcmdwidth;
@@ -87,25 +87,33 @@ fiforecv(ulong vv)
 		if(v&(1<<Lclose))
 			print("lid close up\n");
 
+		if(v&(1<<Pdown))
+			mousemod &= Button1;
+		if(v&(1<<Rbtn))
+			mousemod &= Button2;
+		if(v&(1<<Lbtn))
+			mousemod &= Button3;
+
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
-			if(i == Lbtn)
-				mouse &= Button3;
-			else if(i == Rbtn)
-				mouse &= Button2;
+			if (i==Rbtn||i==Lbtn)
+				continue;
 			else if(v & (1<<i))
 				kbdputc(kbdq, rockermap[conf.bmap][i]);
 		break;
 	case F7keydown:
-		if(v&(1<<Lbtn))
-			mouse |= Button3;
+		if(v&(1<<Pdown))
+			mousemod |= Button1;
 		if(v&(1<<Rbtn))
-			mouse |= Button2;
+			mousemod |= Button2;
+		if(v&(1<<Lbtn))
+			mousemod |= Button3;
+
 		if(v&(1<<Lclose))
 			print("lid close down\n");
 		break;
 	case F7mousedown:
-		//print("mousedown %lux %lud %lud\n", v, v&0xff, (v>>8)&0xff);
-		mousetrack(mouse ? mouse : Button1, v&0xff, (v>>8)&0xff, 0);
+		// print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
+		mousetrack(mousemod, v&0xff, (v>>8)&0xff, 0);
 		break;
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);
