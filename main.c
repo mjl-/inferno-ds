@@ -37,6 +37,9 @@ extern int kernel_pool_pcnt;
 int
 segflush(void *a, ulong n)
 {
+//	dcflush(a, 2*n);
+//	icflush(a, 2*n);
+
 	dcflush(a, n);
 	icflush(a, n);
 	return 0;

@@ -85,7 +85,7 @@ fiforecv(ulong vv)
 	switch(vv&Fcmdmask) {
 	case F7keyup:
 		if(v&(1<<Lclose))
-			print("lid close up\n");
+			blankscreen(1);
 
 		if(v&(1<<Pdown))
 			mousemod &= Button1;
@@ -109,7 +109,7 @@ fiforecv(ulong vv)
 			mousemod |= Button3;
 
 		if(v&(1<<Lclose))
-			print("lid close down\n");
+			blankscreen(0);
 		break;
 	case F7mousedown:
 		// print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
@@ -133,6 +133,7 @@ vblankintr(Ureg *, void *)
 static void
 ndsinit(void)
 {
+//	NDShdr *dsh = (NDShdr*)0x027FFE00;
 	NDShdr *dsh = (NDShdr*)ROMZERO;
 	ulong hasrom, hassram;
 	char *p;

@@ -146,11 +146,10 @@ trapinit(void)
 	witcm(0x00000000 | 0x20); /* ITCM start (ro) = 0, sz = 32 MB */
 	wdtcm(KZERO | 0x0a);  /* DTCM start (rw) = KZERO, sz = 16 KB */
 
-	/* update DTCM with the contents of KZERO */
 	cp = rcpctl();
 	wcpctl(cp | CpCdtcml);
-	memmove((void*)KZERO, (void*)KZERO, DTCMSIZE);
-	dcflush((void*)KZERO, DTCMSIZE);
+	memmove((void*)&Mach0, (void*)&Mach0, DTCMSIZE);
+	dcflush((void*)&Mach0, DTCMSIZE);
 	wcpctl(cp | CpCitcme|CpCdtcme);
 
 	/* set up stacks for various exceptions */

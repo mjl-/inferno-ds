@@ -185,13 +185,9 @@ root
 	/usr/inferno/lib/wmsetup
 	/usr/inferno/namespace
 	/fonts/lucidasans/lsr.10
-	/fonts/lucidasans/lsr.12
 	/fonts/lucidasans/lsb.10
 	/fonts/lucidasans/unicode.6.font
-	/fonts/lucidasans/unicode.7.font
 	/fonts/lucidasans/boldlatin1.6.font
-	/fonts/pelm/unicode.8.font
-	/fonts/pelm/latin1.8
 	/fonts/misc/latin1.6x13.font
 	/fonts/misc/latin1.6x13
 

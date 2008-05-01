@@ -128,11 +128,9 @@ vblankintr(void)
 {
 	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
-	static ulong lastxypress = ~0;
-	static ulong lastbpress = ~0;
-	ulong xypress, bpress;
+	ulong bst, cbst, bup, bdown;
+	static ulong obst, opx, opy;
 	int i;
-	ulong mask, changed, up, down;
 #ifdef notyet
 	uint8 ct[sizeof(IPC->time.curtime)];
 	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
@@ -142,35 +140,41 @@ vblankintr(void)
 
 	heartbeat++;
 
-	xypress = REG_KEYXY;
-	if(~xypress & Pendown) {
+	/* check buttons state */
+	bst = REG_KEYINPUT & Btn9msk;
+	bst |= (REG_KEYXY & Btn7msk) << (Xbtn-Xbtn7);
+
+	if(~bst & 1<<Pdown) {
 		touchReadXY(&tp);
-		nbfifoput(F7mousedown, tp.px|tp.py<<8);
-	} else if(~lastxypress & Pendown) {
+		if (opx != tp.px || opy != tp.py)
+			nbfifoput(F7mousedown, tp.px|tp.py<<8);
+		opx = tp.px;
+		opy = tp.py;
+	} else if(~obst & 1<<Pdown) {
 		nbfifoput(F7mouseup, 0);
 	}
-	lastxypress = xypress;
 
-	bpress = REG_KEYINPUT;
-	bpress |= (xypress & (1<<Xbtn7|1<<Ybtn7|1<<Pdown7|1<<Lclose7)) << (Xbtn-Xbtn7);
-	changed = bpress^lastbpress;
-	mask = 1;
-	down = up = 0;
-	for(i = 0; changed && i < Maxbtns; i++) {
-		if(mask&changed) {
-			if(bpress&mask)
-				up |= mask;
+	cbst = bst^obst;
+	bdown = bup = 0;
+	for(i = 0; cbst && i < Maxbtns; i++) {
+		if(cbst & (1<<i)) {
+			if(bst & (1<<i))
+				bup |= (1<<i);
 			else
-				down |= mask;
-			changed &= ~mask;
+				bdown |= (1<<i);
+			cbst &= ~(1<<i);
 		}
-		mask <<= 1;
 	}
-	lastbpress = bpress;
-	if(up)
-		nbfifoput(F7keyup, up);
-	if(down)
-		nbfifoput(F7keydown, down);
+	obst = bst;
+
+	/* skip bogus keypresses at start */
+	if(heartbeat == 1)
+		return;
+
+	if(bup)
+		nbfifoput(F7keyup, bup);
+	if(bdown)
+		nbfifoput(F7keydown, bdown);
 
 	vblankaudio();
 
