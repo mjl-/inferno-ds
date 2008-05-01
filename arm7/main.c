@@ -18,21 +18,6 @@ extern char end[];
 
 int ndstype;
 
-void 
-memtest(char *a, char c, int n, int read){
-	int i;
-
-	for (i=0; i < n; i++){
-		if (read)
-			c = a[i];
-		else{
-			a[i] += 1;
-			a[i] &= 0x0F;
-			a[i] |= c;
-		}
-	}
-}
-
 enum
 {
 	MaxRetry = 5,
@@ -47,7 +32,6 @@ nbfifoput(ulong cmd, ulong v)
 		return;
 	FIFOREG->send = (cmd|v<<Fcmdwidth);
 }
-
 
 void
 fifoput(ulong cmd, ulong v)
@@ -77,7 +61,6 @@ fiforecvintr(void)
 	intrclear(FRECVbit, 0);
 }
 
-#define DMTEST if(0)memtest
 int 
 main(void)
 {
@@ -96,8 +79,6 @@ main(void)
 	dmax = MaxRetry; err = MaxRange;
 	readtsc(TscgetX, &dmax, &err);
 
-	DMTEST((char*)(IPC), 0x10, 1, 0);
-
 	trapinit();
 	initclkirq();
 
@@ -106,19 +87,10 @@ main(void)
 
 	intrenable(VBLANKbit, vblankintr, 0);
 
-/*
-	setytrig(80);
-	intrenable(VCOUNTbit, VcountHandler, 0);
-*/
-
-	DMTEST((char*)(IPC), 0x20, 1, 0);
-
 	// keep the ARM7 out of main RAM
 	while (1){
 		swiWaitForVBlank();
-
 //		swiDelay(50000);
-//		DMTEST((char*)(IPC), 0x30, 1, 0);
 	}
 	return 0;
 }
@@ -139,6 +111,10 @@ vblankintr(void)
 #endif
 
 	heartbeat++;
+
+	if (0) /* test dbgprint */
+	if((heartbeat % 120) == 0)
+		print("Hello world!\n");
 
 	/* check buttons state */
 	bst = REG_KEYINPUT & Btn9msk;
@@ -231,7 +207,6 @@ vblankintr(void)
 		IPC->time.curtime[i] = ct[i];
 	}
 
-	DMTEST((char*)(IPC), 0x60, 1, 0);
 */
 	
 	// ack. ints
@@ -276,9 +251,20 @@ vblankaudio(void)
 		}
 	}
 
-	DMTEST((char*)(IPC), 0x50, 1, 0);
-	
 	// ack. ints
 	// intrclear(VBLANKbit, 0);
+}
+
+int
+print(char *fmt, ...)
+{
+	int n;
+	va_list arg;
+	char *buf = (char*)((char*)IPC + sizeof(IPC));
+
+	strcpy(buf, fmt);
+	nbfifoput(F7dbgprint, (ulong)buf);
+
+	return n;
 }
 
