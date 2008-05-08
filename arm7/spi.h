@@ -29,6 +29,7 @@
 
 // 'Networking'
 #define REG_RCNT	(*(vuint16*)0x04000134)
+#define REG_KEYXY	(*(vuint16*)0x04000136)
 #define RTC_CR		(*(vuint16*)0x04000138)
 #define RTC_CR8		(*( vuint8*)0x04000138)
 
@@ -82,35 +83,37 @@
  i.e. when we're part of a continuous transfer */
 #define Spicont       BIT(11)
 
-// Power management registers
+/*
+ * Power management registers
+ */
 enum power_reg
 {
-	POWER_CONTROL	 	= 0,
-	POWER_BATTERY	 	= 1,
+	POWER_CONTROL		= 0,
+	POWER_BATTERY		= 1,
 	POWER_MIC_CONTROL	= 2,
 	POWER_MIC_GAIN		= 3,
 	POWER_BACKLIGHT		= 4,
+
+	PM_READ_REGISTER 	= (1<<7),
 };
 
-#define PM_READ_REGISTER       (1<<7)
-
-/*
- * Power management control
- */
-#define POWER0_SOUND_AMP	(1<<0)	/* Power the sound hardware (needed to hear stuff in GBA mode too) */
-#define	POWER0_SOUND_SPK	(1<<1)	/* Power the main speakers, headphone output will still work. */
-#define POWER0_LOWER_BACKLIGHT	(1<<2)	/* Enable the top backlight if set */
-#define POWER0_UPPER_BACKLIGHT	(1<<3)	/* Enable the bottom backlight if set */
-#define POWER0_LED_BLINK	(1<<4)
-#define POWER0_LED_FAST		(1<<5)
-#define POWER0_SYSTEM_POWER	(1<<6)	/* Same thing, I like this name better tho */
+// power control register bits
+enum
+{
+	POWER0_SOUND_AMP	= (1<<0),	/* Power the sound hardware (needed to hear stuff in GBA mode too) */
+	POWER_SOUND_SPK		= (1<<1),	/* Power the main speakers, headphone output will still work. */
+	POWER0_LOWER_BACKLIGHT	= (1<<2),	/* Enable the top backlight if set */
+	POWER0_UPPER_BACKLIGHT	= (1<<3),	/* Enable the bottom backlight if set */
+	POWER0_LED_BLINK	= (1<<4),
+	POWER0_LED_FAST		= (1<<5),
+	POWER0_SYSTEM_POWER	= (1<<6),	/* Turn the power *off* if set */
+};
 
 // PM control register bits - LED control
 #define PM_LED_CONTROL(m)    ((m)<<4)   ?
 #define PM_LED_ON     (0<<4)   Steady on
 #define PM_LED_SLEEP  (2<<4)   Blinking, mostly off
 #define PM_LED_BLINK  (3<<4)   Blinking, mostly on
-
 
 enum {
 	Brightlow,
@@ -152,4 +155,6 @@ void busywait(void);
 
 // Read the firmware
 void read_firmware(uint32 address, void * destination, uint32 size);
+
+
 
