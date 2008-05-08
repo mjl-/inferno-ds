@@ -25,31 +25,32 @@
 #include "../mem.h"
 #include "nds.h"
 
-int 
-readPowerManagement(int reg) 
+u8
+power_read(int reg)
 {
-	return writePowerManagement((reg)|PM_READ_REGISTER, 0);
+	return power_write((reg)|PM_READ_REGISTER, 0);
 }
 
 
-int writePowerManagement(int reg, int cmd) {
+u8 power_write(int reg, int cmd)
+{
+	while (REG_SPICNT & SPI_BUSY);
+	REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | Spicont | SPI_DEVICE_POWER;
+	REG_SPIDATA = reg;
 
-  while (REG_SPICNT & SPI_BUSY);
-  REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | Spicont | SPI_DEVICE_POWER;
-  REG_SPIDATA = reg;
+	while (REG_SPICNT & SPI_BUSY);
+	REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | SPI_DEVICE_POWER;
+	REG_SPIDATA = cmd;
 
-  while (REG_SPICNT & SPI_BUSY);
-  REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | SPI_DEVICE_POWER;
-  REG_SPIDATA = cmd;
-
-  while (REG_SPICNT & SPI_BUSY);
-  return REG_SPIDATA & 0xFF;
+	while (REG_SPICNT & SPI_BUSY);
+	return REG_SPIDATA & 0xFF;
 }
 
 
 
-void readFirmware(uint32 address, void * destination, uint32 size) {
-
+void
+read_firmware(uint32 address, void * destination, uint32 size)
+{
 	uint8 * buffer = (uint8 *)destination;
 
 	while (REG_SPICNT & SPI_BUSY);
@@ -74,7 +75,14 @@ void readFirmware(uint32 address, void * destination, uint32 size) {
 }
 
 void
+busywait(void) 
+{
+	while (REG_SPICNT & SPI_BUSY)
+		swiDelay(1);
+}
+
+void
 brightset(int v)
 {
-	writePowerManagement(PM_BACKLIGHT_REG, v&Brightmask);
+	power_write(POWER_BACKLIGHT, v&Brightmask);
 }

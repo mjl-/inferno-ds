@@ -43,17 +43,17 @@ void readUserSettings(void) {
 	/* default to slot 1 user Settings */
 	void *currentSettings = &slot1;
 	
-	readFirmware( 0x20, &userSettingsBase, 2);
+	read_firmware( 0x20, &userSettingsBase, 2);
 	
 	slot1Address = userSettingsBase * 8;
 	slot2Address = userSettingsBase * 8 + 0x100;
 	
-	readFirmware(slot1Address , &slot1, sizeof(PERSONAL_DATA));
-	readFirmware(slot2Address , &slot2, sizeof(PERSONAL_DATA));
-	readFirmware(slot1Address + 0x70, &slot1count, 2);
-	readFirmware(slot2Address + 0x70, &slot2count, 2);
-	readFirmware(slot1Address + 0x72, &slot1CRC, 2);
-	readFirmware(slot2Address + 0x72, &slot2CRC, 2);
+	read_firmware(slot1Address , &slot1, sizeof(PERSONAL_DATA));
+	read_firmware(slot2Address , &slot2, sizeof(PERSONAL_DATA));
+	read_firmware(slot1Address + 0x70, &slot1count, 2);
+	read_firmware(slot2Address + 0x70, &slot2count, 2);
+	read_firmware(slot1Address + 0x72, &slot1CRC, 2);
+	read_firmware(slot2Address + 0x72, &slot2CRC, 2);
 
 	calc1CRC = swiCRC16( 0xffff, &slot1, sizeof(PERSONAL_DATA));
 	calc2CRC = swiCRC16( 0xffff, &slot2, sizeof(PERSONAL_DATA));

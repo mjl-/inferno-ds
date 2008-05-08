@@ -31,10 +31,6 @@
 #define	SPIbit		23		/* SPI */
 #define	WIFIbit		24		/* WIFI */
 
-#define DISP_VBLANKbit	3
-#define DISP_HBLANKbit	4
-#define DISP_VCOUNTbit	5
-
 typedef struct IntReg IntReg;
 struct IntReg {
 	ulong	ime;	// Interrupt Master Enable
@@ -142,7 +138,14 @@ struct TimerReg {
 	ushort	ctl;
 };
 
-// timer ctl
+/* TIMERREG data usage:
+ * tmr->data = TIMER_BASE(div) / Hz, where div is TmrdivN 
+ */ 
+#define TIMER_BASE(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
+
+/*
+ * TIMERREG ctl bits
+ */
 enum
 {
 	Tmrena	= (1<<7),	//	enables the timer.
@@ -154,11 +157,6 @@ enum
 	Tmrdiv1024=(3),		//	set timer freq to (33.514 / 1024) Mhz.
 };
 
-/* usage: 
- * tmr->data = TIMER_BASE(div) / Hz, where div is TmrdivN 
- */ 
-#define TIMER_BASE(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
-
 /* 
  * Lcd control (59.73 hz)
  */
@@ -169,6 +167,19 @@ typedef struct LcdReg LcdReg;
 struct LcdReg {
 	ulong lccr;	/* control */
 	ulong lcsr;	/* status */
+};
+
+/*
+ * LCDREG status bits
+ */
+enum
+{
+	DispInVblank	= 0,		/* display currently in a vertical blank. */
+	DispInHblank	= 1,		/* display currently in a horizontal blank. */
+	DispInVcount	= 2,		/* current scanline and %DISP_Y match. */
+	DispIrqVblank	= 3,		/* Irq on vblank */
+	DispIrqHblank	= 4,		/* Irq on hblank */
+	DispIrqVcount	= 5,		/* Irq on Vcount*/
 };
 
 #define VRAMREG	((VramReg*)VRAM)
@@ -191,17 +202,26 @@ struct PowerReg {
 	ushort pcr;
 };
 
-enum {
-	POWER_LCD =		1<<0,
+enum ARM7_power
+{
+	POWER_SOUND,	//	Controls the power for the sound controller.
+	POWER_WIFI,	//	Controls the power for the wifi device.
+};
+
+/*
+ * POWERREG bits
+ */
+enum ARM9_power
+{
+	POWER_LCD =			1<<0,
 	POWER_2D_A =		1<<1,
 	POWER_MATRIX = 		1<<2,
-	POWER_3D_CORE = 	1<<3,
+	POWER_3D_CORE = 		1<<3,
 	POWER_2D_B =		1<<9,
 	POWER_SWAP_LCDS =	1<<15,
 };
 
-
-#define SPIREG ((PowerReg*)SPI)
+#define SPIREG ((SpiReg*)SPI)
 typedef struct SpiReg SpiReg;
 struct SpiReg {
 	ushort spicr;
@@ -256,9 +276,21 @@ struct NDShdr{
 	ushort hdrcrc;
 };
 
-
 /* 
  * Input Buttons
+ */
+#define KEYINPUT	0x04000130
+#define KEYREG ((KeyReg*)KEYINPUT)
+typedef struct KeyReg KeyReg;
+struct KeyReg {
+	ushort in;
+	ushort inctl;
+	ushort rcnt;
+	ushort xy;
+};
+
+/*
+ * KEYREG bits
  */
 enum
 {

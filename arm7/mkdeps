@@ -14,7 +14,7 @@ $AWK -v 'conf='$CONF '
 
 	/^[O|H]FILES=/ {collect=1; next}
 
-	/^[ 	]*$/ {collect=0}
+	/^[ 	]*$|^#/ {collect=0}
 	
 	collect {
 		if(match($1, ".+.\\$O")){

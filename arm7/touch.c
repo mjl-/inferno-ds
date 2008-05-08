@@ -53,7 +53,7 @@ chkstylus(void)
 	REG_SPIDATA = 0;
 	busywait();
 	if(wastouched){
-		if( !(REG_KEYXY & 0x40) )
+		if( !(KEYREG->xy & 0x40) )
 			return 1;
 		else{
 			REG_SPICNT = Spien|Spi2mhz|Spitouch|Spicont;
@@ -64,10 +64,10 @@ chkstylus(void)
 			REG_SPICNT = Spien|Spi2mhz|Spitouch;
 			REG_SPIDATA = 0;
 			busywait();
-			return !(REG_KEYXY & 0x40) ? 2 : 0;
+			return !(KEYREG->xy & 0x40) ? 2 : 0;
 		}
 	}else{
-		return !(REG_KEYXY & 0x40) ? 1 : 0;
+		return !(KEYREG->xy & 0x40) ? 1 : 0;
 	}
 }
 uint16 

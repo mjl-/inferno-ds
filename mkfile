@@ -27,7 +27,6 @@ OBJ=\
 	defont.$O\
 	main.$O\
 	trap.$O\
-	math.$O\
 	$CONF.root.$O\
 	$IP\
 	$DEVS\

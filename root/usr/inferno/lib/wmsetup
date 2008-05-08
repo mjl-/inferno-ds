@@ -1,5 +1,6 @@
 #!/dis/sh script
 
+wmrun bind -a '#A' /dev # audio
 wmrun bind -a '#R' /dev	# nds regs
 wmrun bind -b /icons/tinytk /icons/tk
 
@@ -15,24 +16,19 @@ wmrun wm/keyboard -t
 wmrun wm/sh -w 240 -h 130 -ic '
 	echo welcome `{cat /dev/user}!;
 	
-#	cat /dev/ndsfw
+	cat /dev/ndsfw
 
-	echo /dev/ndsrom works! > /dev/ndsrom
-	cat /dev/ndsrom  | read -o 0 19
+#	echo /dev/ndsrom works! > /dev/ndsrom
+#	cat /dev/ndsrom  | read -o 0 19
 
-	echo /dev/ndssram works! > /dev/ndssram
-	cat /dev/ndssram  | read -o 0 20
+#	echo /dev/ndssram works! > /dev/ndssram
+#	cat /dev/ndssram  | read -o 0 20
 
 	echo show ints
 	echo '' 0x04000208/X
 		0x04000210/X
-		0x04000214/X'' | mdb /dev/registers 
+		0x04000214/X'' | mdb /dev/registers
 
-	pwrctl=0x04000304
-	vpwrctl=`{mdb /dev/registers $pwrctl/X}
-
-	mdb -w /dev/registers $pwrctl''/w 0x00008000 | ''$"vpwrctl
-	echo lcd swap
-	mdb -w /dev/registers $pwrctl''/w ''$"vpwrctl
+	auplay /usr/inferno/lib/invhit.iaf
 	'
 

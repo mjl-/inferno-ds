@@ -53,12 +53,10 @@
 #include "jtypes.h"
 #include "bios.h"
 #include "card.h"
-#include "dma.h"
 #include "ipc.h"
 #include "memory.h"
 #include "system.h"
-#include "serial.h"
 #include "audio.h"
 #include "clock.h"
 #include "touch.h"
-
+#include "spi.h"

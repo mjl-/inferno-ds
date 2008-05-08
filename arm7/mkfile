@@ -16,10 +16,10 @@ OFILES=\
 	spi.$O\
 	clock.$O\
 	system.$O\
-	serial.$O\
 	touch.$O\
 	microphone.$O\
 	userSettings.$O\
+#	wifi.$O\
 
 HFILES=\
 	../mem.h\
@@ -27,17 +27,17 @@ HFILES=\
 	jtypes.h\
 	bios.h\
 	card.h\
-	dma.h\
 	ipc.h\
 	memory.h\
 	system.h\
-	serial.h\
+	spi.h\
 	audio.h\
 	clock.h\
 	touch.h\
 	dat.h\
 	fns.h\
-
+#	wifi.h\
+	
 LIBS=\
 	kern\
 

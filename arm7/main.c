@@ -18,13 +18,6 @@ extern char end[];
 
 int ndstype;
 
-enum
-{
-	MaxRetry = 5,
-	MaxRange = 30,
-};
-
-
 void
 nbfifoput(ulong cmd, ulong v)
 {
@@ -40,6 +33,14 @@ fifoput(ulong cmd, ulong v)
 }
 
 void
+nds_fifo_send(ulong v)
+{
+	if(FIFOREG->ctl & FifoTfull)
+		return;
+	FIFOREG->send = v;
+}
+
+void
 fiforecvintr(void)
 {
 	ulong v, vv;
@@ -50,7 +51,7 @@ fiforecvintr(void)
 		v = vv>>Fcmdwidth;
 		switch(vv&Fcmdmask) {
 		case F9brightness:
-			readFirmware(FWconsoletype, buf, sizeof buf);
+			read_firmware(FWconsoletype, buf, sizeof buf);
 			ndstype = buf[0];
 			if(ndstype == Dslite)
 				brightset(v);
@@ -60,6 +61,12 @@ fiforecvintr(void)
 
 	intrclear(FRECVbit, 0);
 }
+
+enum
+{
+	MaxRetry = 5,
+	MaxRange = 30,
+};
 
 int 
 main(void)
@@ -71,7 +78,7 @@ main(void)
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
-	readFirmware(0x03FE00,PersonalData,sizeof(PersonalData));
+	read_firmware(0x03FE00,PersonalData,sizeof(PersonalData));
 	poweron(POWER_SOUND);
 	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
 
@@ -117,8 +124,8 @@ vblankintr(void)
 		print("Hello world!\n");
 
 	/* check buttons state */
-	bst = REG_KEYINPUT & Btn9msk;
-	bst |= (REG_KEYXY & Btn7msk) << (Xbtn-Xbtn7);
+	bst = KEYREG->in & Btn9msk;
+	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
 
 	if(~bst & 1<<Pdown) {
 		touchReadXY(&tp);

@@ -36,89 +36,13 @@
 */
 
 
-//	LCD status register.
-#define	REG_DISPSTAT	(*(vu16*)0x04000004)
-
-//	The display currently in a vertical blank.
-#define DISP_IN_VBLANK     BIT(0)
-
-//	The display currently in a horizontal blank.
-#define DISP_IN_HBLANK     BIT(1)
-
-//	Current scanline and %DISP_Y match.
-#define DISP_YTRIGGERED    BIT(2)
-
-//	Interrupt on vertical blank.
-#define DISP_VBLANK_IRQ    BIT(3)
-
-//	Interrupt on horizontal blank.
-#define DISP_HBLANK_IRQ    BIT(4)
-
-//	Interrupt when current scanline and %DISP_Y match.
-#define DISP_YTRIGGER_IRQ  BIT(5)
-
-//	Current display scanline.
-#define	REG_VCOUNT		(*(vu16*)0x4000006)
-
-
 //	Halt control register.
 /*!	Writing 0x40 to HALT_CR activates GBA mode.
 	%HALT_CR can only be accessed via the BIOS.
 */
 #define HALT_CR       (*(vuint16*)0x04000300)
 
-//	Power control register.
-/*!	This register controls what hardware should
-	be turned on or off.
-*/
-#define	REG_POWERCNT	*(vu16*)0x4000304
-
-//	Turns on specified hardware.
-/*!	This function should only be called after %powerSET.
-
-	\param on What to power on.
-*/
-
-//	Turns on only the specified hardware.
-/*!	Use this function to power on basic hardware types you
-	wish to use throughout your program.
-
-	\param on What to power on.
-*/
-
-//	Turns off the specified hardware.
-/*!	\param off What to power off.
-*/
-
-
-//	Enables power to all hardware required for 2D video.
-#define POWER_ALL_2D     (POWER_LCD |POWER_2D_A |POWER_2D_B)
-
-//	Enables power to all hardware required for 3D video.
-#define POWER_ALL		 (POWER_ALL_2D | POWER_3D_CORE | POWER_MATRIX)
-
-#define POWER_SWAP_LCDS		BIT(15)
-
-//	Switches the screens.
-
-//	Forces the main core to display on the top.
-
-
-
-//	Power-controlled hardware devices accessable to the ARM7.
-/*!	Note that these should only be used when programming for
-	the ARM7.  Trying to boot up these hardware devices via
-	the ARM9 would lead to unexpected ress.
-*/
-enum ARM7_power
-{
-	POWER_SOUND,	//	Controls the power for the sound controller.
-	POWER_UNKNOWN,	//	Controls the power for an unknown device.
-};
-
-
 void readUserSettings(void);
-
 
 //	User's DS settings.
 /*!	\struct tPERSONAL_DATA
@@ -184,33 +108,7 @@ typedef struct tPERSONAL_DATA {
 #pragma hjdicks 0
 #pragma packed 0
 
-//	Key input register.
-/*!	On the ARM9, the hinge "button," the touch status, and the
-	X and Y buttons cannot be accessed directly.
-*/
-#define	REG_KEYINPUT	(*(vuint16*)0x04000130)
-
-//	Key input control register.
-#define	REG_KEYCNT		(*(vuint16*)0x04000132)
-
 //	Default location for the user's personal data (see %PERSONAL_DATA).
 #define PersonalData ((PERSONAL_DATA*)0x27FFC80)
 
-//	argv structure
-/*!	\struct __argv
-
-	structure used to set up argc/argv on the DS
-
-*/
-struct __argv {
-	int argvMagic;		// argv magic number, set to 0x5f617267 ('_arg') if valid 
-	char *cmdLine;	// base address of cmd line, set of null terminated strings
-	int length;			// total length of cmd line
-};
-
-//	Default location for the libnds argv structure.
-#define libnds_argv		((struct __argv *)0x027FFF70)
-
-// argv struct magic number
-#define argvMagic 0x5f617267
 void setytrig(int Yvalue);

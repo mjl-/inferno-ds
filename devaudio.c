@@ -13,7 +13,7 @@ enum
 {
 	Qdir		= 0,
 	Qaudio,
-	Qvolume,
+	Qaudioctl,
 };
 
 static
@@ -21,7 +21,7 @@ Dirtab audiodir[] =
 {
 	".",		{Qdir, 0, QTDIR},	0,	0555,
 	"audio",	{Qaudio},		0,	0666,
-	"volume",	{Qvolume},		0,	0666,
+	"audioctl",	{Qaudioctl},		0,	0666,
 };
 
 void	DC_FlushRange(const void *base, u32 size);
@@ -56,19 +56,6 @@ void playGenericSound(const void* data, u32 length){
 	Snd.data[0].len = length;
 
 	playSoundBlock(&Snd);
-}
-
-// raw pcm audio sample
-extern int invhitlen;
-extern char invhitcode[];
-
-static void
-audioinit(void){
-	print("audioinit ...\n");
-//	memset(IPC->soundData, 0, sizeof(TransferSound));
-
-	setGenericSound(11127, 0x7F, 0, 1);
-	playGenericSound(invhitcode, invhitlen);
 }
 
 static Chan*
@@ -115,11 +102,20 @@ audioread(Chan *c, void *vp, long n, vlong offset)
 	case Qaudio:
 		break;
 
-	case Qvolume:
+	case Qaudioctl:
 		break;
 	}
 	return n;
 }
+
+/* audioctl
+ * +rate   11127
+ * +chans  1
+ * +bits   8
+ * +enc    pcm 
+ *
+ * and volume
+ */
 
 // TODO: provive audio write support,
 // in order to play some audio files from devroot
@@ -131,10 +127,12 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 		error(Eperm);
 		break;
 
-	case Qvolume:
+	case Qaudioctl:
 		break;
 
 	case Qaudio:
+		setGenericSound(11127, 0x7F, 0, 1);
+		playGenericSound(vp, n);
 		break;
 	}
 	return n;
@@ -145,7 +143,7 @@ Dev audiodevtab = {
 	"audio",
 
 	devreset,
-	audioinit,
+	devinit,
 	devshutdown,
 	audioattach,
 	audiowalk,

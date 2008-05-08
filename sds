@@ -86,7 +86,7 @@ link
 
 misc
 	logo
-	invhit
+	math
 
 code
 	int main_pool_pcnt = 50;
@@ -96,6 +96,7 @@ code
 
 	int consoleprint = 1;
 	int redirectconsole = 1;
+	int iprintscreenputs = 1;
 	char debug_keys = 1;
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";
@@ -226,6 +227,9 @@ root
 	/icons/tinytk/exit.bit
 	/icons/tinytk/help.bit
 	/icons/tinytk/ok.bit
+
+	/dis/auplay.dis
+	/usr/inferno/lib/invhit.iaf
 
 #	/dis/lib/devpointer.dis
 #	/dis/nds/touchprint.dis

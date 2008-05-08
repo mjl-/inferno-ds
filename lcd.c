@@ -9,12 +9,8 @@
 #include	"screen.h"
 #include	"arm7/jtypes.h"
 #include	"lcdreg.h"
-#define	DPRINT	if(1)iprint
 
-enum
-{
-	EnableCtlr =~0x7	/* lcsr */
-};
+#define	DPRINT	if(0)iprint
 
 #define Scrbase(n) (((n)*0x800)+0x6000000)
 #define Cbase(n) (((n)*0x4000)+0x6000000)
@@ -52,7 +48,7 @@ setlcdmode(LCDdisplay *ld)
  	lcd->lccr = MODE_FB(0);
       	vram->acr = VRAM_ENABLE|VRAM_A_LCD;
 
-	iprint("lccr=%8.8lux\n", lcd->lccr); 
+	DPRINT("lccr=%8.8lux\n", lcd->lccr); 
 }
 static LCDdisplay main_display;	/* TODO: limits us to a single display */
 

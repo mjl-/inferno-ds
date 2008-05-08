@@ -84,7 +84,7 @@ intrenable(int v, void (*r)(void), int tbdf)
 		
 	INTREG->ier |= (1 << v);
 	if (VBLANKbit <= v && v <= VCOUNTbit)
-		LCDREG->lcsr |= (1 << (DISP_VBLANKbit+v));
+		LCDREG->lcsr |= (1 << (DispIrqVblank+v));
 }
 
 void
@@ -96,7 +96,7 @@ intrmask(int v, int tbdf)
 	
 	INTREG->ier &= ~(1<<v);
 	if (VBLANKbit <= v && v <= VCOUNTbit)
-		LCDREG->lcsr &= ~(1<<(DISP_VBLANKbit+v));
+		LCDREG->lcsr &= ~(1<<(DispIrqVblank+v));
 }
 
 void

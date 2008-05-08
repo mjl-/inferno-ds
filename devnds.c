@@ -127,13 +127,6 @@ fiforecv(ulong vv)
 }
 
 static void
-vblankintr(Ureg *, void *)
-{
-	/* TODO: update lcd/screen fb on vblank */
-	intrclear(VBLANKbit, 0);
-}
-
-static void
 ndsinit(void)
 {
 //	NDShdr *dsh = (NDShdr*)0x027FFE00;
@@ -144,8 +137,9 @@ ndsinit(void)
 	// Map Game Cartridge memory to ARM9
 	*((ulong*)EXMEMCNT) &= ~0x80;
 
-	hassram = (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0) &&
-		(memcmp((void*)dsh->rserv5, "PASS", 4) == 0);
+	// (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0)
+	hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0);
+
 	if (hassram)
 		conf.bsram = SRAMZERO;
 
@@ -159,8 +153,6 @@ ndsinit(void)
 	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
 	print("ndsinit: sram %lud @ %08x rom %lud @ %08x\n",
 		hassram, conf.bsram, hasrom, conf.brom);
-
-	intrenable(0, VBLANKbit, vblankintr, 0, 0);
 }
 
 static Chan*
