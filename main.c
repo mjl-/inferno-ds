@@ -336,13 +336,3 @@ va2pa(void *v)
 	return (ulong)v;
 }
 
-
-
-static  void IPC_SendSync(unsigned int sync) {
-	REG_IPC_SYNC = (REG_IPC_SYNC & 0xf0ff) | (((sync) & 0x0f) << 8) | IPC_SYNC_IRQ_REQUEST;
-}
-
-
-static  int IPC_GetSync() {
-	return REG_IPC_SYNC & 0x0f;
-}

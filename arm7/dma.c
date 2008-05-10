@@ -1,60 +1,72 @@
+#include <u.h>
+#include "../mem.h"
+#include "../io.h"
+#include <kern.h>
+#include "nds.h"
 
-static  void 
-dmaCopyWords(uint8 channel, const void* src, void* dest, uint32 size) 
+static void 
+dmaCopyWords(int8 channel, const void* src, void* dest, uint32 size, uchar sync)
 {
-	DMA_SRC(channel) = (uint32)src;
-	DMA_DEST(channel) = (uint32)dest;
-	DMA_CR(channel) = DMA_COPY_WORDS | (size>>2);
-	while(DMA_CR(channel) & DMA_BUSY);
+	DmaReg *dmareg;
+	if (channel < 0 || channel > 3)
+		return;
+
+	dmareg = DMAREG + channel;
+	dmareg->src = (uint32)src;
+	dmareg->dst = (uint32)dest;
+	dmareg->ctl = Dmatxwords | (size>>2);
+	if (sync)
+		while(dmareg->ctl & Dmabusy);
 }
 
-static  void dmaCopyHalfWords(uint8 channel, const void* src, void* dest, uint32 size) {
-	DMA_SRC(channel) = (uint32)src;
-	DMA_DEST(channel) = (uint32)dest;
-	DMA_CR(channel) = DMA_COPY_HALFWORDS | (size>>1);
-	while(DMA_CR(channel) & DMA_BUSY);
+static void
+dmaCopyHalfWords(int8 channel, const void* src, void* dest, uint32 size, uchar sync)
+{
+	DmaReg *dmareg;
+	if (channel < 0 || channel > 3)
+		return;
+
+	dmareg = DMAREG + channel;
+	dmareg->src = (uint32)src;
+	dmareg->dst = (uint32)dest;
+	dmareg->ctl = Dmatxhwords | (size>>1);
+	if (sync)
+		while(dmareg->ctl & Dmabusy);
 }
 
-static  void dmaCopy(const void * source, void * dest, uint32 size) {
-	DMA_SRC(3) = (uint32)source;
-	DMA_DEST(3) = (uint32)dest;
-	DMA_CR(3) = DMA_COPY_HALFWORDS | (size>>1);
-	while(DMA_CR(3) & DMA_BUSY);
+#define dmaCopy(src, dest, size, sync)	dmaCopyWords(3, src, dest, size, sync)
+
+static void 
+dmaFillWords(const void* src, void* dest, uint32 size)
+{
+	DmaReg *dmareg;
+
+	dmareg = DMAREG + 3;
+	dmareg->src = (uint32)src;
+	dmareg->dst = (uint32)dest;
+	dmareg->ctl = Dmasrcfix | Dmatxwords | (size>>2);
+	while(dmareg->ctl & Dmabusy);
 }
 
-static  void dmaCopyWordsAsynch(uint8 channel, const void* src, void* dest, uint32 size) {
-	DMA_SRC(channel) = (uint32)src;
-	DMA_DEST(channel) = (uint32)dest;
-	DMA_CR(channel) = DMA_COPY_WORDS | (size>>2);
+static void 
+dmaFillHalfWords(const void* src, void* dest, uint32 size)
+{
+	DmaReg *dmareg;
 
+	dmareg = DMAREG + 3;
+	dmareg->src = (uint32)src;
+	dmareg->dst = (uint32)dest;
+	dmareg->ctl = Dmasrcfix | Dmatxhwords | (size>>1);
+	while(dmareg->ctl & Dmabusy);
 }
 
-static  void dmaCopyHalfWordsAsynch(uint8 channel, const void* src, void* dest, uint32 size) {
-	DMA_SRC(channel) = (uint32)src;
-	DMA_DEST(channel) = (uint32)dest;
-	DMA_CR(channel) = DMA_COPY_HALFWORDS | (size>>1);
-}
+static  int
+dmaBusy(int8 channel)
+{
+	DmaReg *dmareg;
+	if (channel < 0 || channel > 3)
+		return 0;
 
-static  void dmaCopyAsynch(const void * source, void * dest, uint32 size) {
-	DMA_SRC(3) = (uint32)source;
-	DMA_DEST(3) = (uint32)dest;
-	DMA_CR(3) = DMA_COPY_HALFWORDS | (size>>1);
-}
-
-static  void dmaFillWords( const void* src, void* dest, uint32 size) {
-	DMA_SRC(3) = (uint32)src;
-	DMA_DEST(3) = (uint32)dest;
-	DMA_CR(3) = DMA_SRC_FIX | DMA_COPY_WORDS | (size>>2);
-	while(DMA_CR(3) & DMA_BUSY);
-}
-
-static  void dmaFillHalfWords( const void* src, void* dest, uint32 size) {
-	DMA_SRC(3) = (uint32)src;
-	DMA_DEST(3) = (uint32)dest;
-	DMA_CR(3) = DMA_SRC_FIX | DMA_COPY_HALFWORDS | (size>>1);
-	while(DMA_CR(3) & DMA_BUSY);
-}
-
-static  int dmaBusy(uint8 channel) {
-	return (DMA_CR(channel) & DMA_BUSY)>>31;
+	dmareg = DMAREG + channel;
+	return (dmareg->ctl & Dmabusy)>>31;
 }

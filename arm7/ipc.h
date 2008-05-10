@@ -48,7 +48,8 @@ struct TransferSound {
 };
 
 
-
+#define IPCMEM 0x027FF000
+#define IPC ((TransferRegion*)IPCMEM)
 typedef struct TransferRegion TransferRegion;
 struct TransferRegion {
 	vint16 touchX,   touchY;	 // TSC X, Y
@@ -91,48 +92,3 @@ struct TransferRegion {
 	vuint32 mailSize;
 };
 
-
-
-
-
-#define IPC getIPC()
-
-#define IPC_PEN_DOWN BIT(6)
-#define IPC_X BIT(0)
-#define IPC_Y BIT(1)
-#define IPC_LID_CLOSED BIT(7)
-
-
-// Synchronization register
-
-#define REG_IPC_SYNC	(*(vuint16*)0x04000180)
-
-enum IPC_SYNC_BITS {
-	IPC_SYNC_IRQ_ENABLE		=	BIT(14),
-	IPC_SYNC_IRQ_REQUEST	=	BIT(13)
-};
-
-
-
-
-
-// fifo
-
-#define REG_IPC_FIFO_TX		(*(vu32*)0x4000188)
-#define REG_IPC_FIFO_RX		(*(vu32*)0x4100000)
-#define REG_IPC_FIFO_CR		(*(vu16*)0x4000184)
-
-enum IPC_CONTROL_BITS {
-	IPC_FIFO_SEND_EMPTY	=	(1<<0),
-	IPC_FIFO_SEND_FULL	=	(1<<1),
-	IPC_FIFO_SEND_IRQ	=	(1<<2),
-	IPC_FIFO_SEND_CLEAR	=	(1<<3),
-	IPC_FIFO_RECV_EMPTY	=	(1<<8),
-	IPC_FIFO_RECV_FULL	=	(1<<9),
-	IPC_FIFO_RECV_IRQ	=	(1<<10),
-	IPC_FIFO_ERROR		=	(1<<14),
-	IPC_FIFO_ENABLE		=	(1<<15)
-};
-
-
-TransferRegion  *getIPC(void);

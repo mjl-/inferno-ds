@@ -129,13 +129,13 @@ fiforecv(ulong vv)
 static void
 ndsinit(void)
 {
-//	NDShdr *dsh = (NDShdr*)0x027FFE00;
+//	NDShdr *dsh = NDSHeader;
 	NDShdr *dsh = (NDShdr*)ROMZERO;
 	ulong hasrom, hassram;
 	char *p;
 
-	// Map Game Cartridge memory to ARM9
-	*((ulong*)EXMEMCNT) &= ~0x80;
+	// bug: rom is only usable with certain slot2 devices
+	EXMEMREG->ctl &= ~Arm7ownsrom;
 
 	// (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0)
 	hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0);
@@ -355,19 +355,6 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		error(Ebadusefd);
 	}
 	return n;
-}
-
-TransferRegion  *getIPC(void) {
-	return (TransferRegion*)(0x027FF000);
-}
-
-static  void IPC_SendSync(unsigned int sync) {
-	REG_IPC_SYNC = (REG_IPC_SYNC & 0xf0ff) | (((sync) & 0x0f) << 8) | IPC_SYNC_IRQ_REQUEST;
-}
-
-
-static  int IPC_GetSync() {
-	return REG_IPC_SYNC & 0x0f;
 }
 
 Dev ndsdevtab = {

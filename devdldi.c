@@ -167,7 +167,7 @@ if(0){ /* fix calling elf-arm code */
 		print("isin: %d\n", hdr.io.isin());
 		print("clrstat: %d\n", hdr.io.clrstat());
 		print("init: %d\n", hdr.io.init());
-		print("deinit: %d\n", hdr.io.deinit());
+		//print("deinit: %d\n", hdr.io.deinit());
 
 		print("while(1);\n");
 		// while(1);

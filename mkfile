@@ -64,6 +64,9 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
 	cd arm7; mk CONF=$CONF
 
+i$CONF.kfs: root/lib/proto/$CONF'proto'
+	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
+
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$CONF i$CONF.kfs
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
@@ -75,8 +78,8 @@ i$CONF.nds: i$CONF arm7/i$CONF i$CONF.kfs
 	echo -n ROMZERO9 >> i$CONF.nds
 	cat i$CONF.kfs >> i$CONF.nds
 
-i$CONF.kfs: root/lib/proto/$CONF'proto'
-	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
+i$CONF.ds.gba: i$CONF.nds
+	dsbuild $prereq -o $target
 
 i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c

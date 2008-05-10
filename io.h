@@ -3,8 +3,6 @@
  * Interrupt controller
  */
 
-#define INTREG	((IntReg *)INTbase)
-
 #define	MaxIRQbit	24		/* Maximum IRQ */
 
 #define	VBLANKbit	0		/* Vertical blank */
@@ -31,6 +29,7 @@
 #define	SPIbit		23		/* SPI */
 #define	WIFIbit		24		/* WIFI */
 
+#define INTREG	((IntReg *)INTbase)
 typedef struct IntReg IntReg;
 struct IntReg {
 	ulong	ime;	// Interrupt Master Enable
@@ -66,7 +65,6 @@ enum
 	Fifoerror =	1<<14,
 	Fifoenable =	1<<15,
 };
-
 
 /*
  * Fifo message types
@@ -224,14 +222,15 @@ enum ARM9_power
 #define SPIREG ((SpiReg*)SPI)
 typedef struct SpiReg SpiReg;
 struct SpiReg {
-	ushort spicr;
-	ushort spidat;
+	ushort ctl;
+	ushort data;
 };
 
 #define VIDMEMHI	((ushort*)VRAMTOP)
 #define VIDMEMLO	((ushort*)VRAMZERO)
 
 /* NDS file header info */
+#define NDSHeader ((NDShdr*)0x027FFE00)
 typedef struct NDShdr NDShdr;
 struct NDShdr{
 	char gtitle[12];
@@ -332,9 +331,35 @@ enum
 	Button3 =	1<<2,
 };
 
-typedef struct Ipc Ipc;
-struct Ipc {
-	ulong cr;
+/*
+ * Synchronization reg
+ */
+#define IPCREG ((IpcReg*)0x04000180)
+typedef struct IpcReg IpcReg;
+struct IpcReg {
+	ulong ctl;
+};
+
+enum
+{
+	Ipcirq 		= 1<<13,
+	Ipcirqena	= 1<<14,
+};
+
+/*
+ * External memory reg
+ */
+#define EXMEMREG ((ExmReg*)EXMEMCNT)
+typedef struct ExmReg ExmReg;
+struct ExmReg {
+	ulong ctl;
+};
+
+enum
+{
+	Arm7ownsrom	= 1<<7,
+	Arm7ownscard	= 1<<11,
+	Arm7ownsram	= 1<<15,
 };
 
 void _halt(void);

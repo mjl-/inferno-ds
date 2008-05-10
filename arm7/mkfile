@@ -12,7 +12,6 @@ OFILES=\
 	l.$O\
 	main.$O\
 	trap.$O\
-	ipc.$O\
 	spi.$O\
 	clock.$O\
 	system.$O\
@@ -28,7 +27,6 @@ HFILES=\
 	bios.h\
 	card.h\
 	ipc.h\
-	memory.h\
 	system.h\
 	spi.h\
 	audio.h\
