@@ -297,16 +297,6 @@ TEXT mpuinit(SB), $-4
 	MOVW	$(CpCaltivec|CpClateabt|CpCd32|CpCi32|CpCwb), R1
 	MCR		CpMPU, 0, R1, C(CpControl), C0, 0
 	
-	/* allocate GBA+Main Memory to ARM9 */
-	/* (Setting wait_cr here allows init of card specific registers here) */
-	/* bit  7: GBA  Slot allocated to ARM9 */
-	/* bit 11: DS   Slot allocated to ARM9 */
-	/* bit 15: Main Memory priority to ARM9 */
-	MOVW	$(EXMEMCNT), R0 			/* wait_cr */
-	MOVW	(R0), R1
-	BIC		$0x8880, R1
-	MOVW	R1, (R0)
-	
 	/* Protection unit Setup added by Sasq */
 	
 	/* Disable cache */

@@ -10,7 +10,6 @@
 
 #include 	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
-#include	"arm7/touch.h"
 #include	"arm7/system.h"
 
 #define	DPRINT if(0)print
@@ -63,8 +62,8 @@ Dirtab ndstab[]={
 
 // TODO use Dbgbtn7 to enable debug; by toggling Conf.bmap = 2
 static	Rune	rockermap[3][Numbtns] ={
-	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
-	{'\n', 0x7f, '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
+	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
 	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
 };
 
@@ -129,30 +128,41 @@ fiforecv(ulong vv)
 static void
 ndsinit(void)
 {
-//	NDShdr *dsh = NDSHeader;
-	NDShdr *dsh = (NDShdr*)ROMZERO;
-	ulong hasrom, hassram;
-	char *p;
+	NDShdr *dsh = nil;
+	ulong hassram;
+	ulong *p;
+	
+	// arm9 is the owner of ram, slot-1 & slot-2 
+	EXMEMREG->ctl &= ~(Arm7ownsrom|Arm7ownscard|Arm7ownsram);
 
-	// bug: rom is only usable with certain slot2 devices
-	EXMEMREG->ctl &= ~Arm7ownsrom;
+	// look for a valid NDShdr
+	if (memcmp((void*)((NDShdr*)ROMZERO)->gcode, "INFR", 4) == 0)
+		dsh =  (NDShdr*)ROMZERO;
+	else if (memcmp((void*)NDSHeader->gcode, "INFR", 4) == 0)
+		dsh = NDSHeader;
 
-	// (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0)
-	hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0);
+	if(dsh != nil){
+		/* check before overriding anyone else's memory */
+		hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0) &&
+			  (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0);
 
-	if (hassram)
-		conf.bsram = SRAMZERO;
+		conf.bsram = SRAMTOP;
+		if (hassram)
+			conf.bsram = SRAMZERO;
+		
+		/* BUG: rom only present on certain slot2 devices */
+		if (dsh == (NDShdr*)ROMZERO)
+		for (p=(ulong*)(ROMZERO+dsh->appeoff); p < (ulong*)(ROMTOP); p++)
+			if (memcmp(p, "ROMZERO9", 8) == 0)
+				break;
 
-	hasrom = (dsh->romhdrsz == 0x200);
-	if (hasrom)
-	for (p=(char*)ROMZERO+dsh->appeoff; p < (char*)ROMTOP; p++)
-		if (memcmp(p, "ROMZERO9", 8) == 0)
-			break;
-
-	conf.brom = (ulong)p + 8;
-	DPRINT("ROMZERO+appeoff: %08lux\n", ROMZERO+dsh->appeoff);
-	print("ndsinit: sram %lud @ %08x rom %lud @ %08x\n",
-		hassram, conf.bsram, hasrom, conf.brom);
+		conf.brom = ROMTOP;
+		if (p <= (ulong*)(ROMTOP))
+			conf.brom = (ulong)p + strlen("ROMZERO9");
+		
+	}
+	DPRINT("ndsinit: hdr %08lx sram %08x rom %08x\n",
+		dsh, conf.bsram, conf.brom);
 }
 
 static Chan*
@@ -279,7 +289,6 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
-		DPRINT("ndsread rom w %llux off %lld n %ld\n", (conf.brom+offset), offset, n);
  		memmove(a, (void*)(conf.brom+offset), n);
  		break;
 
@@ -336,20 +345,19 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
+		DPRINT("rom w %llux off %lld n %ld\n", (conf.brom+offset), offset, n);
 		memmove((void*)(conf.brom+offset), a, n);
  		break;
 
  	case Qsram:
-		/* check before overriding anyone else's memory */
-		if (!conf.bsram)
-			return 0;
-
 		len = SRAMTOP - conf.bsram;
 		if(offset < 0 || offset >= len)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
+		DPRINT("sram w %llux off %lld n %ld\n", (conf.bsram+offset), offset, n);
  		memmove((void*)(conf.bsram+offset), a, n);
+ 		break;
 
 	default:
 		error(Ebadusefd);
