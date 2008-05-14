@@ -123,7 +123,7 @@ timerdisable( int timer )
 void
 timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 {
-	TimerReg *t = (TimerReg*)(TIMERbase) + timer;
+	TimerReg *t = TIMERREG + timer;
 	if ((timer < 0) || (timer > 3))
 		return;
 	timerdisable(timer);

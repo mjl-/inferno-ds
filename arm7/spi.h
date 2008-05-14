@@ -101,7 +101,7 @@ enum power_reg
 enum
 {
 	POWER0_SOUND_AMP	= (1<<0),	/* Power the sound hardware (needed to hear stuff in GBA mode too) */
-	POWER_SOUND_SPK		= (1<<1),	/* Power the main speakers, headphone output will still work. */
+	POWER0_SOUND_SPK	= (1<<1),	/* Power the main speakers, headphone output will still work. */
 	POWER0_LOWER_BACKLIGHT	= (1<<2),	/* Enable the top backlight if set */
 	POWER0_UPPER_BACKLIGHT	= (1<<3),	/* Enable the bottom backlight if set */
 	POWER0_LED_BLINK	= (1<<4),
@@ -111,9 +111,9 @@ enum
 
 // PM control register bits - LED control
 #define PM_LED_CONTROL(m)    ((m)<<4)   ?
-#define PM_LED_ON     (0<<4)   Steady on
-#define PM_LED_SLEEP  (2<<4)   Blinking, mostly off
-#define PM_LED_BLINK  (3<<4)   Blinking, mostly on
+#define PM_LED_ON     (0<<4)   /* Steady on */
+#define PM_LED_SLEEP  (2<<4)   /* Blinking, mostly off */
+#define PM_LED_BLINK  (3<<4)   /* Blinking, mostly on */
 
 enum {
 	Brightlow,

@@ -227,28 +227,6 @@ TEXT	gotopc(SB), $-4
 */
 	RET
 
-TEXT _halt(SB), $-4
-	SWI 0x020000
-
-TEXT _reset(SB), $-4
-	SWI 0x010000
-
-/* need to allow kernel to pass args on what to clear */	
-TEXT	_clearregs(SB), $-4
-	MOVW 	$0x4, R0
-	SWI 	0x010000
-
-TEXT _stop(SB), $-4
-	MOVW 	$0xEAEAEA,R0
-
-TEXT swiDelay(SB), $-4
-	SWI		0x030000
-	RET
-
-TEXT	waitvblank(SB), $-4
-	SWI		0x050000
-	RET
-
 /* dsemu only: used to print to log */
 TEXT consputs(SB),$-4
 	SWI		0xff0000

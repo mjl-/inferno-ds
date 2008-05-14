@@ -74,20 +74,24 @@ static int curlen = 0;
 void 
 StartRecording(u8* buffer, int length) 
 {
+	TimerReg *t = TIMERREG + 1;
+
 	micbuf = buffer;
 	micbuflen = length;
 	curlen = 0;
 	MIC_On();
 	
-//	 Setup a 16kHz timer
-	TIMERREG->data = TIMER_BASE(Tmrdiv1) / 16000;
-	TIMERREG->ctl = Tmrena | Tmrdiv1 | Tmrirq;
+	// Setup a 16kHz timer
+	t->data = TIMER_BASE(Tmrdiv1) / 16000;
+	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
 }
 
 int 
 StopRecording() 
 {
-	TIMERREG->ctl &= ~Tmrena;
+	TimerReg *t = TIMERREG + 1;
+
+	t->ctl &= ~Tmrena;
 	MIC_Off();
 	micbuf = 0;
 	return curlen;

@@ -80,9 +80,3 @@ busywait(void)
 	while (REG_SPICNT & SPI_BUSY)
 		swiDelay(1);
 }
-
-void
-brightset(int v)
-{
-	power_write(POWER_BACKLIGHT, v&Brightmask);
-}

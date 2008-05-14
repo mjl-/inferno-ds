@@ -6,11 +6,6 @@
 #include "fns.h"
 #include "nds.h"
 
-s32 getFreeSoundChannel(void);
-void vblankintr(void);
-void vblankaudio(void);
-void poweron(int);
-
 /* So we can initialize our own data section and bss */
 extern char bdata[];
 extern char edata[];
@@ -54,7 +49,16 @@ fiforecvintr(void)
 			read_firmware(FWconsoletype, buf, sizeof buf);
 			ndstype = buf[0];
 			if(ndstype == Dslite)
-				brightset(v);
+				power_write(POWER_BACKLIGHT, v&Brightmask);
+			break;
+		case F9poweroff:
+			power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
+			break;
+		case F9reboot:
+			swiSoftReset();
+			break;
+		case F9leds:
+			power_write(POWER_CONTROL, v);
 			break;
 		}
 	}
@@ -68,6 +72,9 @@ enum
 	MaxRange = 30,
 };
 
+void vblankintr(void);
+void vblankaudio(void);
+
 int 
 main(void)
 {
@@ -78,8 +85,8 @@ main(void)
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
-	read_firmware(0x03FE00,PersonalData,sizeof(PersonalData));
-	poweron(POWER_SOUND);
+	read_firmware(0x03FE00, PersonalData, sizeof(PersonalData));
+	POWERREG->pcr |= 1<<POWER_SOUND;
 	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
 
 	/* dummy read to enable the touchpad PENIRQ */
@@ -95,10 +102,8 @@ main(void)
 	intrenable(VBLANKbit, vblankintr, 0);
 
 	// keep the ARM7 out of main RAM
-	while (1){
+	while (1)
 		swiWaitForVBlank();
-//		swiDelay(50000);
-	}
 	return 0;
 }
 
@@ -223,17 +228,14 @@ vblankintr(void)
 void 
 startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) 
 {
-	// TODO: fix freq = - 0x01000000 / sampleRate;
-	if (sampleRate == 11127)
-		SCHANNEL_TIMER(channel) = SOUND_FREQ(11127);
-
+	SCHANNEL_TIMER(channel) = SOUND_FREQ(sampleRate);
 	SCHANNEL_SOURCE(channel) = (u32)data;
 	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
 	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);
 }
 
 s32 
-getFreeSoundChannel()
+getFreeSoundChannel(void)
 {
 	int i;
 	for (i=0; i<16; i++) {
@@ -266,7 +268,7 @@ int
 print(char *fmt, ...)
 {
 	int n;
-	va_list arg;
+	//va_list arg;
 	char *buf = (char*)((char*)IPC + sizeof(IPC));
 
 	strcpy(buf, fmt);

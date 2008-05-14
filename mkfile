@@ -15,7 +15,7 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
-KTZERO=0x02004010
+KTZERO=0x02000130
 KTZERO7=0x03800000
 
 OBJ=\

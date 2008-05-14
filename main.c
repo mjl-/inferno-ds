@@ -263,7 +263,8 @@ exit(int inpanic)
 
 	if(inpanic){
 		print("Hit the reset button\n");
-		for(;;)clockpoll();
+		for(;;)
+			clockpoll();
 	}
 	archreboot();
 }

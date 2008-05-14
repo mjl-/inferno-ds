@@ -14,7 +14,6 @@ OFILES=\
 	trap.$O\
 	spi.$O\
 	clock.$O\
-	system.$O\
 	touch.$O\
 	microphone.$O\
 	userSettings.$O\

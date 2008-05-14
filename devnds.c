@@ -133,12 +133,12 @@ ndsinit(void)
 	ulong *p;
 	
 	// arm9 is the owner of ram, slot-1 & slot-2 
-	EXMEMREG->ctl &= ~(Arm7ownsrom|Arm7ownscard|Arm7ownsram);
+	EXMEMREG->ctl &= ~(Arm7hasds|Arm7hasgba|Arm7hasram);
 
 	// look for a valid NDShdr
-	if (memcmp((void*)((NDShdr*)ROMZERO)->gcode, "INFR", 4) == 0)
+	if (memcmp((void*)((NDShdr*)ROMZERO)->gcode, "INFRME", 6) == 0)
 		dsh =  (NDShdr*)ROMZERO;
-	else if (memcmp((void*)NDSHeader->gcode, "INFR", 4) == 0)
+	else if (memcmp((void*)NDSHeader->gcode, "INFRME", 6) == 0)
 		dsh = NDSHeader;
 
 	if(dsh != nil){
@@ -216,6 +216,14 @@ enum {
 	Autostart	= 1<<6,
 	Nosettings	= 1<<9,
 };
+
+/* memmove8 for SRAM: 8 bits width bus only */
+static void
+memmove8(uchar* dest, uchar const* src, int n)
+{
+	while(n--) 
+		*dest++ = *src++;
+}
 
 static long
 ndsread(Chan* c, void* a, long n, vlong offset)
@@ -298,7 +306,7 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
- 		memmove(a, (void*)(conf.bsram+offset), n);
+ 		memmove8(a, (uchar*)(conf.bsram+offset), n);
 		break;
 
 	default:
@@ -345,8 +353,8 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
-		DPRINT("rom w %llux off %lld n %ld\n", (conf.brom+offset), offset, n);
 		memmove((void*)(conf.brom+offset), a, n);
+		DPRINT("rom w %llux off %lld n %ld\n", (conf.brom+offset), offset, n);
  		break;
 
  	case Qsram:
@@ -355,8 +363,8 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
+ 		memmove8((uchar*)(conf.bsram+offset), a, n);
 		DPRINT("sram w %llux off %lld n %ld\n", (conf.bsram+offset), offset, n);
- 		memmove((void*)(conf.bsram+offset), a, n);
  		break;
 
 	default:

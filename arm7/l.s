@@ -21,6 +21,15 @@ dead:
 GLOBL 		Mach0(SB), $KSTACK7
 GLOBL 		Mach1(SB), $KSTACK7
 
+TEXT swiSoftReset(SB), $-4
+	SWI 0x000000
+	RET
+
+/* need to allow kernel to pass args on what to clear */	
+TEXT	_clearregs(SB), $-4
+	MOVW 	$0x4, R0
+	SWI 	0x010000
+
 TEXT swiDelay(SB), $-4
 	SWI	0x030000
 	RET
@@ -31,6 +40,11 @@ TEXT swiWaitForVBlank(SB), $-4
 
 TEXT swiHalt(SB), $-4
 	SWI	0x060000
+	RET
+
+TEXT swiSetHaltCR(SB), $-4
+	MOVW	R0, R2
+	SWI	0x1F0000
 	RET
 
 TEXT swiDivide(SB), $-4

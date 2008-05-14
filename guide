@@ -1,5 +1,6 @@
 win rc
 changes
+changes | grep  '# [ADMC]'
 svn diff > `date '+%0e%0m%0Y'`.patch
 acme -a -l ds.dump &
 Dump /usr/inferno/os/ds/ds.dump

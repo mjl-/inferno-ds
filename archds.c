@@ -24,13 +24,20 @@ archreset(void)
 void
 archconsole(void)
 {
-//	uartspecial(0, 57600, 'n', &kbdq, &printq, kbdcr2nl);
 }
+
 void
 archpowerdown(void)
 {
-	_stop();
+	fifoput(F9poweroff, 0);
 }
+
+void
+archreboot(void)
+{
+	fifoput(F9reboot, 0);
+}
+
 /* no need for this? */
 void
 archpowerup(void)
@@ -93,10 +100,3 @@ archether(int ctlno, Ether *ether)
 //	memmove(ether->ea, macaddrs[ctlno], Eaddrlen);
 	return 1;
 }
-
-void
-archreboot(void)
-{
-	_reset();
-}
-

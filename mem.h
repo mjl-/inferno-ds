@@ -43,9 +43,9 @@
  */
 
 #define KZERO		0x02000000
-#define MACHADDR	(KZERO+0x00002000)
-#define KTTB		(KZERO+0x00004000)      /* we don't have TTB */
-#define KTZERO		(KZERO+0x00004010)
+#define MACHADDR	(KZERO+0x00000000)
+#define KTTB		(KZERO+0x00000100)      /* we don't have TTB */
+#define KTZERO		(KZERO+0x00000130)
 #define KSTACK	8192			/* Size of kernel stack */
 
 #define	FLUSHMEM KTTB
@@ -87,7 +87,6 @@
 #define	ROMTOP		0x09FFFFFF
 #define	SRAMZERO	0x0A000000
 #define	SRAMTOP		0x0A00FFFF
-#define	EXMEMCNT	0x04000204
 #define	DTCMZERO	0x027C0000	/* NDS DTCM standard address */
 #define	DTCMSIZE	(16*1024)
 

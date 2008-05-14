@@ -77,6 +77,9 @@ enum
 
 	/* from arm9 to arm7 */
 	F9brightness =	0,
+	F9poweroff,
+	F9reboot,
+	F9leds,
 
 	/* from arm7 to arm9 */
 	F7keyup,
@@ -132,13 +135,11 @@ enum
 #define TIMERREG	((TimerReg*)TIMERbase)
 typedef struct TimerReg TimerReg;
 struct TimerReg {
-	ushort	data;	/* match */
-	ushort	ctl;
+	ushort data;	/* match */
+	ushort ctl;
 };
 
-/* TIMERREG data usage:
- * tmr->data = TIMER_BASE(div) / Hz, where div is TmrdivN 
- */ 
+/* usage: TIMERREG->data = TIMER_BASE(div) / Hz, where div is TmrdivN */ 
 #define TIMER_BASE(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
 
 /*
@@ -146,19 +147,18 @@ struct TimerReg {
  */
 enum
 {
-	Tmrena	= (1<<7),	//	enables the timer.
-	Tmrirq	= (1<<6),	//	request an Interrupt on overflow.
-	Tmrcas	= (1<<2),	//	cause the timer to count when the timer below overflows (unavailable for timer 0).
-	Tmrdiv1	= (0),		//	set timer freq to 33.514 Mhz.
-	Tmrdiv64 = (1),		//	set timer freq to (33.514 / 64) Mhz.
-	Tmrdiv256 = (2),	//	set timer freq to (33.514 / 256) Mhz.
-	Tmrdiv1024=(3),		//	set timer freq to (33.514 / 1024) Mhz.
+	Tmrena		= (1<<7),	// enables the timer.
+	Tmrirq		= (1<<6),	// request an Interrupt on overflow.
+	Tmrcas		= (1<<2),	// cause the timer to count when the timer below overflows (unavailable for timer 0).
+	Tmrdiv1 	= (0),		// set timer freq to 33.514 Mhz.
+	Tmrdiv64 	= (1),		// set timer freq to (33.514 / 64) Mhz.
+	Tmrdiv256 	= (2),		// set timer freq to (33.514 / 256) Mhz.
+	Tmrdiv1024 	= (3),		// set timer freq to (33.514 / 1024) Mhz.
 };
 
 /* 
  * Lcd control (59.73 hz)
  */
-
 #define LCDREG		((LcdReg*)LCD)
 #define SUBLCDREG		((LcdReg*)SUBLCD)
 typedef struct LcdReg LcdReg;
@@ -180,6 +180,9 @@ enum
 	DispIrqVcount	= 5,		/* Irq on Vcount*/
 };
 
+/*
+ * VRAM & WRAM bank control
+ */
 #define VRAMREG	((VramReg*)VRAM)
 typedef struct VramReg VramReg;
 struct VramReg {
@@ -190,6 +193,7 @@ struct VramReg {
 	uchar ecr;
 	uchar fcr;
 	uchar gcr;
+	uchar wcr; /* wram control */
 	uchar hcr;
 	uchar icr;
 };
@@ -342,28 +346,31 @@ struct IpcReg {
 
 enum
 {
-	Ipcirq 		= 1<<13,
+	Ipcdatain	= 0x00F,
+	Ipcnotused	= 0x0F0,
+	Ipcdataout	= 0xF00,
+	Ipcgenirq	= 1<<13,
 	Ipcirqena	= 1<<14,
 };
 
 /*
  * External memory reg
  */
-#define EXMEMREG ((ExmReg*)EXMEMCNT)
+#define EXMEMREG ((ExmReg*)0x04000204)
 typedef struct ExmReg ExmReg;
 struct ExmReg {
-	ulong ctl;
+	ushort ctl;
 };
 
 enum
 {
-	Arm7ownsrom	= 1<<7,
-	Arm7ownscard	= 1<<11,
-	Arm7ownsram	= 1<<15,
+	Gbasramcycles	= (1<<1|1<<0),	/* (0-3 = 10, 8, 6, 18 cycles) */
+	Gbarom1cycles	= (1<<3|1<<2),	/* (0-3 = 10, 8, 6, 18 cycles) */
+	Gbarom2cycles	= 1<<4,		/* (0-1 = 6, 4 cycles) */
+	Gbaslotphyout	= (1<<6|1<<5),	/* (0-3 = Low, 4.19MHz, 8.38MHz, 16.76MHz) */
+	Arm7hasgba	= 1<<7,		/* (0=ARM9, 1=ARM7) */
+	Arm7hasds	= 1<<11,	/* (0=ARM9, 1=ARM7) */
+  	Ramaccessmode	= 1<<14,	/* (0=Async/GBA/Reserved, 1=Synchronous) */
+	Arm7hasram	= 1<<15,	/* (0=ARM9 Priority, 1=ARM7 Priority) */
 };
 
-void _halt(void);
-void _reset(void);
-void _waitvblank(void);
-void _stop(void);
-void _clearregs(void);

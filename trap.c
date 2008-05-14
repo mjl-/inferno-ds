@@ -142,9 +142,9 @@ trapinit(void)
 	INTREG->ier=0;
 	INTREG->ipr=~0;
 
-	/* TCM stores highly accessed data: vectors, Mach0, stacks */
-	witcm(0x00000000 | 0x20); /* ITCM start (ro) = 0, sz = 32 MB */
-	wdtcm(KZERO | 0x0a);  /* DTCM start (rw) = KZERO, sz = 16 KB */
+	/* setup TCM(base, size): stores highly accessed data: vectors, Mach0, stacks */
+	witcm(0x00000000 | 0x20);	/* size = 32 MB */
+	wdtcm(0x00000000 | 0x0a);	/* size = 16 KB */
 
 	cp = rcpctl();
 	wcpctl(cp | CpCdtcml);

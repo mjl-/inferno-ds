@@ -182,10 +182,6 @@ int swiDecompressRLEVram(void * source, void * destination, uint32 toGetSize, TD
 
  Note: ARM9 exclusive swi 0x16
 
-
-
-
-
  swiHalt (swi 0x06)
    Same as swiSetHaltCR(0x80)
 
