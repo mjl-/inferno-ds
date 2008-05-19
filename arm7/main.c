@@ -124,9 +124,9 @@ vblankintr(void)
 
 	heartbeat++;
 
-	if (0) /* test dbgprint */
-	if((heartbeat % 120) == 0)
-		print("Hello world!\n");
+	if (1)
+	if((heartbeat % 128) == 0)
+		print("say: %s %d %x\n", "Hello world!", heartbeat, heartbeat);
 
 	/* check buttons state */
 	bst = KEYREG->in & Btn9msk;
@@ -262,18 +262,5 @@ vblankaudio(void)
 
 	// ack. ints
 	// intrclear(VBLANKbit, 0);
-}
-
-int
-print(char *fmt, ...)
-{
-	int n;
-	//va_list arg;
-	char *buf = (char*)((char*)IPC + sizeof(IPC));
-
-	strcpy(buf, fmt);
-	nbfifoput(F7dbgprint, (ulong)buf);
-
-	return n;
 }
 

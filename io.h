@@ -86,7 +86,7 @@ enum
 	F7keydown,
 	F7mousedown,
 	F7mouseup,
-	F7dbgprint,
+	F7print,
 };
 
 /* 

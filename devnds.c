@@ -117,8 +117,8 @@ fiforecv(ulong vv)
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);
 		break;
-	case F7dbgprint:
-		print("F7dbgprint: %s\n", (char*) v);
+	case F7print:
+		print("%s", (char*) v); /* just forward arm7 prints */
 		break;
 	default:
 		break;

@@ -100,7 +100,7 @@
 /*
  * ARM7 specific
  */
-#define	KSTACK7		256
+#define	KSTACK7		512
 #define	IWRAMZERO7	0x03800000
 #define	IWRAMTOP7	0x0380FFF0
 #define	INTHAND7	(SFRZERO - 4)

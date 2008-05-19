@@ -11,6 +11,7 @@ KTZERO7=0x03800000
 OFILES=\
 	l.$O\
 	main.$O\
+	print.$O\
 	trap.$O\
 	spi.$O\
 	clock.$O\
