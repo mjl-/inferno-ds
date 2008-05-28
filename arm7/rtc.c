@@ -36,99 +36,110 @@
 #define SIO_out (1<<4)
 #define SIO_in  (1)
 
-void 
-BCDToInteger(uint8 * data, uint32 length)
-{
-	u32 i;
-	for (i = 0; i < length; i++) {
-		data[i] = (data[i] & 0xF) + ((data[i] & 0xF0)>>4)*10;
-	}
-}
+#define RTC_PM (1<<6)
+#define HOUR_MASK 0x3f
 
-void
-integerToBCD(uint8 * data, uint32 length)
+static void
+rtcTransaction(uint8 * cmd, uint32 cmdlen, uint8 * res, uint32 reslen)
 {
-	u32 i;
-	for (i = 0; i < length; i++) {
-		int high, low;
-		swiDivMod(data[i], 10, &high, &low);
-		data[i] = (high<<4) | low;
-	}
-}
+	u8 bit;
+	u8 i;
 
-void
-rtcTransaction(uint8 * cmd, uint32 cmdLength, uint8 * res, uint32 resLength)
-{
-	uint32 bit;
-	uint8 data;
-	
 	RTC_CR8 = CS_0 | SCK_1 | SIO_1;
 	swiDelay(RTC_DELAY);
 	RTC_CR8 = CS_1 | SCK_1 | SIO_1;
 	swiDelay(RTC_DELAY);
-		data = *cmd++;
+
+	for (i = 0; i < cmdlen; i++) {
 		for (bit = 0; bit < 8; bit++) {
-			RTC_CR8 = CS_1 | SCK_0 | SIO_out | (data>>7);
+			RTC_CR8 = CS_1 | SCK_0 | SIO_out | (cmd[i] >> 7);
 			swiDelay(RTC_DELAY);
-			RTC_CR8 = CS_1 | SCK_1 | SIO_out | (data>>7);
+
+			RTC_CR8 = CS_1 | SCK_1 | SIO_out | (cmd[i] >> 7);
 			swiDelay(RTC_DELAY);
-			data = data << 1;
-		}
-	for ( ; cmdLength > 1; cmdLength--) {
-		data = *cmd++;
-		for (bit = 0; bit < 8; bit++) {
-			RTC_CR8 = CS_1 | SCK_0 | SIO_out | (data & 1);
-			swiDelay(RTC_DELAY);
-			RTC_CR8 = CS_1 | SCK_1 | SIO_out | (data & 1);
-			swiDelay(RTC_DELAY);
-			data = data >> 1;
+
+			cmd[i] = cmd[i] << 1;
 		}
 	}
-	for ( ; resLength > 0; resLength--) {
-		data = 0;
+
+	for (i = 0; i < reslen; i++) {
+		res[i] = 0;
 		for (bit = 0; bit < 8; bit++) {
 			RTC_CR8 = CS_1 | SCK_0;
 			swiDelay(RTC_DELAY);
+			
 			RTC_CR8 = CS_1 | SCK_1;
 			swiDelay(RTC_DELAY);
-			if (RTC_CR8 & SIO_in) data |= (1 << bit);
+
+			if (RTC_CR8 & SIO_in)
+				res[i] |= (1 << bit);
 		}
-		*res++ = data;
 	}
+
 	RTC_CR8 = CS_0 | SCK_1;
 	swiDelay(RTC_DELAY);
 }
 
-void 
-rtcReset(void) 
+static u8 
+BCDToInt(u8 data)
 {
-	uint8 status;
-	uint8 cmd[2];
-	cmd[0] = READ_STATUS_REG1;
-	rtcTransaction(cmd, 1, &status, 1);
-	if (status & (STATUS_POC | STATUS_BLD)) {
-		cmd[0] = WRITE_STATUS_REG1;
-		cmd[1] = status | STATUS_RESET;
-		rtcTransaction(cmd, 2, 0, 0);
-	}
+	return ((data & 0xF) + ((data & 0xF0) >> 4) * 10);
 }
 
-void
-rtcGetTimeAndDate(uint8 * time)
+static u32
+get_nds_seconds(u8 * time)
 {
-	uint8 cmd, status;
-	cmd = READ_TIME_AND_DATE;
-	rtcTransaction(&cmd, 1, time, 7);
-	cmd = READ_STATUS_REG1;
-	rtcTransaction(&cmd, 1, &status, 1);
-	if ( status & STATUS_24HRS ) {
-		time[4] &= 0x3f;
-	} else {
+	struct Tm tm;
+	u8 hours = 0;
+	u8 i;
+
+	hours = BCDToInt(time[4] & HOUR_MASK);
+
+	if ((time[4] & RTC_PM) && (hours < 12)) {
+		hours += 12;
 	}
-	BCDToInteger(time,7);
+
+	for (i = 0; i < 7; i++) {
+		time[i] = BCDToInt(time[i]);
+	}
+
+	tm.sec  = time[6];
+	tm.min  = time[5];
+	tm.hour = hours;
+	tm.mday = time[2];
+	tm.mon  = time[1];
+	tm.year = time[0] + 2000;	
+	tm.tzoff = -1;
+
+	if(0)
+	print("%d:%d:%d %d/%d/%d [HH:MM:SS YY/MM/DD]\n",
+			tm.hour, tm.min, tm.sec, tm.year, tm.mon, tm.mday);
+	
+	return tm2sec(&tm);	
 }
 
-void
+ulong
+nds_get_time7(void)
+{
+	u8 command;
+	u8 time[8];
+	unsigned int seconds;
+
+	command = READ_DATA_REG1;
+	rtcTransaction(&command, 1, &(time[1]), 7);
+
+	command = READ_STATUS_REG1;
+	rtcTransaction(&command, 1, &(time[0]), 1);
+
+	seconds = get_nds_seconds(&(time[1]));
+
+	return seconds;
+
+}
+
+/* TODO: nds_set_time7(ulong seconds) */
+
+static void
 rtcSetTimeAndDate(uint8 * time)
 {
 	uint8 cmd[8];
@@ -137,26 +148,11 @@ rtcSetTimeAndDate(uint8 * time)
 	for ( i=0; i< 8; i++ ) {
 		cmd[i+1] = time[i];
 	}
-	cmd[0] = WRITE_TIME_AND_DATE;
+	cmd[0] = WRITE_DATA_REG1;
 	rtcTransaction(cmd, 8, 0, 0);
 }
 
-void
-rtcGetTime(uint8 * time)
-{
-	uint8 cmd, status;
-	cmd = READ_TIME;
-	rtcTransaction(&cmd, 1, time, 3);
-	cmd = READ_STATUS_REG1;
-	rtcTransaction(&cmd, 1, &status, 1);
-	if ( status & STATUS_24HRS ) {
-		time[0] &= 0x3f;
-	} else {
-	}
-	BCDToInteger(time,3);
-}
-
-void
+static void
 rtcSetTime(uint8 * time)
 {
 	uint8 cmd[4];
@@ -167,61 +163,6 @@ rtcSetTime(uint8 * time)
 	}
 	cmd[0] = WRITE_TIME;
 	rtcTransaction(cmd, 4, 0, 0);
-}
-
-void
-syncRTC(void)
-{
-	if (++IPC->time.rtc.seconds == 60 ) {
-		IPC->time.rtc.seconds = 0;
-		if (++IPC->time.rtc.minutes == 60) {
-			IPC->time.rtc.minutes  = 0;
-			if (++IPC->time.rtc.hours == 24) {
-				rtcGetTimeAndDate((uint8 *)&(IPC->time.rtc.year));
-			}
-		}
-	}
-	
-	IPC->unixTime++;
-	intrclear(UARTbit, 0);
-}
-
-void
-initclkirq(void)
-{
-	uint8 cmd[4];
-	struct Tm currentTime;
-	
-	REG_RCNT = 0x8100;
-	intrenable(UARTbit, syncRTC, 0);
-	rtcReset();
-	cmd[0] = READ_STATUS_REG2;
-	rtcTransaction(cmd, 1, &cmd[1], 1);
-	cmd[0] = WRITE_STATUS_REG2;
-	cmd[1] = 0x41;
-	rtcTransaction(cmd, 2, 0, 0);
-	
-	cmd[0] = WRITE_INT_REG1;
-	cmd[1] = 0x01;
-	rtcTransaction(cmd, 2, 0, 0);
-	
-	cmd[0] = WRITE_INT_REG2;
-	cmd[1] = 0x00;
-	cmd[2] = 0x21;
-	cmd[3] = 0x35;
-	rtcTransaction(cmd, 4, 0, 0);
-//	 Read all time settings on first start
-	rtcGetTimeAndDate((uint8 *)&(IPC->time.rtc.year));
-
-	currentTime.sec  = IPC->time.rtc.seconds;
-	currentTime.min  = IPC->time.rtc.minutes;
-	currentTime.hour = IPC->time.rtc.hours;
-	currentTime.mday = IPC->time.rtc.day;
-	currentTime.mon  = IPC->time.rtc.month - 1;
-	currentTime.year = IPC->time.rtc.year + 100;
-	
-	currentTime.tzoff = -1;
-	IPC->unixTime = tm2sec(&currentTime);
 }
 
 #define SEC2MIN 60L

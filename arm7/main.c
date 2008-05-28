@@ -13,12 +13,13 @@ extern char end[];
 
 int ndstype;
 
-void
+int
 nbfifoput(ulong cmd, ulong v)
 {
 	if(FIFOREG->ctl & FifoTfull)
-		return;
+		return 0;
 	FIFOREG->send = (cmd|v<<Fcmdwidth);
+	return 1;
 }
 
 void
@@ -38,6 +39,7 @@ nds_fifo_send(ulong v)
 void
 fiforecvintr(void)
 {
+	ulong secs;
 	ulong v, vv;
 	uchar buf[1];
 
@@ -55,10 +57,13 @@ fiforecvintr(void)
 			power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
 			break;
 		case F9reboot:
-			swiSoftReset();
+			swiSoftReset();	// TODO: doesn't work
 			break;
 		case F9leds:
-			power_write(POWER_CONTROL, v);
+			power_write(POWER_CONTROL, v); // BUG: messes bligth bits
+			break;
+		case F9getrtc:
+			IPC->unixTime = nds_get_time7();
 			break;
 		}
 	}
@@ -94,7 +99,6 @@ main(void)
 	readtsc(TscgetX, &dmax, &err);
 
 	trapinit();
-	initclkirq();
 
 	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
 	intrenable(FRECVbit, fiforecvintr, 0);
@@ -115,18 +119,15 @@ vblankintr(void)
 	ulong bst, cbst, bup, bdown;
 	static ulong obst, opx, opy;
 	int i;
-#ifdef notyet
-	uint8 ct[sizeof(IPC->time.curtime)];
-	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0, batt, aux;
 	int t1, t2;
+#ifdef notyet
 	uint32 temp;
+	ushort batt, aux;
+	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0;
 #endif
 
+	
 	heartbeat++;
-
-	if (1)
-	if((heartbeat % 128) == 0)
-		print("say: %s %d %x\n", "Hello world!", heartbeat, heartbeat);
 
 	/* check buttons state */
 	bst = KEYREG->in & Btn9msk;
@@ -186,42 +187,13 @@ vblankintr(void)
 	}
 */
 	
-	// Read the time
-/*
-	rtcGetTime((uint8 *)ct);
-	BCDToInteger((uint8 *)&(ct[1]), 7);
-
 	// Read the temperature
-	batt = touchRead(Tscgetbattery);
-	aux  = touchRead(Tscgetaux);
-	temp = touchReadTemperature(&t1, &t2);
-*/
+//	batt = touchRead(Tscgetbattery);
+//	aux  = touchRead(Tscgetaux);
+//	temp = touchReadTemperature(&t1, &t2);
+//	if(heartbeat % 180 == 0)
+//		 print("batt %d aux %d temp %d\n", batt, aux, temp);
 
-	// Update the IPC struct
-/*
-	IPC->heartbeat 		= heartbeat;
-	IPC->touchX			= x; // x/14-24
-	IPC->touchY			= y; // y/18-12
-	IPC->touchXpx		= xpx;
-	IPC->touchYpx		= ypx;
-	IPC->touchZ1		= z1;
-	IPC->touchZ2		= z2;
-	IPC->buttons		= press;
-	IPC->battery		= batt;
-	IPC->aux			= aux;
-	IPC->tdiode1		= t1;
-	IPC->tdiode2		= t2;
-	IPC->temperature	= temp;
-*/
-	
-/*
-	for(i=0; i<sizeof(ct); i++) {
-		IPC->time.curtime[i] = ct[i];
-	}
-
-*/
-	
-	// ack. ints
 	intrclear(VBLANKbit, 0);
 }
 
@@ -260,7 +232,6 @@ vblankaudio(void)
 		}
 	}
 
-	// ack. ints
 	// intrclear(VBLANKbit, 0);
 }
 

@@ -14,7 +14,7 @@ OFILES=\
 	print.$O\
 	trap.$O\
 	spi.$O\
-	clock.$O\
+	rtc.$O\
 	touch.$O\
 	microphone.$O\
 	userSettings.$O\
@@ -30,7 +30,7 @@ HFILES=\
 	system.h\
 	spi.h\
 	audio.h\
-	clock.h\
+	rtc.h\
 	touch.h\
 	dat.h\
 	fns.h\

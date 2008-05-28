@@ -81,6 +81,7 @@ init()
 
 	timefile: string;
 	rootsource: string;
+	scale := 1;
 	cfd := sys->open("/dev/consctl", Sys->OWRITE);
 	if(cfd != nil)
 		sys->fprint(cfd, "rawon");
@@ -103,6 +104,8 @@ init()
 	setsysname("ds");			# set system name
 
 	now := getclock(timefile, rootsource);
+	if(scale == 1)
+		now *= big 1000000;
 	setclock("/dev/time", now);
 	if(timefile != "#r/rtc")
 		setclock("#r/rtc", now/big 1000000);

@@ -56,6 +56,6 @@
 #include "ipc.h"
 #include "system.h"
 #include "audio.h"
-#include "clock.h"
+#include "rtc.h"
 #include "touch.h"
 #include "spi.h"

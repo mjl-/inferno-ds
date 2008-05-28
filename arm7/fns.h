@@ -5,6 +5,6 @@ void	intrenable(int v, void (*r)(void), int tbdf);
 void 	trapinit(void);
 
 void	nds_fifo_send(ulong v);
-void	nbfifoput(ulong cmd, ulong v);
+int	nbfifoput(ulong cmd, ulong v);
 void	fifoput(ulong cmd, ulong v);
 

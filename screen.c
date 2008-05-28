@@ -223,7 +223,7 @@ screeninit(void)
 	blanktime = 3;	/* minutes */
 
 	setsublcdmode();
-	intrenable(0, VBLANKbit, vblankintr, 0, 0);
+	// intrenable(0, VBLANKbit, vblankintr, 0, 0);
 }
 
 uchar*

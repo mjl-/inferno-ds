@@ -80,6 +80,8 @@ enum
 	F9poweroff,
 	F9reboot,
 	F9leds,
+	F9getrtc,
+	F9setrtc,
 
 	/* from arm7 to arm9 */
 	F7keyup,

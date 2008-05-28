@@ -82,9 +82,9 @@
 #define STATUS_INT1ME    (1<<1)   
 #define STATUS_INT1FE    (1<<0)   
 
- //full 7 bytes for time and date
-#define WRITE_TIME_AND_DATE	0x64
-#define READ_TIME_AND_DATE	0x65
+// full 7 bytes for time and date
+#define WRITE_DATA_REG1	0x64
+#define READ_DATA_REG1	0x65
 
 // last 3 bytes of current time
 #define WRITE_TIME    0x66
@@ -103,20 +103,6 @@
 #define READ_FREE_REG      0x6E
 #define WRITE_FREE_REG     0x6F
 
+ulong nds_get_time7(void);
 
-void rtcReset(void);
-void rtcTransaction(uint8 * cmd, uint32 cmdLength, uint8 * res, uint32 resLength);
-
-void rtcGetTime(uint8 * time);
-void rtcSetTime(uint8 * time);
-
-void rtcGetTimeAndDate(uint8 * time);
-void rtcSetTimeAndDate(uint8 * time);
-
-void rtcGetData(uint8 * data, uint32 size);
-
-void BCDToInteger(uint8 * data, uint32 length);
-void integerToBCD(uint8 * data, uint32 length);
-
-void initclkirq(void);
 

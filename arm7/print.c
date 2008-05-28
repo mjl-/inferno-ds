@@ -20,11 +20,11 @@ itoa(ulong ival, char *a, int base)
 
 	n = 0;
 	conv = "0123456789abcdef";
-	while(ival){
+	do{
 		i = ival % base;
 		ival /= base;
 		ar[n++] = conv[i];
-	}
+	}while(ival);
 
 	for (i=0; i<n; i++)
 		a[i] = ar[n-i-1];
@@ -108,6 +108,6 @@ print(char *fmt, ...)
 	sd->n = vsprint(sd->s, fmt, ap);
 	va_end(ap);
 
-	nbfifoput(F7print, (ulong)sd->s);
+	while(!nbfifoput(F7print, (ulong)sd->s));
 	return sd->n;
 }
