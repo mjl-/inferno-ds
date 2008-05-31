@@ -137,7 +137,14 @@ nds_get_time7(void)
 
 }
 
-/* TODO: nds_set_time7(ulong seconds) */
+void
+nds_set_time7(ulong secs){
+	/* TODO
+	 * 1 convert secs to tm (using sec2tm)
+	 * 2 fill time[8] with tm
+	 * 3 update rtc with time[8]
+	 */
+};
 
 static void
 rtcSetTimeAndDate(uint8 * time)

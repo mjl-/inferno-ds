@@ -128,8 +128,7 @@ ulong	us2tmr(int us);
 int	tmr2us(ulong t);
 void 	microdelay(int us);
 
-void dispfont(void);
-void consputs(char *str);
+void	dispfont(void);
 
 void	setsublcdmode(void);
 void	putlogo(uchar *addr);
@@ -144,3 +143,6 @@ void	fifoput(ulong cmd, ulong param);
 ulong	fifoget(ulong *param);
 void	fiforecvintr(Ureg*, void*);
 void	fifosendintr(Ureg*, void*);
+
+ulong	getr12(void);
+void	setr12(ulong);

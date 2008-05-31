@@ -37,9 +37,6 @@ extern int kernel_pool_pcnt;
 int
 segflush(void *a, ulong n)
 {
-//	dcflush(a, 2*n);
-//	icflush(a, 2*n);
-
 	dcflush(a, n);
 	icflush(a, n);
 	return 0;
@@ -126,7 +123,7 @@ main(void)
 	//ulong i,j,k;
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
-
+	
 	doc("mpuinit...\n");
 	mpuinit();
 	doc("machinit...\n");
@@ -144,7 +141,7 @@ main(void)
 	doc("poolinit...\n");
 	poolsizeinit();
 	poolinit();
-	poolsetcompact(mainmem, poolmove);
+	//poolsetcompact(mainmem, poolmove);
 
 	doc("trapinit...\n");
 	trapinit(); 
@@ -156,23 +153,9 @@ main(void)
 	doc("screeninit...\n");
 	screeninit();
 
-	// there's nothing to link atm
 	links();
 	procinit();
 	chandevreset();
-
-//	spllo();
-//	for(;;)	waitvblank();
-//	for(;;);
-	if(0){
-		for(;;)
-		print("H%x T%ld B%x t%lux "
-			"%x %d %d %d %x %x "
-			"b%d t%ld\n",
-			IPC->heartbeat, IPC->temperature>>12, IPC->battery, m->ticks,
-			IPC->touchX, IPC->touchY, IPC->touchXpx, IPC->touchYpx,IPC->touchZ1, IPC->touchZ2,
-			IPC->buttons, IPC->unixTime);
-	}
 
 	eve = strdup("inferno");
 	archconsole();

@@ -64,7 +64,7 @@ rtcread(Chan *c, void *buf, long n, vlong off)
 
 	switch((ulong)c->qid.path){
 	case Qrtc:
-		fifoput(F9getrtc, 0);
+		fifoput(F9getrtc, (ulong)(&IPC->unixTime));
 		return readnum(off, buf, n, IPC->unixTime, NUMSIZE);
 	}
 	error(Egreg);
@@ -95,7 +95,7 @@ rtcwrite(Chan *c, void *buf, long n, vlong off)
 		}
 		secs = strtoul(cp, 0, 0);
 		IPC->unixTime = secs;
-		fifoput(F9setrtc, 0);
+		fifoput(F9setrtc, (ulong)(&IPC->unixTime));
 		return n;
 
 	}

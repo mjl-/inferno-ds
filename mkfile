@@ -68,7 +68,7 @@ i$CONF.kfs: root/lib/proto/$CONF'proto'
 	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
-i$CONF.nds: i$CONF arm7/i$CONF i$CONF.kfs
+i$CONF.nds: i$CONF arm7/i$CONF # i$CONF.kfs
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
 		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
@@ -76,7 +76,7 @@ i$CONF.nds: i$CONF arm7/i$CONF i$CONF.kfs
 	# append rom data at end of .nds (see root/dis/mkkfs)
 	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
 	echo -n ROMZERO9 >> i$CONF.nds
-	cat i$CONF.kfs >> i$CONF.nds
+#	cat i$CONF.kfs >> i$CONF.nds
 
 i$CONF.ds.gba: i$CONF.nds
 	dsbuild $prereq -o $target

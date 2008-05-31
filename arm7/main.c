@@ -6,6 +6,9 @@
 #include "fns.h"
 #include "nds.h"
 
+#include "../wifi.h"
+#include "wifi.h"
+
 /* So we can initialize our own data section and bss */
 extern char bdata[];
 extern char edata[];
@@ -39,7 +42,6 @@ nds_fifo_send(ulong v)
 void
 fiforecvintr(void)
 {
-	ulong secs;
 	ulong v, vv;
 	uchar buf[1];
 
@@ -50,7 +52,7 @@ fiforecvintr(void)
 		case F9brightness:
 			read_firmware(FWconsoletype, buf, sizeof buf);
 			ndstype = buf[0];
-			if(ndstype == Dslite)
+			if(ndstype == Dslite || ndstype == Ds)
 				power_write(POWER_BACKLIGHT, v&Brightmask);
 			break;
 		case F9poweroff:
@@ -63,7 +65,10 @@ fiforecvintr(void)
 			power_write(POWER_CONTROL, v); // BUG: messes bligth bits
 			break;
 		case F9getrtc:
-			IPC->unixTime = nds_get_time7();
+			*(ulong*)v = nds_get_time7();
+			break;
+		case F9setrtc:
+			nds_set_time7(*(ulong*)v);
 			break;
 		}
 	}
@@ -98,12 +103,17 @@ main(void)
 	dmax = MaxRetry; err = MaxRange;
 	readtsc(TscgetX, &dmax, &err);
 
+	wifi_init();
+	
 	trapinit();
 
 	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
 	intrenable(FRECVbit, fiforecvintr, 0);
 
 	intrenable(VBLANKbit, vblankintr, 0);
+
+	intrenable(TIMER0bit, wifi_timer_handler, 0);
+	intrenable(WIFIbit, wifi_interrupt, 0);
 
 	// keep the ARM7 out of main RAM
 	while (1)
@@ -126,7 +136,6 @@ vblankintr(void)
 	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0;
 #endif
 
-	
 	heartbeat++;
 
 	/* check buttons state */
@@ -136,7 +145,7 @@ vblankintr(void)
 	if(~bst & 1<<Pdown) {
 		touchReadXY(&tp);
 		if (opx != tp.px || opy != tp.py)
-			nbfifoput(F7mousedown, tp.px|tp.py<<8);
+			nbfifoput(F7mousedown, tp.px|tp.py<<8|(tp.z1+tp.z2)<<16);
 		opx = tp.px;
 		opy = tp.py;
 	} else if(~obst & 1<<Pdown) {

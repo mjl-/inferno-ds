@@ -227,9 +227,12 @@ TEXT	gotopc(SB), $-4
 */
 	RET
 
-/* dsemu only: used to print to log */
-TEXT consputs(SB),$-4
-	SWI		0xff0000
+/* used by dldi to save/restore R12 (SB) */
+TEXT	getr12(SB), $-4
+	MOVW	R12, R0
+	RET
+TEXT	setr12(SB), $-4
+	MOVW	R0, R12
 	RET
 
 TEXT	getcpuid(SB), $-4
@@ -339,7 +342,7 @@ TEXT mpuinit(SB), $-4
 	/* Enable ICache, DCache and Mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
 	ORR		$(CpCrrob|CpCicache|CpCdcache), R0	/* TODO CpCmpu */
-	BIC		$(CpCaltivec), R0
+	BIC		$(CpCaltivec|CpCmpu), R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET

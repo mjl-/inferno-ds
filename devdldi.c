@@ -143,7 +143,6 @@ dldiinit(void){
 		print("bad DLDIhdr start %lux %lux\n", &hdr, &hdr.sdata);
 
 	print("dldi: %s\n", hdr.textid);
-//	while(1);
 	if (hdr.io.caps){
 		print("%.4s %s%s %s%s (%lx)\n",
 		hdr.io.type, 
@@ -162,18 +161,20 @@ dldiinit(void){
 		DPRINT("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
 
 if(0){ /* fix calling elf-arm code */
+		ulong r12 = getr12();
 		uchar sect[SECTSZ];
+		extern ulong setR12;
 
+		print("setR12(& %lux) %lux R12 %lux r12 (& %lux) %lux\n", &setR12, setR12, getr12(), &r12, r12);
 		print("isin: %d\n", hdr.io.isin());
 		print("clrstat: %d\n", hdr.io.clrstat());
 		print("init: %d\n", hdr.io.init());
 		//print("deinit: %d\n", hdr.io.deinit());
 
-		print("while(1);\n");
-		// while(1);
-	
-		ret =hdr.io.read(0, 1, sect);
+		ret=hdr.io.read(0, 1, sect);
 		print("ret: %d\n", ret);
+		
+		print("while(1);\n"); while(1);
 
 		for(i=0; i < sizeof(sect); i++){
 			if(1)
@@ -181,8 +182,7 @@ if(0){ /* fix calling elf-arm code */
 			if(0 && sect[i] == 0xaa || sect[i] == 0x55)
 				print("%d %x\n", i, sect[i]);
 		}
-		print("while(1);\n");
-		while(1);
+		print("while(1);\n"); while(1);
 }
 	}
 }

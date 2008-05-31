@@ -1,7 +1,0 @@
-#!/bin/rc
-rfork ne
-ROOT=/usr/inferno
-fn cd
-NPROC=3
-path=(/Users/npe/Inferno/MacOSX/power/bin $path)
-exec mk $*

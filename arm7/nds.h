@@ -52,7 +52,6 @@
 ---------------------------------------------------------------------------------*/
 #include "jtypes.h"
 #include "bios.h"
-#include "card.h"
 #include "ipc.h"
 #include "system.h"
 #include "audio.h"

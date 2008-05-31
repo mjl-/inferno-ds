@@ -2,7 +2,6 @@ dev
 	root
 	cons archds lcd
 	env
-#	gpio
 	mnt
 	pipe
 	prog
@@ -13,8 +12,7 @@ dev
 	draw screen swcursor
 	pointer
 	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
-	ether netif netaux ethermedium
-#	ata
+	ether netif netaux
 #	uart
 
 	nds
@@ -79,9 +77,9 @@ port
 
 link	
 	fifo
-#	lcd
-#	ether589
-#	ethertdk
+	ethernds
+	ethermedium
+#	ethermii
 #	pppmedium ppp compress
 
 misc

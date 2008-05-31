@@ -144,14 +144,6 @@ cmap(ushort* palette)
 }
 
 void
-dsconsinit(void)
-{
-	// setlcdmode(ld);
-}
-
-void
 uartputs(char* s, int n) {
 	USED(s,n);
-	/* NOTE!: enable only for dsemu */
-	if(0) consputs(s); 
 }

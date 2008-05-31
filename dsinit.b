@@ -49,7 +49,6 @@ init()
 	lightup();
 
 	localok := 0;
-	# temporal workaround: use lfs("#T/ndsrom")
 	if(lfs("#T/ndsrom") >= 0){
 		# let's just take a closer look
 		sys->bind("/n/local/nvfs", "/nvfs", Sys->MREPL|Sys->MCREATE);
@@ -135,10 +134,11 @@ start(cmd: string, args: list of string)
 	}
 }
 
-dobind(f, t: string, flags: int)
+dobind(f, t: string, flags: int): int
 {
-	if(sys->bind(f, t, flags) < 0)
+	if((ret := sys->bind(f, t, flags)) < 0)
 		err(sys->sprint("can't bind %s on %s: %r", f, t));
+	return ret;
 }
 
 lightup()

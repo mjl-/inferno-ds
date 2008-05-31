@@ -16,7 +16,7 @@ i mk 'CONF=sds' syms
 i mk 'CONF=sds'
 
 desmume isds.nds
-wine $home/dsemu/dsemu.exe isds.nds
+desmume --disable-3d isds.nds
 wine $home/nogba-2.6a/'NO$GBA.EXE' isds.nds
 wine $home/nogba-2.6b/'NO$GBA.EXE' isds.nds
 

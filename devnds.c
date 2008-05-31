@@ -24,30 +24,6 @@ enum {
 	Qsram,
 };
 
-enum {
-	Dssoftreset = 0x00,
-	Dsdelay = 0x03,
-	Dsintrwait = 0x04,
-	Dswaitforvblank = 0x05,
-	Dswaitforirq = 0x06,
-	Dsdivide = 0x09,
-	Dscopy = 0x0B,
-	Dsfastcopy = 0x0C,
-	Dssqrt = 0x0D,
-	Dscrc16 = 0x0E,
-	Dsisdebugger = 0x0F,
-	Dsunpackbits = 0x10,
-	Dsdecompresslzsswram = 0x11,
-	Dsdecompresslzssvram = 0x12,
-	Dsdecompresshuffman = 0x13,
-	Dsdecompressrlewram = 0x14,
-	Dsdecompressrlevram = 0x15,
-	Dsdecodedelta8 = 0x16,
-	Dsdecodedelta16 = 0x18,
-	sethaltcr = 0x1F,
-};
-
-static void touchread(void*);
 static
 Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,

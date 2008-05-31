@@ -4,19 +4,8 @@
 #include "fns.h"
 #include "io.h"
 
-extern void fiforecv(ulong);
-
 static QLock getl, putl;
 static Rendez getr, putr;
-
-
-void
-fifolink(void)
-{
-	FIFOREG->ctl = (FifoTirq|FifoRirq|Fifoenable|FifoTflush);
-	intrenable(0, FSENDbit, fifosendintr, nil, "fifosend");
-	intrenable(0, FRECVbit, fiforecvintr, nil, "fiforecv");
-}
 
 static int
 fifocanput(void*)
@@ -54,8 +43,10 @@ fifoget(ulong *param)
 	return r&Fcmdwidth;
 }
 
-void
-fiforecvintr(Ureg*, void*)
+extern void fiforecv(ulong);
+
+static void
+fiforxintr(Ureg*, void*)
 {
 	ulong v;
 
@@ -66,12 +57,25 @@ fiforecvintr(Ureg*, void*)
 	intrclear(FRECVbit, 0);
 }
 
-void
-fifosendintr(Ureg*, void*)
+static void
+fifotxintr(Ureg*, void*)
 {
 	if(FIFOREG->ctl & FifoTfull)
 		return;
 
 	wakeup(&putr);
 	intrclear(FSENDbit, 0);
+}
+
+static void
+fifoinit(void (*rxintr)(Ureg *, void*), void (*txintr)(Ureg *, void*))
+{
+	FIFOREG->ctl = (FifoTirq|FifoRirq|Fifoenable|FifoTflush);
+	intrenable(0, FSENDbit, txintr, nil, "txintr");
+	intrenable(0, FRECVbit, rxintr, nil, "rxintr");
+}
+
+void
+fifolink(void){
+	fifoinit(fiforxintr, fifotxintr);
 }

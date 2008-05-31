@@ -90,6 +90,8 @@ struct touchPosition {
 	int16	z2;
 };
 
+typedef enum { false, true } bool;
+
 // Handy function pointer typedefs
 typedef void ( * IntFn)(void);
 typedef void (* VoidFunctionPointer)(void);

@@ -17,9 +17,9 @@
 
 // #define	R13OK	undef this if correct kernel r13 isn't in Ureg; check calculation in fpiarm below
 
-#define	REG(x) (*(long*)(((char*)ur)+roff[(x)]))
-#define	FPENV	(*ufp)
-#define	FR(x) (*(Internal*)ufp->regs[(x)&7])
+#define	REG(x) (*(long*)(((char*)(ur))+roff[(x)]))
+#define	FPENV	(*(ufp))
+#define	FR(x) (*(Internal*)(ufp)->regs[(x)&7])
 
 /* BUG: check fetch (not worthwhile in Inferno) */
 #define	getubyte(a) (*(uchar*)(a))

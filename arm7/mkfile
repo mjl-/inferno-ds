@@ -18,14 +18,13 @@ OFILES=\
 	touch.$O\
 	microphone.$O\
 	userSettings.$O\
-#	wifi.$O\
+	wifi.$O\
 
 HFILES=\
 	../mem.h\
 	nds.h\
 	jtypes.h\
 	bios.h\
-	card.h\
 	ipc.h\
 	system.h\
 	spi.h\
@@ -34,7 +33,7 @@ HFILES=\
 	touch.h\
 	dat.h\
 	fns.h\
-#	wifi.h\
+	wifi.h\
 	
 LIBS=\
 	kern\
