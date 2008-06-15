@@ -194,18 +194,7 @@ setscreen(LCDmode *mode)
 	screenclear(); 
 
 	swc = swcurs_create((ulong*)gscreen->data->bdata, gscreen->width, gscreen->depth, gscreen->r, 1);
-	drawcursor((Drawcursor*)&arrow);
-//	if (swc != nil){
-//		swcurs_load(swc, &arrow);
-//		swcurs_enable(swc);
-//	}
-}
-
-static void
-vblankintr(Ureg *ureg, void *a)
-{
-	/* TODO: update lcd/screen fb on vblank */
-	intrclear(VBLANKbit, 0);
+	drawcursor(nil);
 }
 
 void
@@ -223,7 +212,6 @@ screeninit(void)
 	blanktime = 3;	/* minutes */
 
 	setsublcdmode();
-	// intrenable(0, VBLANKbit, vblankintr, 0, 0);
 }
 
 uchar*

@@ -33,34 +33,13 @@ enum
 {
 	DLDImagic=		0xBF8DA5ED,
 	
-	Cread =			0x00000001,
-	Cwrite =		0x00000002,
-	Cslotgba =		0x00000010,
-	Cslotnds =		0x00000020,
-	
 	Fixall =		0x01,
 	Fixglue =		0x02,
 	Fixgot =		0x04,
 	Fixbss =		0x08,	
-};
-
-enum
-{
+	
 	LHDRSZ	= 15,		/* argmax {log2(sizeof(h))}, h is a common DLDIhdr */
 	SECTSZ	= 512		/* Ioifc fns work with SECTSZ sectors */
-};
-
-typedef struct Ioifc Ioifc;
-struct Ioifc{
-	char type[4];			/* name */
-	ulong caps;			/* capabilities */
-	
-	int (* init)(void);
-	int (* isin)(void);
-	int (* read)(ulong start, ulong n, void* d);
-	int (* write)(ulong start, ulong n, const void* d);
-	int (* clrstat)(void);
-	int (* deinit)(void);
 };
 
 typedef struct DLDIhdr DLDIhdr;
@@ -152,37 +131,41 @@ dldiinit(void){
 		(hdr.io.caps & Cwrite)? "w" : "",
 		hdr.io.caps);
 		
-		// more checks ...
-		DPRINT("io.init %lux %lux\n", &hdr.io.init, *hdr.io.init);
-		DPRINT("io.isin %lux %lux\n", &hdr.io.isin, *hdr.io.isin);
-		DPRINT("io.read %lux %lux\n", &hdr.io.read, *hdr.io.read);
-		DPRINT("io.write %lux %lux\n", &hdr.io.write, *hdr.io.write);
-		DPRINT("io.clrstat %lux %lux\n", &hdr.io.clrstat, *hdr.io.clrstat);
-		DPRINT("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
-
 if(0){ /* fix calling elf-arm code */
 		ulong r12 = getr12();
-		uchar sect[SECTSZ];
+		uchar sect[6*SECTSZ/sizeof(ushort)];
 		extern ulong setR12;
+	
+		extern Ioifc io_r4tf;
+		memcpy(&hdr.io, &io_r4tf, sizeof(Ioifc));
 
-		print("setR12(& %lux) %lux R12 %lux r12 (& %lux) %lux\n", &setR12, setR12, getr12(), &r12, r12);
-		print("isin: %d\n", hdr.io.isin());
-		print("clrstat: %d\n", hdr.io.clrstat());
-		print("init: %d\n", hdr.io.init());
-		//print("deinit: %d\n", hdr.io.deinit());
+		/* // more checks ...
+		print("io.init %lux %lux\n", &hdr.io.init, *hdr.io.init);
+		print("io.isin %lux %lux\n", &hdr.io.isin, *hdr.io.isin);
+		print("io.read %lux %lux\n", &hdr.io.read, *hdr.io.read);
+		print("io.write %lux %lux\n", &hdr.io.write, *hdr.io.write);
+		print("io.clrstat %lux %lux\n", &hdr.io.clrstat, *hdr.io.clrstat);
+		print("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
+		*/
 
-		ret=hdr.io.read(0, 1, sect);
-		print("ret: %d\n", ret);
+		//print("setR12(& %lux) %lux R12 %lux r12 (& %lux) %lux\n", &setR12, setR12, getr12(), &r12, r12);
+		print("isin: %s\n", hdr.io.isin()? "ok": "ko");
+		print("clrstat: %s\n", hdr.io.clrstat()? "ok": "ko");
+		print("init: %s\n", (ret=hdr.io.init())? "ok": "ko");
+
+		memset(sect, 0, sizeof(sect));
+		if (ret)
+			ret=hdr.io.read(0, sizeof(sect)/SECTSZ, sect);
+		print("read: %s\n", (ret)? "ok": "ko");
 		
-		print("while(1);\n"); while(1);
-
-		for(i=0; i < sizeof(sect); i++){
-			if(1)
-			print("%x,", sect[i]);
-			if(0 && sect[i] == 0xaa || sect[i] == 0x55)
-				print("%d %x\n", i, sect[i]);
+		for(i=0; ret && (i < sizeof(sect)); i++){
+			if(1 && sect[i] != 0) print("%x.", sect[i]);
+			if(0 && (sect[i] == 0x55 || sect[i] == 0xaa))
+				print("bingo %d %x\n", i, sect[i]);
 		}
-		print("while(1);\n"); while(1);
+		print("\n");
+		// print("deinit: %d\n", hdr.io.deinit());
+		// print("while(1);\n"); while(1);
 }
 	}
 }

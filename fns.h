@@ -31,7 +31,7 @@ void	dmastop(int channel);
 int	dmaerror(int channel);
 void	dmareset(void);
 void	drainWBuffer(void);
-void dumplongs(char *, ulong *, int);
+void	dumplongs(char *, ulong *, int);
 void	dumpregs(Ureg* ureg);
 void	dumpstk(ulong *);
 int	fpiarm(Ureg*);

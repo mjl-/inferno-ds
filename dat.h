@@ -28,7 +28,6 @@ struct Conf
 	ulong	base1;			/* base of bank 1 */
 	ulong	ialloc;			/* max interrupt time allocation in bytes */
 	ulong	flashbase;
-	ulong	cpuspeed;
 	ulong	pagetable;
 
 	int		bsram;			/* start of SRAM memory */
@@ -220,6 +219,4 @@ enum {
 	VMODE_LILEND = 0x4000,	/* little endian pixel layout */
 	VMODE_BIGEND = 0x8000,	/* big endian pixel layout */
 };
-
-#define	swcursor	1
 

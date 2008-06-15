@@ -65,7 +65,7 @@ fiforecvintr(void)
 			power_write(POWER_CONTROL, v); // BUG: messes bligth bits
 			break;
 		case F9getrtc:
-			*(ulong*)v = nds_get_time7();
+			(*(ulong*)v) = nds_get_time7();
 			break;
 		case F9setrtc:
 			nds_set_time7(*(ulong*)v);
@@ -81,45 +81,6 @@ enum
 	MaxRetry = 5,
 	MaxRange = 30,
 };
-
-void vblankintr(void);
-void vblankaudio(void);
-
-int 
-main(void)
-{
-	int16 dmax;
-	u8 err;
-	
-	INTREG->ime = 0;
-
-	memset(edata, 0, end-edata); 		/* clear the BSS */
-
-	read_firmware(0x03FE00, PersonalData, sizeof(PersonalData));
-	POWERREG->pcr |= 1<<POWER_SOUND;
-	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
-
-	/* dummy read to enable the touchpad PENIRQ */
-	dmax = MaxRetry; err = MaxRange;
-	readtsc(TscgetX, &dmax, &err);
-
-	wifi_init();
-	
-	trapinit();
-
-	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
-	intrenable(FRECVbit, fiforecvintr, 0);
-
-	intrenable(VBLANKbit, vblankintr, 0);
-
-	intrenable(TIMER0bit, wifi_timer_handler, 0);
-	intrenable(WIFIbit, wifi_interrupt, 0);
-
-	// keep the ARM7 out of main RAM
-	while (1)
-		swiWaitForVBlank();
-	return 0;
-}
 
 void
 vblankintr(void)
@@ -206,41 +167,69 @@ vblankintr(void)
 	intrclear(VBLANKbit, 0);
 }
 
-void 
-startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) 
-{
-	SCHANNEL_TIMER(channel) = SOUND_FREQ(sampleRate);
-	SCHANNEL_SOURCE(channel) = (u32)data;
-	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
-	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);
-}
-
-s32 
-getFreeSoundChannel(void)
-{
-	int i;
-	for (i=0; i<16; i++) {
-		if ( (SCHANNEL_CR(i) & SCHANNEL_ENABLE) == 0 ) return i;
-	}
-	return -1;
-}
-
 void
-vblankaudio(void)
+arm7intr(void)
 {
-	u32 i;
-	TransferSound *snd = IPC->soundData;
+	print("arm7intr\n");
+	intrclear(ARM7bit, 0);	
+}
 
-	IPC->soundData = 0;	
-	if (snd) {
-		for (i=0; i<snd->count; i++) {
-			s32 chan = getFreeSoundChannel();
-			if (chan >= 0) {
-				startSound(snd->data[i].rate, snd->data[i].data, snd->data[i].len, chan, snd->data[i].vol, snd->data[i].pan, snd->data[i].format);
-			}
-		}
-	}
+int 
+main(void)
+{
+	int16 dmax;
+	u8 err;
+	
+	INTREG->ime = 0;
 
-	// intrclear(VBLANKbit, 0);
+	memset(edata, 0, end-edata); 		/* clear the BSS */
+
+	read_firmware(0x03FE00, PersonalData, sizeof(PersonalData));
+
+	/* dummy read to enable the touchpad PENIRQ */
+	dmax = MaxRetry; err = MaxRange;
+	readtsc(TscgetX, &dmax, &err);
+
+	wifi_init();
+	
+	trapinit();
+
+	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
+	intrenable(FRECVbit, fiforecvintr, 0);
+
+	intrenable(VBLANKbit, vblankintr, 0);
+
+	intrenable(TIMER0bit, wifi_timer_handler, 0);
+	intrenable(WIFIbit, wifi_interrupt, 0);
+	intrenable(ARM7bit, arm7intr, 0);
+
+if(0){
+	/*
+	print("mac %x:%x:%x:%x:%x:%x\n"
+		wifi_data.MacAddr[0],
+		wifi_data.MacAddr[1],
+		wifi_data.MacAddr[2],
+		wifi_data.MacAddr[3],
+		wifi_data.MacAddr[4],
+		wifi_data.MacAddr[5],
+	*/
+
+	wifi_data.aplist = (Wifi_AccessPoint*) IPC;
+	//wifi_open();
+	wifi_start_scan();
+
+	print(
+		"ssid: %s\n"
+		"aplist: %x\n"
+		"stats: %x\n", 
+		wifi_data.ssid,
+		(ulong)wifi_data.aplist,
+		(ulong)wifi_data.stats);
+}
+
+	// keep the ARM7 out of main RAM
+	while (1)
+		swiWaitForVBlank();
+	return 0;
 }
 

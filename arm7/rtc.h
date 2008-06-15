@@ -104,5 +104,5 @@
 #define WRITE_FREE_REG     0x6F
 
 ulong nds_get_time7(void);
-
+void nds_set_time7(ulong);
 

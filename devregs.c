@@ -18,37 +18,37 @@ Dirtab regstab[]={
 	"registers",	{Qregs},		0, 0600,
 };
 
-uchar
+static uchar
 inb(ulong reg)
 {
 	return *(uchar*)reg;
 }
 
-ushort
+static ushort
 insh(ulong reg)
 {
 	return *(ushort*)reg;
 }
 
-ulong
+static ulong
 inl(ulong reg)
 {
 	return *(ulong*)reg;
 }
 
-void
+static void
 outb(ulong reg, uchar b)
 {
 	*(uchar*)reg = b;
 }
 
-void
+static void
 outsh(ulong reg, ushort sh)
 {
 	*(ushort*)reg = sh;
 }
 
-void
+static void
 outl(ulong reg, ulong l)
 {
 	*(ulong*)reg = l;

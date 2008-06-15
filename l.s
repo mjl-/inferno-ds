@@ -332,17 +332,18 @@ TEXT mpuinit(SB), $-4
 	MCR		CpMPU, 0, R0, C(CpCachebit), C0, 1
 
 	/* IAccess */
-	MOVW	$0x33636333, R0
+	MOVW	$0x33333333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 3
 
 	/* DAccess */
-	MOVW	$0x36333333, R0
+	MOVW	$0x33333333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
-	/* Enable ICache, DCache and Mpu */
+
+	/* Enable icache, dcache and mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
-	ORR		$(CpCrrob|CpCicache|CpCdcache), R0	/* TODO CpCmpu */
-	BIC		$(CpCaltivec|CpCmpu), R0
+	ORR		$(CpCrrob|CpCicache|CpCdcache),	R0
+	BIC		$(CpCaltivec), R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
 
 	RET
@@ -353,12 +354,12 @@ TEXT mpuinit(SB), $-4
 TEXT icflushall(SB), $-4
 _icflushall:
 	MOVW	$0, R0
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 0 /* clean i-cache and branch buffer */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(5), 0 /* clean icache and branch buffer */
 	CPWAIT
 	RET
 
 /*
- * icache: invalidate part of i-cache and invalidate branch target buffer
+ * icache: invalidate part of icache and invalidate branch target buffer
  */
 TEXT icflush(SB), $-4
 	MOVW		4(FP), R1
@@ -371,6 +372,7 @@ icflush1:
 	ADD		$CACHELINESZ, R0
 	CMP		R0, R1
 	BLO		icflush1
+	MOVW		$0, R0
 	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(13), 1	/* invalidate branch target buffer */
 	CPWAIT
 	RET
@@ -380,15 +382,15 @@ icflush1:
  */
 TEXT dcflushall(SB), $-4
 _dcflushall:
-	MOVW		$(DCFADDR), R0
-	ADD		$DCACHESZ, R0, R1
+	MOVW		$(DCACHESZ), R0
 dcflushall1:
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1	/* clean and flush entry */
-	ADD		$CACHELINESZ, R0
-	CMP		R1, R0
+	SUB		$CACHELINESZ, R0
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1	/* clean entry */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 2	/* flush entry */
+	ADD.S	$0x4000000, R0
 	BNE		dcflushall1
 	MOVW		$0, R0
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 0	/* flush data cache */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(10), 4	/* drain write buffer */
 	CPWAIT
 	RET
 
@@ -401,10 +403,13 @@ TEXT dcflush(SB), $-4
 	ADD		R0, R1
 	BIC		$(CACHELINESZ-1), R0
 dcflush1:
-	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 1	/* clean entry */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(14), 1	/* clean entry */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 1	/* invalidate entry */
+	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(10), 1
 	ADD		$CACHELINESZ, R0
 	CMP		R0, R1
 	BLO		dcflush1
+	MOVW		$0, R0
 	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(10), 4	/* drain write buffer */
 	CPWAIT
 	RET
@@ -415,11 +420,11 @@ dcflush1:
 TEXT dcinval(SB), $-4
 	ADD		R0, R1, R1
 	BIC		$(CACHELINESZ - 1), R0, R0
-.dcinvalidate:
+dcinval1:
 	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(6), 1
 	ADD		$CACHELINESZ, R0
 	CMP		R0, R1
-	BLT		.dcinvalidate
+	BLT		dcinval1
 	CPWAIT
 	RET
 /*

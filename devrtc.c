@@ -64,7 +64,9 @@ rtcread(Chan *c, void *buf, long n, vlong off)
 
 	switch((ulong)c->qid.path){
 	case Qrtc:
+		IPC->unixTime = 1;
 		fifoput(F9getrtc, (ulong)(&IPC->unixTime));
+		while(IPC->unixTime == 1); /* wait for arm7 write */
 		return readnum(off, buf, n, IPC->unixTime, NUMSIZE);
 	}
 	error(Egreg);

@@ -29,7 +29,7 @@
 #define	SPIbit		23		/* SPI */
 #define	WIFIbit		24		/* WIFI */
 
-#define INTREG	((IntReg *)INTbase)
+#define INTREG	((IntReg *)(SFRZERO + 0x208))
 typedef struct IntReg IntReg;
 struct IntReg {
 	ulong	ime;	// Interrupt Master Enable
@@ -177,7 +177,7 @@ enum FIFO_WIFI_CMDS
  * Dma controller
  */
 
-#define DMAREG	((DmaReg*)DMAbase)
+#define DMAREG	((DmaReg*)(SFRZERO + 0x0b0))
 typedef struct DmaReg DmaReg;
 struct DmaReg {
 	ulong	src;
@@ -201,10 +201,11 @@ enum
 	Dmasrcinc	= 0,
 	Dmasrcdec	= 1<<23,
 	Dmasrcfix	= 1<<24,
+	Dmarepeat	= 1<<25,
 	
 	Dmadstinc	= 0,
 	Dmadstdec	= 1<<21,
-	Dmadstfix	= 1<<22,
+	Dmadstfix	= 2<<21,
 	Dmadstrst	= 3<<21,
 	
 	Dmatxwords	= (Dmaena|Dma32bit|Dmastartnow),
@@ -216,7 +217,7 @@ enum
  * Timers control
  */
 
-#define TIMERREG	((TimerReg*)TIMERbase)
+#define TIMERREG	((TimerReg*)(SFRZERO + 0x100))
 typedef struct TimerReg TimerReg;
 struct TimerReg {
 	ushort data;	/* match */
@@ -458,3 +459,26 @@ enum
 	Arm7hasram	= 1<<15,	/* (0=ARM9 Priority, 1=ARM7 Priority) */
 };
 
+/*
+ * discio interface
+ */
+enum
+{
+	Cread =			0x00000001,
+	Cwrite =		0x00000002,
+	Cslotgba =		0x00000010,
+	Cslotnds =		0x00000020,
+};
+
+typedef struct Ioifc Ioifc;
+struct Ioifc {
+	char type[4];			/* name */
+	ulong caps;			/* capabilities */
+	
+	int (* init)(void);
+	int (* isin)(void);
+	int (* read)(ulong start, ulong n, void* d);
+	int (* write)(ulong start, ulong n, const void* d);
+	int (* clrstat)(void);
+	int (* deinit)(void);
+};

@@ -65,6 +65,13 @@ interrupt(Ureg*, void *arg)
 	DPRINT("interrupt\n");
 }
 
+/* set scanning interval */
+static void
+scanbs(void *a, uint secs)
+{
+	DPRINT("scanbs\n");
+}
+
 static int
 etherndsreset(Ether* ether)
 {
@@ -102,9 +109,10 @@ etherndsreset(Ether* ether)
 	ether->transmit = transmit;
 	ether->interrupt = interrupt;
 	ether->ifstat = ifstat;
+	ether->scanbs = scanbs;
+	ether->promiscuous = promiscuous;
 
 	ether->arg = ether;
-	ether->promiscuous = promiscuous;
 
 	return 0;
 }

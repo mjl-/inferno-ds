@@ -90,7 +90,7 @@ static u32
 get_nds_seconds(u8 * time)
 {
 	struct Tm tm;
-	u8 hours = 0;
+	u8 hours;
 	u8 i;
 
 	hours = BCDToInt(time[4] & HOUR_MASK);
@@ -139,6 +139,7 @@ nds_get_time7(void)
 
 void
 nds_set_time7(ulong secs){
+	USED(secs);
 	/* TODO
 	 * 1 convert secs to tm (using sec2tm)
 	 * 2 fill time[8] with tm

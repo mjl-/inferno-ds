@@ -40,10 +40,3 @@ http://inferno-lab.googlecode.com/svn/trunk/81/i
 # ndstool usage
 ndstool -c rom.nds -9 arm9.bin -7 arm7.bin -y9 y9.bin -y7 y7.bin -d data -y overlay -t banner.bin -h header.bin # create
 ndstool -x rom.nds -9 arm9.bin -7 arm7.bin -y9 y9.bin -y7 y7.bin -d data -y overlay -t banner.bin -h header.bin # extract
-
-# links
-http://www.double.co.nz/nintendo_ds/
-http://www.auia.net/ds/
-http://wiki.pocketheaven.com/DLDI
-http://oopsilon.com/The-Smallest-NDS-File
-http://www.google.es/search?q=desmume+debugging

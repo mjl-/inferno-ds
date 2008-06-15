@@ -68,12 +68,32 @@ archpowerup(void)
 	;
 }
 
-
 void
 archconfinit(void)
 {
+	ushort *operactl = (ushort*)0x08240000; /* set to 0x0001 to enble ram*/
+
+	// arm9 is the owner of ram, slot-1 & slot-2 
+	EXMEMREG->ctl &= ~(Arm7hasds|Arm7hasgba|Arm7hasram);
+
+	/* detect/enable slot2 memory expansions */
+	if (*operactl){
+		*operactl = 0x0001;
+
+		conf.base1 = ROMZERO + (ROMTOP - ROMZERO + 1)/2;
+		conf.npage1 = (ROMTOP - conf.base1)/BY2PG;
+		if(0)print("opera base1 %lux npage1 %d\n", conf.base1, conf.npage1);
+	}
+
+	conf.base1 = 0;
+	conf.npage1 = 0;
+
 	conf.topofmem = EWRAMTOP;
+	conf.base0 = PGROUND((ulong)end);
+	conf.npage0 = (conf.topofmem - conf.base0)/BY2PG;
+	
 	m->cpuhz = 66*1000000;
+	conf.bmap = 0;
 }
 
 void
@@ -83,14 +103,14 @@ kbdinit(void)
 	addclock0link(kbdclock, MS2HZ);
 }
 
-static LCDmode lcd256x192x8tft =
+static LCDmode lcd256x192x16tft =
 {
 //	.x = 240, .y = 160, .depth = 16, .hz = 60,
 //	.hsync_wid = 4-2, .sol_wait = 12-1, .eol_wait = 17-1,
 //	.vsync_hgt = 3-1, .soft_wait = 10, .eof_wait = 1,
 //	.lines_per_int = 0,  .acbias_lines = 0,
 //	.vsynclow = 1, .hsynclow = 1,
-	256, 192, 8, 60,
+	256, 192, 16, 60,
 	4-2, 12-1, 17-1,
 	3-1, 10, 1,
 	0, 0,
@@ -100,7 +120,7 @@ static LCDmode lcd256x192x8tft =
 int
 archlcdmode(LCDmode *m)
 {
-	*m =  lcd256x192x8tft;
+	*m =  lcd256x192x16tft;
 	return 0;
 }
 
@@ -110,6 +130,9 @@ archlcdmode(LCDmode *m)
 int
 archether(int ctlno, Ether *ether)
 {
+	static char opt[128];
+	uchar macaddrs[1][Eaddrlen] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+
 	if(ctlno >= 0)
 		return -1;
 	sprint(ether->type, "nds");
@@ -117,7 +140,17 @@ archether(int ctlno, Ether *ether)
 	ether->nopt = 0;
 	ether->port = 0;
 	ether->irq = WIFIbit;
+	ether->interrupt = nil;
 	ether->itype = 0;
-//	memmove(ether->ea, macaddrs[ctlno], Eaddrlen);
+	ether->mbps = 2;
+
+	memmove(ether->ea, macaddrs[ctlno], Eaddrlen);	// TODO get it from arm7
+
+	if(0)
+		strcpy(opt, "mode=0 essid=Limbo station=ds crypt=off");	/* peertopeer */
+	else
+		strcpy(opt, "mode=managed essid=Vitanuova1 station=ds crypt=off");
+	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
+
 	return 1;
 }

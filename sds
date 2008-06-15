@@ -44,6 +44,7 @@ lib
 	kern
 
 mod
+	math
 	sys
 	draw
 	tk
@@ -86,6 +87,8 @@ misc
 	logo
 	math
 
+	discio card
+
 code
 	int main_pool_pcnt = 50;
 	int heap_pool_pcnt = 30;
@@ -94,11 +97,13 @@ code
 
 	int consoleprint = 1;
 	int redirectconsole = 1;
-	int iprintscreenputs = 1;
+	int iprintscreenputs = 0;
 	char debug_keys = 1;
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
+	int swcursor = 1;
+
 	
 init
 	dsinit
@@ -135,6 +140,7 @@ root
 # For development work:
 	/dis/sh.dis
 	/dis/sh/std.dis
+	/dis/sh/expr.dis
 	/dis/ls.dis
 	/dis/cat.dis
 	/dis/bind.dis
@@ -153,6 +159,7 @@ root
 	/dis/ftest.dis
 	/dis/mdb.dis
 	/dis/read.dis
+	/dis/calc.dis
 	/dis/lib/readdir.dis
 	/dis/lib/workdir.dis
 	/dis/lib/daytime.dis
@@ -211,6 +218,12 @@ root
 	/dis/wm/sh.dis
 	/dis/wm/toolbar.dis
 	/dis/wm/wm.dis
+#	/dis/wm/mand.dis
+#	/dis/wm/bounce.dis
+#	/dis/wm/sweeper.dis
+#	/dis/wm/snake.dis
+#	/dis/wm/tetris.dis
+#	/dis/lib/scoretable.dis
 	
 	/lib/wmsetup
 	/lib/sh/profile

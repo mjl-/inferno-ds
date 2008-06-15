@@ -1522,6 +1522,7 @@ void wifi_interrupt(void)
 			Wifi_Intr_DoNothing();
 		}		//15) PreTBTT
 	}
+	intrclear(WIFIbit, 0);
 }
 
 /*
@@ -1808,15 +1809,15 @@ void wifi_start_scan(void)
 	wifi_data.scanChannel = 1;
 	Wifi_SetChannel(1);
 
-	TIMERREG->data = (-0x02000000) / (1024 * (1000 / WIFI_CHANNEL_SCAN_DWEL));
+	TIMERREG->data = TIMER_BASE(Tmrdiv1024) / (1000 / WIFI_CHANNEL_SCAN_DWEL);
 	TIMERREG->ctl = Tmrdiv1024 | Tmrena | Tmrirq;
-	INTREG->ier |= (1<<TIMER0bit);
+	intrunmask(TIMER0bit, 0);
 }
 
 static void wifi_bump_scan(void)
 {
 	if (wifi_data.scanChannel == 13) {
-		INTREG->ier &=  ~(1<<TIMER0bit);
+		intrmask(TIMER0bit, 0);
 		wifi_data.state &= ~WIFI_STATE_CHANNEL_SCANNING;
 		TIMERREG->ctl = 0;
 		Wifi_SetChannel(wifi_data.reqChannel);
@@ -1832,9 +1833,11 @@ void wifi_timer_handler(void)
 	if (wifi_data.state & WIFI_STATE_CHANNEL_SCANNING) {
 		wifi_bump_scan();
 	} else {
-		INTREG->ier &=  ~(1<<TIMER0bit);
+		intrmask(TIMER0bit, 0);
 		TIMERREG->ctl = 0;
 	}
+	if(1)print("wifi_timer_handler %d\n", wifi_data.scanChannel);
+	intrclear(TIMER0bit, 0);
 }
 
 void Wifi_SetAPMode(enum WIFI_AP_MODE mode)

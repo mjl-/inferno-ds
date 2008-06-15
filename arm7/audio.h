@@ -1,68 +1,83 @@
+/* 
+ * Sound Channel
+ */
+#define SCHANREG	((SChanReg *)(SFRZERO + 0x400))
+typedef struct SChanReg SChanReg;
+struct SChanReg {
+	union {
+		struct {
+			uchar vol;
+			uchar pad1;
+			uchar pan;
+			uchar pad2;
+		};
+		ulong ctl;
+	} cr;
 
+	ulong	src;
+	ushort	tmr;
+	ushort	rpt;
+	ulong	len; /* in words of 4bytes */
 
-#define SOUND_VOL(n)	(n)
-#define SOUND_FREQ(n)	((-0x1000000 / (n)))
-#define SOUND_ENABLE	BIT(15)
-#define SOUND_REPEAT    BIT(27)
-#define SOUND_ONE_SHOT  BIT(28)
-#define SOUND_FORMAT_16BIT (1<<29)
-#define SOUND_FORMAT_8BIT	(0<<29)
-#define SOUND_FORMAT_PSG    (3<<29)
-#define SOUND_FORMAT_ADPCM  (2<<29)
-#define SOUND_16BIT      (1<<29)
-#define SOUND_8BIT       (0)
+	uchar	pad3[16];
+};
 
-#define SOUND_PAN(n)	((n) << 16)
+/* SCHANREG->cr.ctl bits */
+enum {
 
-#define SCHANNEL_ENABLE BIT(31)
+	SCrepeat	= 1<<27,
+	SC1shot		= 1<<28,
+	
+	SCpcm8bit	= 0<<29,
+	SCpcm16bit	= 1<<29,
+	SCadpcm		= 2<<29,
+	SCpsg		= 3<<29,
 
+	SCena		= 1<<31,
+};
 
-// registers
+/* usage: SCHANREG->tmr = SCHAN_FREQ(hz) */
+#define SCHAN_FREQ(hz)	((-0x1000000 / (hz)))
 
-#define SCHANNEL_CR(n)				(*(vuint32*)(0x04000400 + ((n)<<4)))
-#define SCHANNEL_VOL(n)				(*(vuint8*)(0x04000400 + ((n)<<4)))
-#define SCHANNEL_PAN(n)				(*(vuint8*)(0x04000402 + ((n)<<4)))
-#define SCHANNEL_SOURCE(n)			(*(vuint32*)(0x04000404 + ((n)<<4)))
-#define SCHANNEL_TIMER(n)			(*(vint16*)(0x04000408 + ((n)<<4)))
-#define SCHANNEL_REPEAT_POINT(n)	(*(vuint16*)(0x0400040A + ((n)<<4)))
-#define SCHANNEL_LENGTH(n)			(*(vuint32*)(0x0400040C + ((n)<<4)))
+/* 
+ * Master sound
+ */
+#define SNDREG	((SndReg *)(SFRZERO + 0x500))
+typedef struct SndReg SndReg;
+struct SndReg {
+	union {
+		uchar mvol;
+		ushort ctl;
+	} cr;
 
-#define SOUND_CR          (*(vuint16*)0x04000500)
-#define SOUND_MASTER_VOL  (*(vuint8*)0x04000500)
+	ushort pad1;
+	ulong bias;
+	ushort s508;
+	ushort s510;
+	ushort s514;
+	ushort s518;
+	ushort s51c;
+};
 
+enum {
+	Sndena		= 1<<15,
+};
 
 // not sure on the following
 
-#define SOUND_BIAS        (*(vuint16*)0x04000504)
-#define SOUND508          (*(vuint16*)0x04000508)
-#define SOUND510          (*(vuint16*)0x04000510)
-#define SOUND514		  (*(vuint16*)0x04000514)
-#define SOUND518          (*(vuint16*)0x04000518)
-#define SOUND51C          (*(vuint16*)0x0400051C)
+#define SOUND_BIAS 	(SNDREG->bias)
+#define SOUND508	(SNDREG->s508)
+#define SOUND510	(SNDREG->s510)
+#define SOUND514	(SNDREG->s514)
+#define SOUND518	(SNDREG->s518)
+#define SOUND51C	(SNDREG->s51c)
 
+void vblankaudio(void);
 
-/*---------------------------------------------------------------------------------
-	microphone code based on neimod's microphone example.
-	See: http:neimod.com/dstek/ 
-	Chris Double (chris.double@double.co.nz)
-	http:www.double.co.nz/nintendo_ds
----------------------------------------------------------------------------------*/
-
-
-/*
-	Read a byte from the microphone
-*/
+/* Read a byte from the microphone */
 u8 MIC_ReadData(void);
 
-/*---------------------------------------------------------------------------------
-	Fill the buffer with data from the microphone. The buffer will be
-	signed sound data at 16kHz. Once the length of the buffer is
-	reached, no more data will be stored. Uses ARM7 timer 0.  
----------------------------------------------------------------------------------*/
 void StartRecording(u8* buffer, int length);
 int StopRecording(void);
-
-/* This must be called during IRQ_TIMER0 */
-void ProcessMicrophoneTimerIRQ();
 
 void PM_SetAmp(u8 control);

@@ -39,6 +39,8 @@ segflush(void *a, ulong n)
 {
 	dcflush(a, n);
 	icflush(a, n);
+//	dcinval(a, n);
+	
 	return 0;
 }
 
@@ -69,25 +71,13 @@ halt(void)
 void
 confinit(void)
 {
-	ulong base;
-
 	archconfinit();
-
-	base = PGROUND((ulong)end);
-	conf.base0 = base;
-
-	conf.base1 = 0;
-	conf.npage1 = 0;
-
-	conf.npage0 = (conf.topofmem - base)/BY2PG;
 
 	conf.npage = conf.npage0 + conf.npage1;
 	conf.ialloc = (((conf.npage*(main_pool_pcnt))/100)/2)*BY2PG;
 
 	conf.nproc = 100 + ((conf.npage*BY2PG)/MB)*5;
 	conf.nmach = 1;
-	
-	conf.bmap = 0;
 }
 
 void
@@ -95,37 +85,24 @@ machinit(void)
 {
 	m = (Mach*)MACHADDR;
 	memset(m, 0, sizeof(Mach));	/* clear the mach struct */
+
 	m->machno = 1;
 	m->ticks = 1;
 	m->cpuhz = 66*1000000;
 }
 
-void
-poolmove(void* p, void* g)
-{
-	memmove(p, g, 100);
-}
-
-void
-serputc()
-{
-	// dummy routine
-}
-
-#define idoc(m) if(1) uartputs(m, strlen(m))
+#define idoc(m) if(1) iprint
 #define doc if(0) print
 
 void
 main(void)
 {
-	//char *p, *g, *ep;
-	//ulong *t;
-	//ulong i,j,k;
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 	
 	doc("mpuinit...\n");
 	mpuinit();
+	wcpctl(rcpctl() | CpCmpu);		/* TODO: should be in mpuinit */
 	doc("machinit...\n");
 	machinit();
 	archreset();
@@ -133,15 +110,13 @@ main(void)
 	doc("confinit...\n");
 	confinit();
 
-/* TODO, fix printing, figure out what is wrong with locking and 
-	memory addresses  */
+	/* TODO, fix printing, figure out what is wrong with locking and memory addresses  */
 	
 	doc("xinit...\n");
 	xinit();
 	doc("poolinit...\n");
 	poolsizeinit();
 	poolinit();
-	//poolsetcompact(mainmem, poolmove);
 
 	doc("trapinit...\n");
 	trapinit(); 

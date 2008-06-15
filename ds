@@ -11,21 +11,22 @@ dev
 	dup
 	draw screen swcursor
 	pointer
-#	ip	bootp ip ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
-#	ether netif netaux ethermedium
+	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
+	ether netif netaux
 #	ata
 
 	nds
 
 ip
 #	il
-#	tcp
-#	udp
+	tcp
+	udp
 #	rudp
 #	igmp
-#	ipifc
-#	icmp
-#	ipmux
+	ipifc
+	icmp
+	icmp6
+	ipmux
 
 lib
 	interp
@@ -40,6 +41,7 @@ lib
 	kern
 
 mod
+	math
 	sys
 	draw
 	tk
@@ -72,10 +74,15 @@ port
 	xalloc
 
 link	
-#	lcd
-#	ether589
-#	ethertdk
+	fifo
+	ethernds
+	ethermedium
+#	ethermii
 #	pppmedium ppp compress
+
+misc
+	logo
+	math
 
 code
 	int main_pool_pcnt = 50;
@@ -135,6 +142,7 @@ root
 	/dis/cd.dis
 	/dis/cp.dis
 	/dis/date.dis
+	/dis/dossrv.dis
 	/dis/echo.dis
 	/dis/ed.dis
 	/dis/env.dis

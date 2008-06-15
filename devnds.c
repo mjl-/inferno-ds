@@ -12,6 +12,9 @@
 #include	"arm7/ipc.h"
 #include	"arm7/system.h"
 
+#include	"wifi.h"
+#include	"arm7/wifi.h"
+
 #define	DPRINT if(0)print
 
 enum {
@@ -70,10 +73,12 @@ fiforecv(ulong vv)
 			mousemod &= Button3;
 
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
-			if (i==Rbtn||i==Lbtn)
+			if (i==Rbtn||i==Lbtn){
 				continue;
-			else if(v & (1<<i))
+			}else if(v & (1<<i)){
+				kbdrepeat(0);
 				kbdputc(kbdq, rockermap[conf.bmap][i]);
+			}	
 		break;
 	case F7keydown:
 		if(v&(1<<Pdown))
@@ -97,6 +102,15 @@ fiforecv(ulong vv)
 		print("%s", (char*) v); /* just forward arm7 prints */
 		break;
 	default:
+		print("unknown msg: %lux (val %lux cmd %lux)\n", vv, v, vv&Fcmdmask);
+if(0){
+		// but we know it's a wifi scan end
+		Wifi_AccessPoint *app;
+
+		for(i=0, app = (Wifi_AccessPoint*) IPC; i++ <= 13 || *(ulong*)app; app++)
+			print("ssid %s ch %d\n", app->ssid, app->channel);
+}
+
 		break;
 	}
 }
@@ -108,9 +122,6 @@ ndsinit(void)
 	ulong hassram;
 	ulong *p;
 	
-	// arm9 is the owner of ram, slot-1 & slot-2 
-	EXMEMREG->ctl &= ~(Arm7hasds|Arm7hasgba|Arm7hasram);
-
 	// look for a valid NDShdr
 	if (memcmp((void*)((NDShdr*)ROMZERO)->gcode, "INFRME", 6) == 0)
 		dsh =  (NDShdr*)ROMZERO;
@@ -133,8 +144,8 @@ ndsinit(void)
 				break;
 
 		conf.brom = ROMTOP;
-		if (p <= (ulong*)(ROMTOP))
-			conf.brom = (ulong)p + strlen("ROMZERO9");
+		if (p < (ulong*)(ROMTOP - sizeof("ROMZERO9") - 1))
+			conf.brom = (ulong)p + sizeof("ROMZERO9") - 1;
 		
 	}
 	DPRINT("ndsinit: hdr %08lx sram %08x rom %08x\n",
@@ -282,7 +293,7 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
- 		memmove8(a, (uchar*)(conf.bsram+offset), n);
+ 		memmove(a, (uchar*)(conf.bsram+offset), n);
 		break;
 
 	default:
@@ -339,7 +350,7 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			return 0;
 		if(offset+n > len)
 			n = len - offset;
- 		memmove8((uchar*)(conf.bsram+offset), a, n);
+ 		memmove((uchar*)(conf.bsram+offset), a, n);
 		DPRINT("sram w %llux off %lld n %ld\n", (conf.bsram+offset), offset, n);
  		break;
 

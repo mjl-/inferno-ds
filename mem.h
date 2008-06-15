@@ -44,18 +44,13 @@
 
 #define KZERO		0x02000000
 #define MACHADDR	(KZERO+0x00000000)
-#define KTTB		(KZERO+0x00000100)      /* we don't have TTB */
 #define KTZERO		(KZERO+0x00000130)
 #define KSTACK	8192			/* Size of kernel stack */
 
-#define	FLUSHMEM KTTB
-#define DCFADDR	FLUSHMEM	/* cached and buffered for cache writeback */
-#define MCFADDR	(FLUSHMEM+(1<<20))	/* cached and unbuffered for minicache writeback */
-#define UCDRAMZERO	0xC8000000	/* base of memory doubly-mapped as uncached */
 #define AIVECADDR	0xFFFF0000	/* alternative interrupt vector address (other is 0) */
 
-#define	ICACHESZ	0x2000
-#define	DCACHESZ	0x1000
+#define	ICACHESZ	8192
+#define	DCACHESZ	4096
 #define	CACHELINESZ	32
 
 /*
@@ -91,18 +86,11 @@
 #define	DTCMSIZE	(16*1024)
 
 /*
- * Base registers
- */
-#define INTbase		(SFRZERO + 0x208)
-#define TIMERbase	(SFRZERO + 0x100)
-#define DMAbase		(SFRZERO + 0x0b0)
-
-/*
  * ARM7 specific
  */
 #define	KSTACK7		512
 #define	IWRAMZERO7	0x03800000
-#define	IWRAMTOP7	0x0380FFF0
+#define	IWRAMTOP7	0x0380FFFF
 #define	INTHAND7	(SFRZERO - 4)
 #define	IRQCHECK7	(SFRZERO - 8)
 
@@ -169,6 +157,7 @@
 #define	CpCd32		0x00000020	/* 32-bit data space */
 #define	CpClateabt	0x00000040	/* Late abort Mode (pre v4) */
 #define	CpCbe		0x00000080	/* big-endian operation */
+#define	CpCbpredict	0x00000800	/* branch prediction */
 #define	CpCicache	0x00001000	/* Instruction cache enable */
 #define	CpCaltivec	0x00002000	/* alternative interrupt vectors */
 #define	CpCrrob		0x00004000	/* Round Robin cache replacement */

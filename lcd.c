@@ -100,7 +100,8 @@ lcd_init(LCDmode *p)
 void
 lcd_flush(void)
 {
-		dcflushall();	/* need more precise addresses */
+	if(0)print("lcd_flush\n");
+	dcflushall();	/* need more precise addresses */
 }
 
 void

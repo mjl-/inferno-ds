@@ -35,14 +35,14 @@ struct TransferSoundData {
   u32 rate;
   u8 vol;
   u8 pan;
-  u8 format;
+  u8 fmt;
   u8 PADDING;
 };
 
 
 typedef struct TransferSound TransferSound;
 struct TransferSound {
-  TransferSoundData data[16];
+  TransferSoundData d[16];
   u8 count;
   u8 PADDING[3];
 };
