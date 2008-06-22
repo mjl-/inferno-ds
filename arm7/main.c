@@ -85,17 +85,12 @@ enum
 void
 vblankintr(void)
 {
+	int i;
 	static int heartbeat = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
 	ulong bst, cbst, bup, bdown;
 	static ulong obst, opx, opy;
-	int i;
 	int t1, t2;
-#ifdef notyet
-	uint32 temp;
-	ushort batt, aux;
-	ushort x=0, y=0, xpx=0, ypx=0, z1=0, z2=0;
-#endif
 
 	heartbeat++;
 
@@ -103,6 +98,10 @@ vblankintr(void)
 	bst = KEYREG->in & Btn9msk;
 	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
 
+	/* skip bogus keypresses at start */
+	if (heartbeat == 1)
+		obst = bst;
+	
 	if(~bst & 1<<Pdown) {
 		touchReadXY(&tp);
 		if (opx != tp.px || opy != tp.py)
@@ -126,43 +125,18 @@ vblankintr(void)
 	}
 	obst = bst;
 
-	/* skip bogus keypresses at start */
-	if(heartbeat == 1)
-		return;
-
 	if(bup)
 		nbfifoput(F7keyup, bup);
 	if(bdown)
 		nbfifoput(F7keydown, bdown);
 
 	vblankaudio();
-
-/*
-	if((press^lastpress) & Pendown) {
-		lastpress = press;
-		press |= Pendown;
-	} else {
-		touchReadXY(&tp);
-		if ( tp.x == 0 || tp.y == 0 ) {
-			press |= Pendown;
-			lastpress = press;
-		} else {
-			x = tp.x;
-			y = tp.y;
-			xpx = tp.px;
-			ypx = tp.py;
-			z1 = tp.z1;
-			z2 = tp.z2;
-		}
-	}
-*/
 	
 	// Read the temperature
-//	batt = touchRead(Tscgetbattery);
-//	aux  = touchRead(Tscgetaux);
-//	temp = touchReadTemperature(&t1, &t2);
-//	if(heartbeat % 180 == 0)
-//		 print("batt %d aux %d temp %d\n", batt, aux, temp);
+	IPC->aux = touchRead(Tscgetaux);
+	IPC->battery  = touchRead(Tscgetbattery);
+	IPC->temperature = touchReadTemperature(&t1, &t2);;
+	//print("batt %d aux %d temp %d\n", IPC->battery, IPC->aux, IPC->temperature);
 
 	intrclear(VBLANKbit, 0);
 }

@@ -590,7 +590,7 @@ void wifi_open(void)
 		    (power_read(POWER_CONTROL) & ~POWER0_LED_FAST) |
 		    POWER0_LED_BLINK);
 
-	POWERREG->pcr |= 2;		// enable power for the wifi
+	POWERREG->pcr |= (1<<POWER_WIFI);		// enable power for the wifi
 	*((volatile u16 *)0x04000206) = 0x30;	// ???
 
 	// reset/shutdown wifi:
@@ -652,7 +652,7 @@ void wifi_close(void)
 	wifi_data.state &= ~WIFI_STATE_UP;
 
 	Wifi_Stop();
-	POWERREG->pcr &= ~2;
+	POWERREG->pcr &= ~(1<<POWER_WIFI);
 
 	/* Stop flashing */
 	power_write(POWER_CONTROL,

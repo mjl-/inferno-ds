@@ -1,4 +1,40 @@
-This is a preliminary release of a DS port. Most of the code will be in thumb eventually.
+inferno-ds: Native Inferno Kernel for the Nintendo DS 
 
-Right now it's starting to be usable,
-it starts a window manager (wm) instance and allows you to control it with the touchscreen.
+INTRO
+-----
+The port [1] is starting to be usable,
+that means that limbo programs (dis code) runs on Inferno's Dis VM [2].
+
+Some of the hardware bits [3] that are working are:
+	- both lcd screens (including the touch).
+	- access to spi devices (arm7): rtc, firmware, power, ...
+	- mpu and caches are working.
+	- fifos for processor communication (arm7 <-> arm9).
+	- audio support (play and record).
+
+Still the port is far from finished, so the port is a WIP
+(work in progress) thing some of the bits missing are:
+	- sd card storage 
+	- wifi networking
+
+USAGE
+-----
+To setup/build your own i$CONF.nds file follow the INSTALL file.
+After build launch the resulting i$CONF.nds file on your DS.
+
+At boot time it prompts for the source location of the root fs,
+after the prompt, a window manager wm(1) instance is started
+to interact/launch/control programs using a menu-like interface.
+
+AUTHORS
+-------
+Noah Evans
+Salva Peiró
+Mechiel Lukkien
+
+REFERENCES
+----------
+[1] Inferno DS project: http://code.google.com/p/inferno-ds/
+[2] Inferno Operating System: http://code.google.com/p/inferno-os/ 
+[3] gbatek: hardware reference: http://nocash.emubase.de/gbatek.{txt,htm},
+    excellent reference written by Martin Korth with all you need to know about DS programming.

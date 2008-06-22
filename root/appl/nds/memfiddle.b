@@ -59,7 +59,7 @@ Reg: adt {
 };
 
 r := Reg(0, 4, "", big 0, big 0);
-mempath: con "/dev/registers";
+mempath: con "/dev/ndsmem";
 regpath: con "/lib/registers";
 memfd: ref Sys->FD;
 sign := 1;

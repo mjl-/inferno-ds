@@ -84,7 +84,7 @@ enum
 	F9setrtc,
 
 	/* from arm7 to arm9 */
-	F7keyup,
+	F7keyup = 0,
 	F7keydown,
 	F7mousedown,
 	F7mouseup,
@@ -249,7 +249,8 @@ enum
 typedef struct LcdReg LcdReg;
 struct LcdReg {
 	ulong lccr;	/* control */
-	ulong lcsr;	/* status */
+	ushort lcsr;	/* status */
+	ushort vcount;	/* vline count */
 };
 
 /*

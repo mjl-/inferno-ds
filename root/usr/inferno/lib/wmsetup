@@ -1,7 +1,6 @@
 #!/dis/sh script
 
 wmrun bind -a '#A' /dev # audio
-wmrun bind -a '#R' /dev	# nds regs
 wmrun bind -b /icons/tinytk /icons/tk
 
 menu ''	''
@@ -27,7 +26,7 @@ wmrun wm/sh -w 240 -h 130 -ic '
 	echo show ints
 	echo '' 0x04000208/X
 		0x04000210/X
-		0x04000214/X'' | mdb /dev/registers
+		0x04000214/X'' | mdb /dev/ndsmem
 
 	auplay /usr/inferno/lib/invhit.iaf
 	'

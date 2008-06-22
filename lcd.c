@@ -12,9 +12,6 @@
 
 #define	DPRINT	if(0)iprint
 
-#define Scrbase(n) (((n)*0x800)+0x6000000)
-#define Cbase(n) (((n)*0x4000)+0x6000000)
-
 typedef struct {
 	Vdisplay;
 	LCDparam;
@@ -35,6 +32,8 @@ lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 			(b>>(32-5));
 }
 
+enum { Lcdytrig = 80 };
+
 static void
 setlcdmode(LCDdisplay *ld)
 {
@@ -42,11 +41,12 @@ setlcdmode(LCDdisplay *ld)
 	VramReg *vram = VRAMREG;
 	PowerReg *power = POWERREG;
 
-	lcd->lccr = 0;	
+	lcd->lccr = 0;
   	
 	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);
  	lcd->lccr = MODE_FB(0);
       	vram->acr = VRAM_ENABLE|VRAM_A_LCD;
+	lcd->lcsr = (lcd->lcsr & 0x7F ) | (Lcdytrig << 8) | ((Lcdytrig & 0x100 ) >> 2) ;
 
 	DPRINT("lccr=%8.8lux\n", lcd->lccr); 
 }
@@ -110,9 +110,9 @@ blankscreen(int blank)
 	PowerReg *power = POWERREG;
 
 	if(blank)
-		power->pcr &= ~(POWER_LCD);
-	else
 		power->pcr |= POWER_LCD;
+	else
+		power->pcr &= ~POWER_LCD;
 }
 
 #define RGB15(r,g,b)	((r)|(g<<5)|(b<<10))

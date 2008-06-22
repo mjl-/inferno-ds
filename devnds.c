@@ -21,10 +21,10 @@ enum {
 	Qdir,
 	Qctl,
 	Qinfo,
-	Qtouchctl,
 	Qfw,
 	Qrom,
 	Qsram,
+	Qmem,
 };
 
 static
@@ -32,10 +32,10 @@ Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,
 	"ndsctl",	{Qctl},		0,		0600,
 	"ndsinfo",	{Qinfo},	0,		0600,
-	"touchctl",	{Qtouchctl},	0,		0644,
 	"ndsfw",	{Qfw},		0,		0400,
 	"ndsrom",	{Qrom},		0,		0600,
-	"ndssram",	{Qsram},		0,		0600,
+	"ndssram",	{Qsram},	0,		0600,
+	"ndsmem",	{Qmem},		0,		0600,
 };
 
 
@@ -63,7 +63,7 @@ fiforecv(ulong vv)
 	switch(vv&Fcmdmask) {
 	case F7keyup:
 		if(v&(1<<Lclose))
-			blankscreen(1);
+			blankscreen(0);
 
 		if(v&(1<<Pdown))
 			mousemod &= Button1;
@@ -89,7 +89,7 @@ fiforecv(ulong vv)
 			mousemod |= Button3;
 
 		if(v&(1<<Lclose))
-			blankscreen(0);
+			blankscreen(1);
 		break;
 	case F7mousedown:
 		// print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
@@ -118,27 +118,30 @@ if(0){
 static void
 ndsinit(void)
 {
-	NDShdr *dsh = nil;
+	NDShdr *dsh;
 	ulong hassram;
 	ulong *p;
 	
-	// look for a valid NDShdr
+	dsh = nil;
+	/* look for a valid NDShdr */
 	if (memcmp((void*)((NDShdr*)ROMZERO)->gcode, "INFRME", 6) == 0)
 		dsh =  (NDShdr*)ROMZERO;
 	else if (memcmp((void*)NDSHeader->gcode, "INFRME", 6) == 0)
 		dsh = NDSHeader;
 
-	if(dsh != nil){
-		/* check before overriding anyone else's memory */
-		hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0) &&
-			  (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0);
+	if(dsh == nil)
+		return;
 
-		conf.bsram = SRAMTOP;
-		if (hassram)
-			conf.bsram = SRAMZERO;
+	/* check before overriding anyone else's memory */
+	hassram = (memcmp((void*)dsh->rserv5, "PASS", 4) == 0) &&
+		  (memcmp((void*)dsh->rserv4, "SRAM_V", 6) == 0);
+
+	conf.bsram = SRAMTOP;
+	if (hassram)
+		conf.bsram = SRAMZERO;
 		
-		/* BUG: rom only present on certain slot2 devices */
-		if (dsh == (NDShdr*)ROMZERO)
+	/* BUG: rom only present on certain slot2 devices */
+	if (0 && dsh == (NDShdr*)ROMZERO){
 		for (p=(ulong*)(ROMZERO+dsh->appeoff); p < (ulong*)(ROMTOP); p++)
 			if (memcmp(p, "ROMZERO9", 8) == 0)
 				break;
@@ -146,8 +149,8 @@ ndsinit(void)
 		conf.brom = ROMTOP;
 		if (p < (ulong*)(ROMTOP - sizeof("ROMZERO9") - 1))
 			conf.brom = (ulong)p + sizeof("ROMZERO9") - 1;
-		
 	}
+		
 	DPRINT("ndsinit: hdr %08lx sram %08x rom %08x\n",
 		dsh, conf.bsram, conf.brom);
 }
@@ -176,12 +179,10 @@ ndsopen(Chan* c, int omode)
 	return devopen(c, omode, ndstab, nelem(ndstab), devgen);
 }
 
-
 static void
 ndsclose(Chan*)
 {
 }
-
 
 /* settings flags */
 enum {
@@ -197,6 +198,7 @@ enum {
 	LChinese,
 	LOther,
 	Langmask	= 7,
+
 	Gbalowerscreen	= 1<<3,
 	Backlightshift	= 4,
 	Backlightmask	= 3,
@@ -204,28 +206,61 @@ enum {
 	Nosettings	= 1<<9,
 };
 
-/* memmove8 for SRAM: 8 bits width bus only */
-static void
-memmove8(uchar* dest, uchar const* src, int n)
+/* in/out used to access Qmem */
+
+static uchar
+inb(ulong reg)
 {
-	while(n--) 
-		*dest++ = *src++;
+	return *(uchar*)reg;
+}
+
+static ushort
+insh(ulong reg)
+{
+	return *(ushort*)reg;
+}
+
+static ulong
+inl(ulong reg)
+{
+	return *(ulong*)reg;
+}
+
+static void
+outb(ulong reg, uchar b)
+{
+	*(uchar*)reg = b;
+}
+
+static void
+outsh(ulong reg, ushort sh)
+{
+	*(ushort*)reg = sh;
+}
+
+static void
+outl(ulong reg, ulong l)
+{
+	*(ulong*)reg = l;
 }
 
 static long
 ndsread(Chan* c, void* a, long n, vlong offset)
 {
 	char *tmp;
-	int v, t, l;
+	int v, t, temp;
 	char *p, *e;
 	int len;
 	PERSONAL_DATA *pd = PersonalData;
+	uchar *pa;
+	uchar b;
+	ushort s;
+	ulong l;
 
 	switch((ulong)c->qid.path){
 	case Qdir:
 		return devdirread(c, a, n, ndstab, nelem(ndstab), devgen);
-	case Qtouchctl:
-		break;
+
 	case Qinfo:
 		tmp = malloc(READSTR);
 		if(waserror()){
@@ -233,20 +268,21 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			nexterror();
 		}
 		v = IPC->battery;
-		l = IPC->temperature;
+		temp = IPC->temperature;
 		t = *((uchar*)0x1d); // read console type, version from firmware
 		snprint(tmp, READSTR,
 			"ds type: %x %s\n"
 			"battery: %d %s\n"
-			"temperature: %d.%d\n",
-			t, (t == 0xff? "NDS" : "NDS-lite"), 
-			v, (v? "high" : "low"),
-			l>>12, l & (1<<13 -1));
+			"temp: %d.%.2d\n",
+			t, (t == 0xff? "ds" : "ds-lite"), 
+			v, (v? "low" : "high"),
+			temp>>12, temp & ((1<<13) -1));
 
 		n = readstr(offset, a, n, tmp);
 		poperror();
 		free(tmp);
 		break;
+
 	case Qfw:
 		tmp = p = malloc(1024);
 		if(waserror()) {
@@ -296,6 +332,30 @@ ndsread(Chan* c, void* a, long n, vlong offset)
  		memmove(a, (uchar*)(conf.bsram+offset), n);
 		break;
 
+	case Qmem:
+		pa = a;
+		switch(n) {
+		case 1:
+			b = inb(offset);
+			pa[0] = b;
+			break;
+		case 2:
+			s = insh(offset);
+			pa[0] = s>>0;
+			pa[1] = s>>8;
+			break;
+		case 4:
+			l = inl(offset);
+			pa[0] = l>>0;
+			pa[1] = l>>8;
+			pa[2] = l>>16;
+			pa[3] = l>>24;
+			break;
+		default:
+			error(Ebadusefd);
+		}
+		break;
+
 	default:
 		n=0;
 		break;
@@ -308,6 +368,7 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 {
 	char cmd[64], *fields[6];
 	int nf, len;
+	uchar *pa;
 
 	switch((ulong)c->qid.path){
 	case Qctl:
@@ -322,17 +383,14 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 			fifoput(F9brightness, atoi(fields[1]));
 		else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
-				blankscreen(0);
-			else if(strcmp(fields[1], "off") == 0)
 				blankscreen(1);
+			else if(strcmp(fields[1], "off") == 0)
+				blankscreen(0);
 			else
 				error(Ebadarg);
 		} else
 			error(Ebadarg);
  		break;
-	case Qtouchctl:
-		break;
-//		return touchctl(a, n);
 
  	case Qrom:
 		len = ROMTOP - conf.brom;
@@ -353,6 +411,23 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
  		memmove((uchar*)(conf.bsram+offset), a, n);
 		DPRINT("sram w %llux off %lld n %ld\n", (conf.bsram+offset), offset, n);
  		break;
+
+	case Qmem:
+		pa = a;
+		switch(n) {
+		case 1:
+			outb(offset, pa[0]);
+			break;
+		case 2:
+			outsh(offset, (pa[1]<<8)|pa[0]);
+			break;
+		case 4:
+			outl(offset, (pa[3]<<24)|(pa[2]<<16)|(pa[1]<<8)|pa[0]);
+			break;
+		default:
+			error(Ebadusefd);
+		}
+		break;
 
 	default:
 		error(Ebadusefd);

@@ -173,7 +173,7 @@ setscreen(LCDmode *mode)
 
 	gscreen->r = Rect(0, 0, vd->x, vd->y);
 	gscreen->clipr = gscreen->r;
-	gscreen->depth = 16;
+	gscreen->depth = vd->depth;
 	gscreen->width = vd->x >>1;
 	
 	xgdata.bdata = (uchar*)vd->fb; 

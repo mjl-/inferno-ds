@@ -93,6 +93,8 @@ archconfinit(void)
 	conf.npage0 = (conf.topofmem - conf.base0)/BY2PG;
 	
 	m->cpuhz = 66*1000000;
+	conf.bsram = SRAMTOP;
+	conf.brom = ROMTOP;
 	conf.bmap = 0;
 }
 

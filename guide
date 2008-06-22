@@ -2,6 +2,8 @@ win rc
 changes
 changes | grep  '# [ADMC]'
 svn diff > `date '+%0e%0m%0Y'`.patch
+git diff > `date '+%e%0m%0Y'`.patch
+git status | awk '/# Untracked files:/ {ign=1} {if(!ign) print}'
 acme -a -l ds.dump &
 Dump /usr/inferno/os/ds/ds.dump
 

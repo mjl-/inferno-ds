@@ -8,7 +8,6 @@ dev
 	rtc
 	srv
 	dup
-	regs
 	draw screen swcursor
 	pointer
 	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
