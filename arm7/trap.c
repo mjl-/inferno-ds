@@ -66,7 +66,7 @@ intrclear(int v, int tbdf)
 {
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
-		return;	// panic("intrmask: irq source %d out of range\n", v);
+		return;
 
 	INTREG->ipr = (1 << v);
 	*(ulong*)IRQCHECK7 = (1 << v);
@@ -77,7 +77,7 @@ intrenable(int v, void (*r)(void), int tbdf)
 {
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
-		return; 	// panic("intrenable: irq source %d out of range\n", v);
+		return;
 
 	Irq[v].r	= r;
 	Irq[v].v	= v;
@@ -92,7 +92,7 @@ intrmask(int v, int tbdf)
 {
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
-		return;	// panic("intrmask: irq source %d out of range\n", v);
+		return;
 	
 	INTREG->ier &= ~(1<<v);
 	if (VBLANKbit <= v && v <= VCOUNTbit)
@@ -104,6 +104,6 @@ intrunmask(int v, int tbdf)
 {
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
-		return; 	// panic("intrunmask: irq source %d out of range\n", v);
+		return;
 	INTREG->ier |= (1 << v);
 }

@@ -12,7 +12,6 @@ dev
 	pointer
 	ip	bootp ip ipv6 ipaux iproute arp netlog ptclbsum iprouter plan9 nullmedium pktmedium
 	ether netif netaux
-#	uart
 
 	nds
 	dldi
@@ -75,7 +74,7 @@ port
 	taslock
 	xalloc
 
-link	
+link
 	fifo
 	ethernds
 	ethermedium
@@ -96,7 +95,7 @@ code
 
 	int consoleprint = 1;
 	int redirectconsole = 1;
-	int iprintscreenputs = 0;
+	int iprintscreenputs = 1;
 	char debug_keys = 1;
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";

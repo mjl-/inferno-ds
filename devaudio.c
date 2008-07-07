@@ -8,6 +8,7 @@
 
 #include	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
+#include	"arm7/audio.h"
 
 static int debug = 0;
 
@@ -93,8 +94,8 @@ mxvolume(void)
 	int bits = 8;
 
 	snddat.rate = audio.lovol[Vspeed];
-	snddat.vol = 0x7f * audio.lovol[Vaudio] / 100;
-	snddat.pan = 0x7f * (audio.rovol[Vaudio] - audio.lovol[Vaudio]) / 100;
+	snddat.vol = (Maxvol - Minvol) * audio.lovol[Vaudio] / 100;
+	snddat.pan = (Maxvol - Minvol) * (audio.rovol[Vaudio] - audio.lovol[Vaudio]) / 100;
 	snddat.fmt = (bits == 16);
 }
 

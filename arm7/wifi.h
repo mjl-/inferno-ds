@@ -103,25 +103,28 @@ enum WIFI_STATE {
 
 #define WIFI_CHANNEL_SCAN_DWEL 150 // 150 micro seconds
 
-typedef struct WIFI_TXHEADER {
+typedef struct WIFI_TXHEADER  Wifi_TxHeader;
+struct WIFI_TXHEADER {
 	u16 enable_flags;
 	u16 unknown;
 	u16 countup;
 	u16 beaconfreq;
 	u16 tx_rate;
 	u16 tx_length;
-} Wifi_TxHeader;
+};
 
-typedef struct WIFI_RXHEADER {
+typedef struct WIFI_RXHEADER Wifi_RxHeader;
+struct WIFI_RXHEADER {
 	u16 a;
 	u16 b;
 	u16 c;
 	u16 d;
 	u16 byteLength;
 	u16 rssi_;
-} Wifi_RxHeader;
+};
 
-typedef struct WIFI_ACCESSPOINT {
+typedef struct WIFI_ACCESSPOINT Wifi_AccessPoint;
+struct WIFI_ACCESSPOINT {
 	char ssid[33];		// 0-32byte data, zero
 	char ssid_len;
 	u8 bssid[6];
@@ -136,9 +139,10 @@ typedef struct WIFI_ACCESSPOINT {
 	u8 channel;
 	u8 rssi_past[8];
 	u8 base_rates[16];	// terminated by a 0 entry
-} Wifi_AccessPoint;
+};
 
-typedef struct Wifi_Data_Struct {
+typedef struct Wifi_Data_Struct Wifi_Data;
+struct Wifi_Data_Struct {
 
 	u16 curChannel, reqChannel;
 	u16 curMode, reqMode;
@@ -164,9 +168,71 @@ typedef struct Wifi_Data_Struct {
 	volatile u32 *stats;
 	Wifi_AccessPoint *aplist;
 
-} Wifi_Data;
+};
+
+enum WIFI_STATS
+{
+	WIFI_STATS_RXPACKETS = 0,
+	WIFI_STATS_RXBYTES,
+	WIFI_STATS_RXDATABYTES,
+
+	WIFI_STATS_TXPACKETS,
+	WIFI_STATS_TXBYTES,
+	WIFI_STATS_TXDATABYTES,
+	WIFI_STATS_TXQREJECT,
+
+	WIFI_STATS_TXRAWPACKETS,
+	WIFI_STATS_RXRAWPACKETS,
+	WIFI_STATS_RXOVERRUN,
+
+	WIFI_STATS_DEBUG1,
+	WIFI_STATS_DEBUG2,
+	WIFI_STATS_DEBUG3,
+	WIFI_STATS_DEBUG4,
+	WIFI_STATS_DEBUG5,
+	WIFI_STATS_DEBUG6,
+
+	WIFI_STATS_HW_1B0,
+	WIFI_STATS_HW_1B4,
+	WIFI_STATS_HW_1B8,
+	WIFI_STATS_HW_1BC,
+	WIFI_STATS_HW_1C0,
+	WIFI_STATS_HW_1D0,
+	WIFI_STATS_HW_1D4,
+	WIFI_STATS_HW_1D8,
+	WIFI_STATS_HW_1DC,
+
+	WIFI_STATS_MAX
+};
+
+enum WIFI_AP_MODE
+{
+	WIFI_AP_INFRA,
+	WIFI_AP_ADHOC,
+};
+
+/* Ethernet MTU is 1500 */
+#define NDS_WIFI_MAX_PACKET_SIZE 1600
+
+#define WIFI_ARM7_TIMEOUT	100
+#define WIFI_MAX_AP		32
+
+/* Used for transmission to arm7 */
+typedef struct nds_tx_packet nds_tx_packet;
+struct nds_tx_packet {
+	u16 len;	
+	uchar *data;
+	void *skb;
+};
+
+typedef struct nds_rx_packet nds_rx_packet;
+struct nds_rx_packet {
+	u16 len;	
+	uchar data[NDS_WIFI_MAX_PACKET_SIZE];
+};
 
 extern Wifi_Data wifi_data;
+extern nds_rx_packet *rx_packet;
 
 void wifi_init(void);
 void wifi_open(void);
@@ -188,8 +254,3 @@ void wifi_ap_query(u16 start_stop);
 void wifi_start_scan(void);
 void wifi_timer_handler(void);
 void wifi_rx_q_complete(void);
-
-/* Pointer to buffer used to send incoming packets to ARM9 */
-extern struct nds_rx_packet *rx_packet;
-/* We can only send one packet to ARM9 at a time */
-extern int sending_packet;

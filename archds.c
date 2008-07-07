@@ -82,7 +82,7 @@ archconfinit(void)
 
 		conf.base1 = ROMZERO + (ROMTOP - ROMZERO + 1)/2;
 		conf.npage1 = (ROMTOP - conf.base1)/BY2PG;
-		if(0)print("opera base1 %lux npage1 %d\n", conf.base1, conf.npage1);
+		if(0)print("opera base1 %lux npage1 %lud\n", conf.base1, conf.npage1);
 	}
 
 	conf.base1 = 0;
@@ -133,10 +133,10 @@ int
 archether(int ctlno, Ether *ether)
 {
 	static char opt[128];
-	uchar macaddrs[1][Eaddrlen] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
 
-	if(ctlno >= 0)
+	if(ctlno > 0)
 		return -1;
+
 	sprint(ether->type, "nds");
 	ether->mem = 0;
 	ether->nopt = 0;
@@ -146,7 +146,20 @@ archether(int ctlno, Ether *ether)
 	ether->itype = 0;
 	ether->mbps = 2;
 
-	memmove(ether->ea, macaddrs[ctlno], Eaddrlen);	// TODO get it from arm7
+	memset(ether->ea, 0xff, Eaddrlen);
+	nbfifoput(F9WFmacqry, (ulong)ether->ea);	/* mac from arm7 */
+	
+	if (0){	/* workaround for desmume */
+		int i;
+
+		while (ether->ea[5] == 0xff);
+		for (i=0; i<Eaddrlen; i++)
+			if (ether->ea[i] != 0)
+				break;
+
+		if(i == Eaddrlen)
+			memset(ether->ea, 0x01, Eaddrlen);
+	}
 
 	if(0)
 		strcpy(opt, "mode=0 essid=Limbo station=ds crypt=off");	/* peertopeer */

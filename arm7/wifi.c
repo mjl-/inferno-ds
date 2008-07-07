@@ -21,12 +21,11 @@ Copyright (c) 2005 Stephen Stair
 #include "jtypes.h"
 #include "spi.h"
 #include "system.h"
-#include "../wifi.h"
 #include "wifi.h"
 
 Wifi_Data wifi_data;
 
-struct nds_rx_packet *rx_packet = nil;
+nds_rx_packet *rx_packet = nil;
 
 static void Wifi_Stop(void);
 static void Wifi_DisableTempPowerSave(void);
@@ -1800,26 +1799,31 @@ void wifi_ap_query(u16 start_stop)
 	else
 		wifi_data.state &= ~WIFI_STATE_APQUERYPEND;
 
+	print("wifi_ap_query %x\n", FIFO_WIFI_CMD(FIFO_WIFI_CMD_AP_QUERY, 0));
 	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_AP_QUERY, 0));
 }
 
 void wifi_start_scan(void)
 {
+	TimerReg *t = TIMERREG + WIFItimer;
+
 	wifi_data.state |= WIFI_STATE_CHANNEL_SCANNING;
 	wifi_data.scanChannel = 1;
 	Wifi_SetChannel(1);
 
-	TIMERREG->data = TIMER_BASE(Tmrdiv1024) / (1000 / WIFI_CHANNEL_SCAN_DWEL);
-	TIMERREG->ctl = Tmrdiv1024 | Tmrena | Tmrirq;
+	t->data = TIMER_BASE(Tmrdiv1024) / (1000 / WIFI_CHANNEL_SCAN_DWEL);
+	t->ctl = Tmrdiv1024 | Tmrena | Tmrirq;
 	intrunmask(TIMER0bit, 0);
 }
 
 static void wifi_bump_scan(void)
 {
+	TimerReg *t = TIMERREG + WIFItimer;
+
 	if (wifi_data.scanChannel == 13) {
 		intrmask(TIMER0bit, 0);
 		wifi_data.state &= ~WIFI_STATE_CHANNEL_SCANNING;
-		TIMERREG->ctl = 0;
+		t->ctl = 0;
 		Wifi_SetChannel(wifi_data.reqChannel);
 		nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_SCAN, 1));
 	} else {
@@ -1830,13 +1834,15 @@ static void wifi_bump_scan(void)
 
 void wifi_timer_handler(void)
 {
+	TimerReg *t = TIMERREG + WIFItimer;
+
 	if (wifi_data.state & WIFI_STATE_CHANNEL_SCANNING) {
 		wifi_bump_scan();
 	} else {
 		intrmask(TIMER0bit, 0);
-		TIMERREG->ctl = 0;
+		t->ctl = 0;
 	}
-	if(1)print("wifi_timer_handler %d\n", wifi_data.scanChannel);
+
 	intrclear(TIMER0bit, 0);
 }
 

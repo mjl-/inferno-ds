@@ -139,6 +139,7 @@ vlong	vldiv(vlong num, vlong denom);
 ulong	lsqrt(ulong p);
 ulong	vlsqrt(uvlong p);
 
+int	nbfifoput(ulong cmd, ulong param);
 void	fifoput(ulong cmd, ulong param);
 ulong	fifoget(ulong *param);
 void	fiforecvintr(Ureg*, void*);

@@ -17,13 +17,14 @@ struct SChanReg {
 	ulong	src;
 	ushort	tmr;
 	ushort	rpt;
-	ulong	len; /* in words of 4bytes */
+	ulong	wlen; /* in words of 4 bytes */
 
 	uchar	pad3[16];
 };
 
 /* SCHANREG->cr.ctl bits */
 enum {
+	NSChannels	= 16,	/* number of channels */
 
 	SCrepeat	= 1<<27,
 	SC1shot		= 1<<28,
@@ -34,6 +35,9 @@ enum {
 	SCpsg		= 3<<29,
 
 	SCena		= 1<<31,
+
+	Minvol		= 0x00,
+	Maxvol		= 0x7f,
 };
 
 /* usage: SCHANREG->tmr = SCHAN_FREQ(hz) */

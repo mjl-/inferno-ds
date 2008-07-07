@@ -17,7 +17,6 @@ OFILES=\
 	rtc.$O\
 	touch.$O\
 	audio.$O\
-	userSettings.$O\
 	wifi.$O\
 
 HFILES=\

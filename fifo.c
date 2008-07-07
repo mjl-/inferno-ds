@@ -19,6 +19,15 @@ fifocanget(void*)
 	return (FIFOREG->ctl & FifoRempty) == 0;
 }
 
+int
+nbfifoput(ulong cmd, ulong v)
+{
+	if(FIFOREG->ctl & FifoTfull)
+		return 0;
+	FIFOREG->send = (cmd|v<<Fcmdwidth);
+	return 1;
+}
+
 void
 fifoput(ulong cmd, ulong param)
 {

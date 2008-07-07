@@ -7,8 +7,8 @@
 #include "../mem.h"
 #include "../io.h"
 #include "nds.h"
+#include "dat.h"
 #include "fns.h"
-
 
 // TODO use SPIREG from io.h
 void 
@@ -73,7 +73,7 @@ StartRecording(u8* buffer, int length)
 int 
 StopRecording(void) 
 {
-	TimerReg *t = TIMERREG + 1;
+	TimerReg *t = TIMERREG + AUDIOtimer;
 
 	t->ctl &= ~Tmrena;
 	intrmask(TIMER1bit, 0);
@@ -92,18 +92,18 @@ startSound(int rate, const void* d, u32 bytes, u8 ch, u8 vol, u8 pan, u8 pcm16bi
 	SNDREG->cr.ctl = Sndena | 0x7F;
 
 	schan->tmr = SCHAN_FREQ(rate);
-	schan->src = (u32)d;
-	schan->len = bytes >> 2;
+	schan->src = (ulong)d;
+	schan->wlen = bytes >> 2;
 	schan->cr.vol = vol;
 	schan->cr.pan = pan;
 	schan->cr.ctl |= SCena | SC1shot | (pcm16bit? SCpcm16bit: SCpcm8bit);
 }
 
-s32 
+int
 getFreeSoundChannel(void)
 {
 	int i;
-	for (i=0; i<16; i++) {
+	for (i=0; i<NSChannels; i++) {
 		if (((SCHANREG+i)->cr.ctl & SCena) == 0)
 			return i;
 	}
@@ -121,7 +121,7 @@ vblankaudio(void)
 
 	if (snd)
 	for (i=0; i<snd->count; i++) {
-		s32 chan = getFreeSoundChannel();
+		int chan = getFreeSoundChannel();
 		if (chan >= 0)
 			startSound(snd->d[i].rate, snd->d[i].data, snd->d[i].len, chan, snd->d[i].vol, snd->d[i].pan, snd->d[i].fmt);
 	}

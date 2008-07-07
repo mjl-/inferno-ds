@@ -476,7 +476,7 @@ etherreset(void)
 {
 	Ether *ether;
 	int i, n, ctlrno;
-	char name[KNAMELEN], buf[128];
+	char name[KNAMELEN], buf[256];
 
 	for(ether = 0, ctlrno = 0; ctlrno < MaxEther; ctlrno++){
 		if(ether == 0)

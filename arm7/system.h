@@ -28,31 +28,6 @@
 
 ---------------------------------------------------------------------------------*/
 
-//	NDS hardware definitions.
-/*!	\file system.h
-
-	These definitions are usually only touched during
-	the initialization of the program.
-*/
-
-
-//	Halt control register.
-/*!	Writing 0x40 to HALT_CR activates GBA mode.
-	%HALT_CR can only be accessed via the BIOS.
-*/
-#define HALT_CR       (*(vuint16*)0x04000300)
-
-void readUserSettings(void);
-
-//	User's DS settings.
-/*!	\struct tPERSONAL_DATA
-
-	Defines the structure the DS firmware uses for transfer
-	of the user's settings to the booted program.
-*/
-#pragma hjdicks 1
-#pragma packed 1
-
 /* 
   packed_struct {
     unsigned language                   : 3;    //!<    User's language.
@@ -105,10 +80,7 @@ typedef struct tPERSONAL_DATA {
   u32	rtcOffset;
   u32	RESERVED4;
 }  PERSONAL_DATA ;
-#pragma hjdicks 0
-#pragma packed 0
 
-//	Default location for the user's personal data (see %PERSONAL_DATA).
+/* location to store user's personal data */
 #define PersonalData ((PERSONAL_DATA*)0x27FFC80)
 
-void setytrig(int Yvalue);

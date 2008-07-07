@@ -1,4 +1,4 @@
-#include	"u.h"
+#include	<u.h>
 #include	"../port/lib.h"
 #include	"mem.h"
 #include	"dat.h"
@@ -12,7 +12,6 @@
 #include	"arm7/ipc.h"
 #include	"arm7/system.h"
 
-#include	"wifi.h"
 #include	"arm7/wifi.h"
 
 #define	DPRINT if(0)print
@@ -38,17 +37,13 @@ Dirtab ndstab[]={
 	"ndsmem",	{Qmem},		0,		0600,
 };
 
-
-// TODO use Dbgbtn7 to enable debug; by toggling Conf.bmap = 2
 static	Rune	rockermap[3][Numbtns] ={
 	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
 	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
-	{'?', '|', Del, SysRq, Right, Left, Up, Down, RCtrl, RShift, Esc, No, No},	// debug
 };
 
 /*
  * TODO
- * - take care of changes in buttons, penup/pendown, rockermap, handedness
  * - screen orientation switch between landscape/portrait
  */
 
@@ -101,16 +96,9 @@ fiforecv(ulong vv)
 	case F7print:
 		print("%s", (char*) v); /* just forward arm7 prints */
 		break;
+
 	default:
-		print("unknown msg: %lux (val %lux cmd %lux)\n", vv, v, vv&Fcmdmask);
-if(0){
-		// but we know it's a wifi scan end
-		Wifi_AccessPoint *app;
-
-		for(i=0, app = (Wifi_AccessPoint*) IPC; i++ <= 13 || *(ulong*)app; app++)
-			print("ssid %s ch %d\n", app->ssid, app->channel);
-}
-
+		print("fiforecv9: unhandled msg: %lux\n", vv);
 		break;
 	}
 }

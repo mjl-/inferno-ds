@@ -82,7 +82,13 @@ enum
 	F9leds,
 	F9getrtc,
 	F9setrtc,
-
+	
+	F9WFmacqry,
+	F9WFstats,
+	F9WFapquery,
+	F9WFrxpkt,
+	F9WFtxpacket,
+		
 	/* from arm7 to arm9 */
 	F7keyup = 0,
 	F7keydown,

@@ -6,15 +6,12 @@
 #include "fns.h"
 #include "nds.h"
 
-#include "../wifi.h"
 #include "wifi.h"
 
 /* So we can initialize our own data section and bss */
 extern char bdata[];
 extern char edata[];
 extern char end[];
-
-int ndstype;
 
 int
 nbfifoput(ulong cmd, ulong v)
@@ -43,16 +40,15 @@ void
 fiforecvintr(void)
 {
 	ulong v, vv;
-	uchar buf[1];
+	uchar ndstype[1];
 
 	while(!(FIFOREG->ctl & FifoRempty)) {
 		vv = FIFOREG->recv;
 		v = vv>>Fcmdwidth;
 		switch(vv&Fcmdmask) {
 		case F9brightness:
-			read_firmware(FWconsoletype, buf, sizeof buf);
-			ndstype = buf[0];
-			if(ndstype == Dslite || ndstype == Ds)
+			read_firmware(FWconsoletype, ndstype, sizeof ndstype);
+			if(ndstype[0] == Dslite || ndstype[0] == Ds)
 				power_write(POWER_BACKLIGHT, v&Brightmask);
 			break;
 		case F9poweroff:
@@ -69,6 +65,32 @@ fiforecvintr(void)
 			break;
 		case F9setrtc:
 			nds_set_time7(*(ulong*)v);
+			break;
+
+		case F9WFmacqry:
+			// duplicated code: wifi_mac_query(void)
+			memmove((void*)v, wifi_data.MacAddr, 6);
+			break;
+		case F9WFstats:
+			wifi_data.stats = (volatile ulong *)v;
+			break;
+		case F9WFapquery:
+			wifi_data.aplist = (Wifi_AccessPoint*)v;
+			break;
+		case F9WFrxpkt:
+			rx_packet = (nds_rx_packet*)v;
+
+if(1){
+	wifi_open();
+	wifi_start_scan();
+}
+
+		break;
+		case F9WFtxpacket:
+			break;
+
+		default:
+			print("fiforecv7: unhandled msg: %lux\n", vv);
 			break;
 		}
 	}
@@ -176,30 +198,6 @@ main(void)
 	intrenable(TIMER0bit, wifi_timer_handler, 0);
 	intrenable(WIFIbit, wifi_interrupt, 0);
 	intrenable(ARM7bit, arm7intr, 0);
-
-if(0){
-	/*
-	print("mac %x:%x:%x:%x:%x:%x\n"
-		wifi_data.MacAddr[0],
-		wifi_data.MacAddr[1],
-		wifi_data.MacAddr[2],
-		wifi_data.MacAddr[3],
-		wifi_data.MacAddr[4],
-		wifi_data.MacAddr[5],
-	*/
-
-	wifi_data.aplist = (Wifi_AccessPoint*) IPC;
-	//wifi_open();
-	wifi_start_scan();
-
-	print(
-		"ssid: %s\n"
-		"aplist: %x\n"
-		"stats: %x\n", 
-		wifi_data.ssid,
-		(ulong)wifi_data.aplist,
-		(ulong)wifi_data.stats);
-}
 
 	// keep the ARM7 out of main RAM
 	while (1)
