@@ -6,36 +6,39 @@
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
-#include "nds.h"
 #include "dat.h"
 #include "fns.h"
+#include "jtypes.h"
+#include "ipc.h"
+#include "audio.h"
+#include "spi.h"
 
 // TODO use SPIREG from io.h
 void 
 PM_SetAmp(u8 control) 
 {
 	busywait();
-	REG_SPICNT = Spien | SPI_DEVICE_POWER | SPI_BAUD_1MHz | Spicont;
-	REG_SPIDATA = PM_AMP_OFFSET;
+	SPIREG->ctl = Spiena | SpiDevpower | Spi1mhz | Spicont;
+	SPIREG->data = PM_AMP_OFFSET;
 	busywait();
-	REG_SPICNT = Spien | SPI_DEVICE_POWER | SPI_BAUD_1MHz;
-	REG_SPIDATA = control;
+	SPIREG->ctl = Spiena | SpiDevpower | Spi1mhz;
+	SPIREG->data = control;
 }
 
 u8 
 MIC_ReadData(void) {
 	u16 res, res2;
 	busywait();
-	REG_SPICNT = Spien | SPI_DEVICE_MICROPHONE | Spi2mhz | Spicont;
-	REG_SPIDATA = 0xEC;	// Touchscreen cmd format for AUX
+	SPIREG->ctl = Spiena | SpiDevmic | Spi2mhz | Spicont;
+	SPIREG->data = 0xEC;	// Touchscreen cmd format for AUX
 	busywait();
-	REG_SPIDATA = 0x00;
+	SPIREG->data = 0x00;
 	busywait();
-	res = REG_SPIDATA;
-	REG_SPICNT = Spien | Spitouch | Spi2mhz;
-	REG_SPIDATA = 0x00;
+	res = SPIREG->data;
+	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz;
+	SPIREG->data = 0x00;
 	busywait();
-	res2 = REG_SPIDATA;
+	res2 = SPIREG->data;
 	return (((res & 0x7F) << 1) | ((res2>>7)&1));
 }
 

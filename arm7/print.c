@@ -3,7 +3,8 @@
 #include "../io.h"
 #include <kern.h>
 #include "fns.h"
-#include "nds.h"
+#include "jtypes.h"
+#include "ipc.h"
 
 /* 
  * simple [s]print routines for debugging,

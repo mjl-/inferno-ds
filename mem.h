@@ -64,7 +64,7 @@
 #define	IWRAMZERO9	0x03000000
 #define	IWRAMTOP9	0x03007FFF
 #define	LCD		0x04000000	/* LCD controller */
-#define	SPI		0x040001C0	/* serial peripheral interface controller */
+#define	SPI		0x040001C0	/* SPI controller */
 #define	VRAM		0x04000240	/* Vram bank controller */
 #define	POWER		0x04000304	/* Power controller */
 #define	SUBLCD		0x04001000	/* sub LCD controller */
@@ -91,6 +91,7 @@
 #define	KSTACK7		512
 #define	IWRAMZERO7	0x03800000
 #define	IWRAMTOP7	0x0380FFFF
+#define	EXCHAND7	0x0380FFDC
 #define	INTHAND7	(SFRZERO - 4)
 #define	IRQCHECK7	(SFRZERO - 8)
 

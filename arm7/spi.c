@@ -1,82 +1,60 @@
-/*---------------------------------------------------------------------------------
-
-  Copyright (C) 2005
-    Michael Noland (joat)
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any
-  damages arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any
-  purpose, including commercial applications, and to alter it and
-  redistribute it freely, subject to the following restrictions:
-
-  1.  The origin of this software must not be misrepresented; you
-      must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product
-      documentation would be appreciated but is not required.
-  2.  Altered source versions must be plainly marked as such, and
-      must not be misrepresented as being the original software.
-  3.  This notice may not be removed or altered from any source
-      distribution.
-
----------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
-#include "nds.h"
+#include "../io.h"
+#include "jtypes.h"
+#include "spi.h"
 
-u8
+uchar
 power_read(int reg)
 {
 	return power_write((reg)|PM_READ_REGISTER, 0);
 }
 
-
-u8 power_write(int reg, int cmd)
+uchar
+power_write(int reg, int cmd)
 {
-	while (REG_SPICNT & SPI_BUSY);
-	REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | Spicont | SPI_DEVICE_POWER;
-	REG_SPIDATA = reg;
+	while (SPIREG->ctl & Spibusy);
+	SPIREG->ctl = Spiena | Spi1mhz | Spibytetx | Spicont | SpiDevpower;
+	SPIREG->data = reg;
 
-	while (REG_SPICNT & SPI_BUSY);
-	REG_SPICNT = Spien | SPI_BAUD_1MHZ | SPI_BYTE_MODE | SPI_DEVICE_POWER;
-	REG_SPIDATA = cmd;
+	while (SPIREG->ctl & Spibusy);
+	SPIREG->ctl = Spiena | Spi1mhz | Spibytetx | SpiDevpower;
+	SPIREG->data = cmd;
 
-	while (REG_SPICNT & SPI_BUSY);
-	return REG_SPIDATA & 0xFF;
+	while (SPIREG->ctl & Spibusy);
+	return SPIREG->data & 0xFF;
 }
 
-
-
 void
-read_firmware(uint32 address, void * destination, uint32 size)
+read_firmware(ulong src, void *dst, ulong sz)
 {
-	uint8 * buffer = (uint8 *)destination;
+	uchar *p;
+	
+	p = (uchar *)dst;
+	while (SPIREG->ctl & Spibusy);
+	SPIREG->ctl = Spiena | Spibytetx | Spicont | SpiDevfirmware;
+	SPIREG->data = FIRMWARE_READ;
+	while (SPIREG->ctl & Spibusy);
 
-	while (REG_SPICNT & SPI_BUSY);
-	REG_SPICNT = Spien | SPI_BYTE_MODE | Spicont | SPI_DEVICE_FIRMWARE;
-	REG_SPIDATA = FIRMWARE_READ;
-	while (REG_SPICNT & SPI_BUSY);
+	SPIREG->data = (src>>16) & 0xFF;
+	while (SPIREG->ctl & Spibusy);
+	SPIREG->data = (src>>8) & 0xFF;
+	while (SPIREG->ctl & Spibusy);
+	SPIREG->data = (src>>0) & 0xFF;
+	while (SPIREG->ctl & Spibusy);
 
-	REG_SPIDATA = (address>>16) & 0xFF;
-	while (REG_SPICNT & SPI_BUSY);
-	REG_SPIDATA = (address>>8) & 0xFF;
-	while (REG_SPICNT & SPI_BUSY);
-	REG_SPIDATA = (address>>0) & 0xFF;
-	while (REG_SPICNT & SPI_BUSY);
-
-	while (size--) {
-		REG_SPIDATA = 0;
-		while (REG_SPICNT & SPI_BUSY);
-		*buffer++ = (REG_SPIDATA & 0xFF);
+	while (sz--) {
+		SPIREG->data = 0;
+		while (SPIREG->ctl & Spibusy);
+		*p++ = (SPIREG->data & 0xFF);
 	}
 
-	REG_SPICNT = 0;
+	SPIREG->ctl = 0;
 }
 
 void
 busywait(void) 
 {
-	while (REG_SPICNT & SPI_BUSY)
+	while (SPIREG->ctl & Spibusy)
 		swiDelay(1);
 }

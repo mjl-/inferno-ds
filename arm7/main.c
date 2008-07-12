@@ -4,7 +4,10 @@
 #include <kern.h>
 #include "dat.h"
 #include "fns.h"
-#include "nds.h"
+#include "jtypes.h"
+#include "ipc.h"
+#include "spi.h"
+#include "touch.h"
 
 #include "wifi.h"
 
@@ -40,26 +43,32 @@ void
 fiforecvintr(void)
 {
 	ulong v, vv;
-	uchar ndstype[1];
+	nds_tx_packet *tx_packet;
 
 	while(!(FIFOREG->ctl & FifoRempty)) {
 		vv = FIFOREG->recv;
 		v = vv>>Fcmdwidth;
 		switch(vv&Fcmdmask) {
-		case F9brightness:
-			read_firmware(FWconsoletype, ndstype, sizeof ndstype);
-			if(ndstype[0] == Dslite || ndstype[0] == Ds)
-				power_write(POWER_BACKLIGHT, v&Brightmask);
+		case F9SysCtl:
+			if(0)print("F9SysCtl %x %x %x %x %x\n",
+				v, v & SysCtlbright, v & SysCtlpoweroff, v & SysCtlreboot, v & SysCtlleds);
+				
+			if (v & SysCtlbright){
+				uchar ndstype[1], bright;
+				
+				bright = v>>SysCtlsz;
+				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
+				if(ndstype[0] == Dslite || ndstype[0] == Ds)
+					power_write(POWER_BACKLIGHT, bright&Brightmask);
+			}
+			if (v & SysCtlpoweroff)
+				power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
+			if (v & SysCtlreboot)
+				swiSoftReset();	// TODO: doesn't work
+			if (v & SysCtlleds)
+				power_write(POWER_CONTROL, v); // BUG: messes bligth bits
 			break;
-		case F9poweroff:
-			power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
-			break;
-		case F9reboot:
-			swiSoftReset();	// TODO: doesn't work
-			break;
-		case F9leds:
-			power_write(POWER_CONTROL, v); // BUG: messes bligth bits
-			break;
+			
 		case F9getrtc:
 			(*(ulong*)v) = nds_get_time7();
 			break;
@@ -68,7 +77,6 @@ fiforecvintr(void)
 			break;
 
 		case F9WFmacqry:
-			// duplicated code: wifi_mac_query(void)
 			memmove((void*)v, wifi_data.MacAddr, 6);
 			break;
 		case F9WFstats:
@@ -79,16 +87,26 @@ fiforecvintr(void)
 			break;
 		case F9WFrxpkt:
 			rx_packet = (nds_rx_packet*)v;
-
-if(1){
-	wifi_open();
-	wifi_start_scan();
-}
-
-		break;
-		case F9WFtxpacket:
 			break;
-
+		case F9WFtxpkt:
+			tx_packet = (nds_tx_packet*)v;
+			wifi_send_ether_packet(tx_packet->len, tx_packet->data);
+			tx_packet = nil;
+			break;
+		case F9WFctl:
+			if(0)print("F9WFctl %x %x %x %x %x\n",
+				v, v & WFCtlopen, v & WFCtlclose, v & WFCtlscan, v & WFCtlstats);
+			
+			if(v & WFCtlopen)
+				wifi_open();
+			if(v & WFCtlclose)
+				wifi_close();
+			if(v & WFCtlscan)
+				wifi_start_scan();
+			if(v & WFCtlstats)
+				wifi_stats_query();
+			break;
+				
 		default:
 			print("fiforecv7: unhandled msg: %lux\n", vv);
 			break;
@@ -164,10 +182,10 @@ vblankintr(void)
 }
 
 void
-arm7intr(void)
+ipcsyncintr(void)
 {
-	print("arm7intr\n");
-	intrclear(ARM7bit, 0);	
+	print("ipcsyncintr\n");
+	intrclear(IPCSYNCbit, 0);	
 }
 
 int 
@@ -180,7 +198,7 @@ main(void)
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
-	read_firmware(0x03FE00, PersonalData, sizeof(PersonalData));
+	read_firmware(0x03FE00, UserInfoAddr, sizeof(UserInfoAddr));
 
 	/* dummy read to enable the touchpad PENIRQ */
 	dmax = MaxRetry; err = MaxRange;
@@ -197,7 +215,8 @@ main(void)
 
 	intrenable(TIMER0bit, wifi_timer_handler, 0);
 	intrenable(WIFIbit, wifi_interrupt, 0);
-	intrenable(ARM7bit, arm7intr, 0);
+	IPCREG->ctl |= Ipcirqena;
+	intrenable(IPCSYNCbit, ipcsyncintr, 0);
 
 	// keep the ARM7 out of main RAM
 	while (1)

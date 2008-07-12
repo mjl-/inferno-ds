@@ -1,2 +1,2 @@
-Modified version of libnds's arm7 utilities.
+Modified version of libnds's arm7 utilities (see libnds_license.txt)
 All the sources in this directory have been modified to compile under 5c.

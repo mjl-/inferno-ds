@@ -166,9 +166,8 @@ static long
 audioread(Chan *c, void *v, long n, vlong offset)
 {
 	int liv, riv, lov, rov;
-	int j;
 	long m, n0;
-	char buf[300], *p;
+	char buf[300], *p, *s, *e;
 
 	p = v;
 	switch((ulong)c->qid.path) {
@@ -183,43 +182,36 @@ audioread(Chan *c, void *v, long n, vlong offset)
 		break;
 
 	case Qaudioctl:
-		j = 0;
 		buf[0] = 0;
+		s = buf;
+		e = buf + 300;
 		for(m=0; volumes[m].name; m++){
 			liv = audio.livol[m];
 			riv = audio.rivol[m];
 			lov = audio.lovol[m];
 			rov = audio.rovol[m];
-			j += snprint(buf+j, sizeof(buf)-j, "%s", volumes[m].name);
+			s = seprint(s, e, "%s", volumes[m].name);
 			if((volumes[m].flag & Fmono) || liv==riv && lov==rov){
 				if((volumes[m].flag&(Fin|Fout))==(Fin|Fout) && liv==lov)
-					j += snprint(buf+j, sizeof(buf)-j, " %d", liv);
+					s = seprint(s, e, " %d", liv);
 				else{
 					if(volumes[m].flag & Fin)
-						j += snprint(buf+j, sizeof(buf)-j,
-							" in %d", liv);
+						s = seprint(s, e, " in %d", liv);
 					if(volumes[m].flag & Fout)
-						j += snprint(buf+j, sizeof(buf)-j,
-							" out %d", lov);
+						s = seprint(s, e, " out %d", lov);
 				}
 			}else{
 				if((volumes[m].flag&(Fin|Fout))==(Fin|Fout) &&
 				    liv==lov && riv==rov)
-					j += snprint(buf+j, sizeof(buf)-j,
-						" left %d right %d",
-						liv, riv);
+					s = seprint(s, e, " left %d right %d", liv, riv);
 				else{
 					if(volumes[m].flag & Fin)
-						j += snprint(buf+j, sizeof(buf)-j,
-							" in left %d right %d",
-							liv, riv);
+						s = seprint(s, e, " in left %d right %d", liv, riv);
 					if(volumes[m].flag & Fout)
-						j += snprint(buf+j, sizeof(buf)-j,
-							" out left %d right %d",
-							lov, rov);
+						s = seprint(s, e, " out left %d right %d", lov, rov);
 				}
 			}
-			j += snprint(buf+j, sizeof(buf)-j, "\n");
+			s = seprint(s, e, "\n");
 		}
 		return readstr(offset, p, n, buf);
 		break;

@@ -1,30 +1,10 @@
-/*---------------------------------------------------------------------------------
-	$Id: touch.c,v 1.20 2007/06/25 20:23:35 wntrmute Exp $
-	Touch screen control for the ARM7
-	Copyright (C) 2005
-		Michael Noland (joat)
-		Jason Rogers (dovoto)
-		Dave Murphy (WinterMute)
-	This software is provided 'as-is', without any express or implied
-	warranty.  In no event will the authors be held liable for any
-	damages arising from the use of this software.
-	Permission is granted to anyone to use this software for any
-	purpose, including commercial applications, and to alter it and
-	redistribute it freely, subject to the following restrictions:
-	1.	The origin of this software must not be misrepresented; you
-			must not claim that you wrote the original software. If you use
-			this software in a product, an acknowledgment in the product
-			documentation would be appreciated but is not required.
-	2.	Altered source versions must be plainly marked as such, and
-			must not be misrepresented as being the original software.
-	3.	This notice may not be removed or altered from any source
-			distribution.
----------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
-#include "nds.h"
 #include "dat.h"
+#include "jtypes.h"
+#include "spi.h"
+#include "touch.h"
 
 static u8 wastouched = 0;
 static u8 nrange1 = 0;
@@ -44,25 +24,25 @@ u8
 chkstylus(void)
 {
 	busywait();
-	REG_SPICNT = Spien|Spi2mhz|Spitouch|Spicont; //0x8A01;
-	REG_SPIDATA = Tscgettemp1;
+	SPIREG->ctl = Spiena|Spi2mhz|SpiDevtouch|Spicont; //0x8A01;
+	SPIREG->data = Tscgettemp1;
 	busywait();
-	REG_SPIDATA = 0;
+	SPIREG->data = 0;
 	busywait();
-	REG_SPICNT = Spien|Spi2mhz|Spitouch; //0x8201;
-	REG_SPIDATA = 0;
+	SPIREG->ctl = Spiena|Spi2mhz|SpiDevtouch; //0x8201;
+	SPIREG->data = 0;
 	busywait();
 	if(wastouched){
 		if( !(KEYREG->xy & 0x40) )
 			return 1;
 		else{
-			REG_SPICNT = Spien|Spi2mhz|Spitouch|Spicont;
-			REG_SPIDATA = Tscgettemp1;
+			SPIREG->ctl = Spiena|Spi2mhz|SpiDevtouch|Spicont;
+			SPIREG->data = Tscgettemp1;
 			busywait();
-			REG_SPIDATA = 0;
+			SPIREG->data = 0;
 			busywait();
-			REG_SPICNT = Spien|Spi2mhz|Spitouch;
-			REG_SPIDATA = 0;
+			SPIREG->ctl = Spiena|Spi2mhz|SpiDevtouch;
+			SPIREG->data = 0;
 			busywait();
 			return !(KEYREG->xy & 0x40) ? 2 : 0;
 		}
@@ -77,16 +57,16 @@ touchRead(uint32 cmd)
 	uint32 oldIME = INTREG->ime;
 	INTREG->ime=0;
 	busywait();
-	REG_SPICNT=Spien|Spi2mhz|Spitouch|Spicont; //0x8A01;
-	REG_SPIDATA=cmd;
+	SPIREG->ctl=Spiena|Spi2mhz|SpiDevtouch|Spicont; //0x8A01;
+	SPIREG->data=cmd;
 	busywait();
-	REG_SPIDATA=0;
+	SPIREG->data=0;
 	busywait();
-	res=REG_SPIDATA;
-	REG_SPICNT=Spien|0x201;
-	REG_SPIDATA=0;
+	res=SPIREG->data;
+	SPIREG->ctl=Spiena|0x201;
+	SPIREG->data=0;
 	busywait();
-	res2=REG_SPIDATA>>3;
+	res2=SPIREG->data>>3;
 	INTREG->ime=oldIME;
 	return ((res & 0x7F) << 5) | res2;
 }
@@ -102,27 +82,27 @@ int16 readtsc(uint32 cmd, int16 *dmax, u8 *err){
 	u8 i, j, k;
 	*err = 1;
 	busywait();
-	REG_SPICNT=Spien|Spi2mhz|Spitouch|Spicont;
-	REG_SPIDATA=cmd;
+	SPIREG->ctl=Spiena|Spi2mhz|SpiDevtouch|Spicont;
+	SPIREG->data=cmd;
 	busywait();
 	for(i=0; i<5; i++){
-		REG_SPIDATA = 0;
+		SPIREG->data = 0;
 		busywait();
-		aux1 = REG_SPIDATA;
+		aux1 = SPIREG->data;
 		aux1 = aux1 & 0xFF;
 		aux1 = aux1 << 16;
 		aux1 = aux1 >> 8;
 		values[4-i] = aux1;
-		REG_SPIDATA = cmd;
+		SPIREG->data = cmd;
 		busywait();
-		aux1 = REG_SPIDATA;
+		aux1 = SPIREG->data;
 		aux1 = aux1 & 0xFF;
 		aux1 = aux1 << 16;
 		aux1 = values[4-i] | (aux1 >> 16);
 		values[4-i] = ((aux1 & 0x7FF8) >> 3);
 	}
-	REG_SPICNT = Spien | Spi2mhz | Spitouch;
-	REG_SPIDATA = 0;
+	SPIREG->ctl = Spiena | Spi2mhz | SpiDevtouch;
+	SPIREG->data = 0;
 	busywait();
 	dist = 0;
 	for(i=0; i<4; i++){
@@ -203,7 +183,7 @@ touchReadXY(touchPosition *tp)
 	int16 dmaxy, dmaxx, dmax;
 	u8 error, errloc, usedstylus, i;
 	uint32 oldIME;
-	PERSONAL_DATA *pd=PersonalData;
+	UserInfo *pu=UserInfoAddr;
 	s16 px, py;
 
 	static char tscinit=0;
@@ -211,11 +191,11 @@ touchReadXY(touchPosition *tp)
 	static int xoffset, yoffset;
 
 	if (!tscinit){
-		xscale = ((pd->calX2px - pd->calX1px) << 19) / ((pd->calX2) - (pd->calX1));
-		yscale = ((pd->calY2px - pd->calY1px) << 19) / ((pd->calY2) - (pd->calY1));
+		xscale = ((pu->calX2px - pu->calX1px) << 19) / ((pu->calX2) - (pu->calX1));
+		yscale = ((pu->calY2px - pu->calY1px) << 19) / ((pu->calY2) - (pu->calY1));
                 
-		xoffset = ((pd->calX1 + pd->calX2) * xscale  - ((pd->calX1px + pd->calX2px) << 19))/2;
-		yoffset = ((pd->calY1 + pd->calY2) * yscale  - ((pd->calY1px + pd->calY2px) << 19))/2;
+		xoffset = ((pu->calX1 + pu->calX2) * xscale  - ((pu->calX1px + pu->calX2px) << 19))/2;
+		yoffset = ((pu->calY1 + pu->calY2) * yscale  - ((pu->calY1px + pu->calY2px) << 19))/2;
 		tscinit = 1;
 	}
 
@@ -233,13 +213,13 @@ touchReadXY(touchPosition *tp)
 		if(error==1)
 			errloc+=2;
 
-		REG_SPICNT=Spien|Spi2mhz|Spitouch|Spicont;
+		SPIREG->ctl=Spiena|Spi2mhz|SpiDevtouch|Spicont;
 		for(i=0; i<12; i++){
-			REG_SPIDATA = 0;
+			SPIREG->data = 0;
 			busywait();
 		}
-		REG_SPICNT = Spien|Spi2mhz|Spitouch;
-		REG_SPIDATA = 0;
+		SPIREG->ctl = Spiena|Spi2mhz|SpiDevtouch;
+		SPIREG->data = 0;
 		busywait();
 		if(usedstylus == 2) 
 			errloc = 3;

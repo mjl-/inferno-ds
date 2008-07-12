@@ -3,7 +3,6 @@
 #include "../io.h"
 #include "fns.h"
 #include <kern.h>
-#include "nds.h"
 
 typedef struct IrqEntry IrqEntry;
 struct IrqEntry{
@@ -19,7 +18,8 @@ enum
 static IrqEntry Irq[NumIRQbits];
 
 static void
-intrs(void){
+intrs(void)
+{
 	int i;
 	int ibits;
 
@@ -43,6 +43,14 @@ intrs(void){
 	}
 }
 
+static void
+panic(void)
+{
+	/* sauve qui peut! */
+	print("panic: arm7 cpu halted\n");
+	while(1);
+}
+
 void
 trapinit(void)
 {
@@ -51,7 +59,9 @@ trapinit(void)
 	INTREG->ime = 0;
 	INTREG->ier = 0;
 	INTREG->ipr = ~0;
+
 	*(ulong*)INTHAND7 = (ulong)intrs;
+	*(ulong*)EXCHAND7 = (ulong)panic;
 
 	for(i = 0; i < nelem(Irq); i++){
 		Irq[i].r = nil;

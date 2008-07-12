@@ -10,7 +10,6 @@
 
 #include 	"arm7/jtypes.h"
 #include	"arm7/ipc.h"
-#include	"arm7/system.h"
 
 #include	"arm7/wifi.h"
 
@@ -239,7 +238,7 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	int v, t, temp;
 	char *p, *e;
 	int len;
-	PERSONAL_DATA *pd = PersonalData;
+	UserInfo *pu = UserInfoAddr;
 	uchar *pa;
 	uchar b;
 	ushort s;
@@ -272,34 +271,32 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		break;
 
 	case Qfw:
-		tmp = p = malloc(1024);
+		tmp = p = malloc(READSTR);
 		if(waserror()) {
 			free(tmp);
 			nexterror();
 		}
-		e = tmp+1024;
+		e = tmp+READSTR;
 
-		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pd->version, pd->theme, pd->birthMonth, pd->birthDay);
-		p = seprint(p, e, "nick %.*S\n", pd->nameLen, pd->name);
-		p = seprint(p, e, "msg %.*S\n", pd->messageLen, pd->message);
-		p = seprint(p, e, "alarm hour %d min %d on %d\n", pd->alarmHour, pd->alarmMinute, pd->alarmOn);
-		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pd->calX1, pd->calY1, pd->calX2, pd->calY2);
-		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pd->calX1px, pd->calY1px, pd->calX2px, pd->calY2px);
-		p = seprint(p, e, "flags 0x%02ux lang %d backlight %d", pd->flags,
-			pd->flags&Langmask, (pd->flags>>Backlightshift)&Backlightmask);
-		if(pd->flags & Gbalowerscreen)
+		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pu->version, pu->theme, pu->birthMonth, pu->birthDay);
+		p = seprint(p, e, "nick %.*S\n", pu->nameLen, pu->name);
+		p = seprint(p, e, "msg %.*S\n", pu->messageLen, pu->message);
+		p = seprint(p, e, "alarm hour %d min %d on %d\n", pu->alarmHour, pu->alarmMinute, pu->alarmOn);
+		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pu->calX1, pu->calY1, pu->calX2, pu->calY2);
+		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pu->calX1px, pu->calY1px, pu->calX2px, pu->calY2px);
+		p = seprint(p, e, "flags 0x%02ux lang %d backlight %d", pu->flags,
+			pu->flags&Langmask, (pu->flags>>Backlightshift)&Backlightmask);
+		if(pu->flags & Gbalowerscreen)
 			seprint(p, e, " gbalowerscreen");
-		if(pd->flags & Autostart)
+		if(pu->flags & Autostart)
 			seprint(p, e, " autostart");
-		if(pd->flags & Nosettings)
+		if(pu->flags & Nosettings)
 			seprint(p, e, " nosettings");
 		seprint(p, e, "\n");
 
 		n = readstr(offset, a, n, tmp);
-
 		poperror();
 		free(tmp);
-
 		break;
 
  	case Qrom:
@@ -368,7 +365,7 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		if(nf != 2)
 			error(Ebadarg);
 		if(strcmp(fields[0], "brightness") == 0)
-			fifoput(F9brightness, atoi(fields[1]));
+			fifoput(F9SysCtl, atoi(fields[1])<<SysCtlsz | SysCtlbright);
 		else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
 				blankscreen(1);

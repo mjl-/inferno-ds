@@ -2,7 +2,6 @@
 /*
  * Interrupt controller
  */
-
 #define	MaxIRQbit	24		/* Maximum IRQ */
 
 #define	VBLANKbit	0		/* Vertical blank */
@@ -19,7 +18,7 @@
 #define	GDMA3		11		/* DMA 3 */
 #define	KEYbit		12		/* Keypad */
 #define	CARTbit		13		/* CART */
-#define	ARM7bit		16		/* ARM7 IPC */
+#define	IPCSYNCbit		16		/* IPCSYNC */
 #define	FSENDbit		17		/* SEND FIFO empty */
 #define	FRECVbit		18		/* RECV FIFO non empty */
 #define	CARDbit		19		
@@ -41,7 +40,6 @@ struct IntReg {
 /*
  * Fifo controller
  */
-
 #define	FIFObase	0x04000184
 #define	FIFOend		0x04100000
 #define FIFOREG	((FifoReg*)FIFObase)
@@ -69,26 +67,26 @@ enum
 /*
  * Fifo message types
  */
-
 enum
 {
 	Fcmdwidth =	4,
 	Fcmdmask =	(1<<Fcmdwidth)-1,
 
-	/* from arm9 to arm7 */
-	F9brightness =	0,
-	F9poweroff,
-	F9reboot,
-	F9leds,
+	/* from arm9 to arm7 */	
+	F9SysCtl = 0,
+	
 	F9getrtc,
 	F9setrtc,
 	
+	/* TODO group F9WFinit = stats + apquery + ... */
 	F9WFmacqry,
 	F9WFstats,
 	F9WFapquery,
 	F9WFrxpkt,
-	F9WFtxpacket,
-		
+	F9WFtxpkt,
+	F9WFinit,
+ 	F9WFctl,
+ 		
 	/* from arm7 to arm9 */
 	F7keyup = 0,
 	F7keydown,
@@ -97,40 +95,28 @@ enum
 	F7print,
 };
 
-/* 
- * Fifo commands are encoded as follows:
- * |3 bits FIFO_TYPE | 29 bits type data (subcommands, data, ...) |
- */
-
-#define FIFO_FIRMWARE (0 << 29)
-#define FIFO_BUTTONS  (1 << 29)
-#define FIFO_TOUCH    (2 << 29)
-#define FIFO_MIC      (3 << 29)
-#define FIFO_WIFI     (4 << 29)
-#define FIFO_SOUND    (5 << 29)
-#define FIFO_POWER    (6 << 29)
-#define FIFO_TIME     (7 << 29)
-#define FIFO_GET_TYPE(x) (((x)) & 0xe0000000)
-#define FIFO_GET_TYPE_DATA(x) ((x) & 0x1fffffff)
-
-#define FIFO_HIGH_BITS  (1<<16)
-#define FIFO_LOW_BITS   (1<<17)
-
-/* 
- * Fifo commands for firmware dumper.
- * |3 bits FIFO_FIRMWARE | 5 bits FIFO_CMD_FIRMWARE_x | 24 bits command data |
- */
-#define FIFO_FIRMWARE_CMD(c, d) (FIFO_FIRMWARE | ((c & 0x1f) << 24) | (d & 0x00ffffff))
-#define FIFO_FIRMWARE_GET_CMD(c) ((c >> 24) & 0x1f)
-#define FIFO_FIRMWARE_GET_DATA(d) (d & 0x00ffffff)
-#define FIFO_FIRMWARE_DECODE_ADDRESS(a) ((a) + 0x02000000)
-
-enum FIFO_FIRMWARE_CMDS
+enum	
 {
-	FIFO_FIRMWARE_CMD_BUFFER_ADDRESS,
-	FIFO_FIRMWARE_CMD_READ
-};
+	/*F9Sysctl flags, use msb */
+	SysCtlbright = 1<<0,
+	SysCtlpoweroff = 1<<1,
+	SysCtlreboot = 1<<2,
+	SysCtlleds = 1<<3,
 	
+	SysCtlsz = 4,
+};
+
+enum	
+{
+	/*F9WFctl flags */
+	WFCtlopen = 1<<0,
+	WFCtlclose = 1<<1,
+	WFCtlscan = 1<<2,
+	WFCtlstats = 1<<3,
+	
+	WFCtlsz = 4,
+};
+
 /* 
  * Fifo wifi commands are encoded as follows:
  * |3 bits FIFO_WIFI | 5 bits FIFO_CMD_WIFI_x | 24 bits command data |
@@ -141,6 +127,7 @@ enum FIFO_FIRMWARE_CMDS
  *  Other commands, like those for setting WEP keys or the essid, further
  *  divide the command data into flags and actual data.
  */
+#define FIFO_WIFI     (4 << 29)
 #define FIFO_WIFI_CMD(c, d) (FIFO_WIFI | ((c & 0x1f) << 24) | (d & 0x00ffffff))
 #define FIFO_WIFI_GET_CMD(c) ((c >> 24) & 0x1f)
 #define FIFO_WIFI_GET_DATA(d) (d & 0x00ffffff)
@@ -168,21 +155,8 @@ enum FIFO_WIFI_CMDS
 };
 
 /* 
- * Sound driver commands
- * |3 bits FIFO_SOUND | 1bit unused | 28 bits command data |
- */
-#define FIFO_SOUND_CHANNELS	(1<<24)
-#define FIFO_SOUND_DMA_ADDRESS	(2<<24)
-#define FIFO_SOUND_DMA_SIZE	(3<<24)
-#define FIFO_SOUND_FORMAT	(4<<24)
-#define FIFO_SOUND_RATE		(5<<24)
-#define FIFO_SOUND_TRIGGER	(6<<24)
-#define FIFO_SOUND_POWER	(7<<24)
-
-/* 
  * Dma controller
  */
-
 #define DMAREG	((DmaReg*)(SFRZERO + 0x0b0))
 typedef struct DmaReg DmaReg;
 struct DmaReg {
@@ -222,7 +196,6 @@ enum
 /* 
  * Timers control
  */
-
 #define TIMERREG	((TimerReg*)(SFRZERO + 0x100))
 typedef struct TimerReg TimerReg;
 struct TimerReg {
@@ -315,11 +288,43 @@ enum ARM9_power
 	POWER_SWAP_LCDS =	1<<15,
 };
 
+/*
+ * SPI controller
+ */
 #define SPIREG ((SpiReg*)SPI)
 typedef struct SpiReg SpiReg;
 struct SpiReg {
 	ushort ctl;
 	ushort data;
+};
+
+enum
+{
+	// SPI clock speed
+	Spi4mhz =		0<<0,
+	Spi2mhz =		1<<0,
+	Spi1mhz = 		2<<0,
+	Spi512khz =		3<<0,
+
+	Spibusy =		1<<7,
+
+	// SPI device
+	SpiDevpower =		0<<8,
+	SpiDevfirmware =	1<<8,
+	SpiDevnvram =	 	1<<8,
+	SpiDevtouch = 		2<<8,
+	SpiDevmic =		2<<8,
+
+	// SPI transfer length
+	Spibytetx =		0<<10,
+	Spihwordtx =		1<<10,
+
+	// When used, the /CS line will stay low after the transfer ends
+	// i.e. when we're part of a continuous transfer
+	Spicont = 		1<<11,
+
+	Spiirqena =		1<<14,
+	Spiena =		1<<15,
 };
 
 #define VIDMEMHI	((ushort*)VRAMTOP)
@@ -371,6 +376,50 @@ struct NDShdr{
 	ushort hdrcrc;
 };
 
+/* ram address to save UserInfo aka: user personal data */
+#define UserInfoAddr ((UserInfo*)0x27FFC80)
+typedef struct UserInfo UserInfo;
+struct UserInfo{
+	uchar version;
+	uchar color;
+
+	uchar theme;		// user's theme color (0-15).
+	uchar birthMonth;	// user's birth month (1-12).
+	uchar birthDay;		// user's birth day (1-31).
+
+	uchar RESERVED1[1];	// ???
+
+	Rune name[10];		// The user's name in UTF-16 format.
+	ushort nameLen;		// The length of the user's name in characters.
+
+	Rune message[26];	// The user's message.
+	ushort messageLen;	// The length of the user's message in characters.
+
+	uchar alarmHour;	// What hour the alarm clock is set to (0-23).
+	uchar alarmMinute;	// What minute the alarm clock is set to (0-59).
+				// 0x027FFCD3  alarm minute
+
+	uchar RESERVED2[2];	// ???
+	ushort alarmOn;
+				// 0x027FFCD4  ??
+
+	ushort calX1;		// Touchscreen calibration: first X touch
+	ushort calY1;		// Touchscreen calibration: first Y touch
+	uchar calX1px;		// Touchscreen calibration: first X touch pixel
+	uchar calY1px;		// Touchscreen calibration: first X touch pixel
+
+	ushort calX2;		// Touchscreen calibration: second X touch
+	ushort calY2;		// Touchscreen calibration: second Y touch
+	uchar calX2px;		// Touchscreen calibration: second X touch pixel
+	uchar calY2px;		// Touchscreen calibration: second Y touch pixel
+
+	ushort flags;
+
+	ushort	RESERVED3;
+	ulong	rtcOffset;
+	ulong	RESERVED4;
+};
+
 /* 
  * Input Buttons
  */
@@ -382,6 +431,7 @@ struct KeyReg {
 	ushort inctl;
 	ushort rcnt;
 	ushort xy;
+	ushort rtccr;
 };
 
 /*

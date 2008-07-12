@@ -52,13 +52,13 @@ archconsole(void)
 void
 archpowerdown(void)
 {
-	fifoput(F9poweroff, 0);
+	fifoput(F9SysCtl, SysCtlpoweroff);
 }
 
 void
 archreboot(void)
 {
-	fifoput(F9reboot, 0);
+	fifoput(F9SysCtl, SysCtlreboot);
 }
 
 /* no need for this? */
@@ -141,23 +141,21 @@ archether(int ctlno, Ether *ether)
 	ether->mem = 0;
 	ether->nopt = 0;
 	ether->port = 0;
-	ether->irq = WIFIbit;
+	ether->irq = IPCSYNCbit;
 	ether->interrupt = nil;
 	ether->itype = 0;
 	ether->mbps = 2;
+	ether->maxmtu = 1492;
 
 	memset(ether->ea, 0xff, Eaddrlen);
 	nbfifoput(F9WFmacqry, (ulong)ether->ea);	/* mac from arm7 */
 	
-	if (0){	/* workaround for desmume */
-		int i;
-
-		while (ether->ea[5] == 0xff);
-		for (i=0; i<Eaddrlen; i++)
-			if (ether->ea[i] != 0)
-				break;
-
-		if(i == Eaddrlen)
+	if(1){	/* workaround for desmume */
+		uchar i, maczero[Eaddrlen];
+		
+		for(i=0; i < 1<<(8*sizeof(uchar))-1; i++);
+		memset(maczero, 0x00, Eaddrlen);
+		if(memcmp(ether->ea, maczero, Eaddrlen) == 0)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 

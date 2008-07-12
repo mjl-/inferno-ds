@@ -17,15 +17,14 @@ OFILES=\
 	rtc.$O\
 	touch.$O\
 	audio.$O\
+#	dma.$O\
 	wifi.$O\
 
 HFILES=\
 	../mem.h\
-	nds.h\
 	jtypes.h\
 	bios.h\
 	ipc.h\
-	system.h\
 	spi.h\
 	audio.h\
 	rtc.h\

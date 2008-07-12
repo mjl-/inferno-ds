@@ -1,29 +1,11 @@
-/*---------------------------------------------------------------------------------
-	$Id: clock.c,v 1.6 2007/06/16 01:09:02 wntrmute Exp $
-	Copyright (C) 2005
-		Michael Noland (Joat)
-		Jason Rogers (Dovoto)
-		Dave Murphy (WinterMute)
-	This software is provided 'as-is', without any express or implied
-	warranty.  In no event will the authors be held liable for any
-	damages arising from the use of this software.
-	Permission is granted to anyone to use this software for any
-	purpose, including commercial applications, and to alter it and
-	redistribute it freely, subject to the following restrictions:
-	1.	The origin of this software must not be misrepresented; you
-			must not claim that you wrote the original software. If you use
-			this software in a product, an acknowledgment in the product
-			documentation would be appreciated but is not required.
-	2.	Altered source versions must be plainly marked as such, and
-			must not be misrepresented as being the original software.
-	3.	This notice may not be removed or altered from any source
-			distribution.
----------------------------------------------------------------------------------*/
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "nds.h"
+#include "jtypes.h"
+#include "rtc.h"
+#include "spi.h"
+#include "bios.h"
 #include "fns.h"
 
 #define RTC_DELAY 48
@@ -40,7 +22,7 @@
 #define HOUR_MASK 0x3f
 
 static void
-rtcTransaction(uint8 * cmd, uint32 cmdlen, uint8 * res, uint32 reslen)
+rtcTransaction(uchar *cmd, ulong cmdlen, uchar *res, ulong reslen)
 {
 	u8 bit;
 	u8 i;
@@ -80,14 +62,14 @@ rtcTransaction(uint8 * cmd, uint32 cmdlen, uint8 * res, uint32 reslen)
 	swiDelay(RTC_DELAY);
 }
 
-static u8 
-BCDToInt(u8 data)
+static uchar
+BCDToInt(uchar data)
 {
 	return ((data & 0xF) + ((data & 0xF0) >> 4) * 10);
 }
 
-static u32
-get_nds_seconds(u8 * time)
+static ulong
+get_nds_seconds(uchar *time)
 {
 	struct Tm tm;
 	u8 hours;
@@ -121,57 +103,40 @@ get_nds_seconds(u8 * time)
 ulong
 nds_get_time7(void)
 {
-	u8 command;
-	u8 time[8];
-	unsigned int seconds;
+	uchar cmd;
+	uchar time[8];
 
-	command = READ_DATA_REG1;
-	rtcTransaction(&command, 1, &(time[1]), 7);
+	cmd = READ_DATA_REG1;
+	rtcTransaction(&cmd, 1, &(time[1]), 7);
 
-	command = READ_STATUS_REG1;
-	rtcTransaction(&command, 1, &(time[0]), 1);
+	cmd = READ_STATUS_REG1;
+	rtcTransaction(&cmd, 1, &(time[0]), 1);
 
-	seconds = get_nds_seconds(&(time[1]));
-
-	return seconds;
+	return get_nds_seconds(&(time[1]));
 
 }
+
+static void sec2tm(ulong secs, Tm *tm);
 
 void
 nds_set_time7(ulong secs){
-	USED(secs);
-	/* TODO
-	 * 1 convert secs to tm (using sec2tm)
-	 * 2 fill time[8] with tm
-	 * 3 update rtc with time[8]
-	 */
+	/* TODO: revise */
+	struct Tm tm;
+	uchar time[8];
+
+	sec2tm(secs, &tm);
+
+	time[6+1] = tm.sec;
+	time[5+1] = tm.min;
+	time[4+1] = tm.hour;
+	time[2+1] = tm.mday;
+	time[1+1] = tm.mon;
+	time[0+1] = tm.year - 2000;
+	tm.tzoff = -1;
+
+	time[0] = WRITE_DATA_REG1;
+	rtcTransaction(time, 8, 0, 0);
 };
-
-static void
-rtcSetTimeAndDate(uint8 * time)
-{
-	uint8 cmd[8];
-	
-	int i;
-	for ( i=0; i< 8; i++ ) {
-		cmd[i+1] = time[i];
-	}
-	cmd[0] = WRITE_DATA_REG1;
-	rtcTransaction(cmd, 8, 0, 0);
-}
-
-static void
-rtcSetTime(uint8 * time)
-{
-	uint8 cmd[4];
-	
-	int i;
-	for ( i=0; i< 3; i++ ) {
-		cmd[i+1] = time[i];
-	}
-	cmd[0] = WRITE_TIME;
-	rtcTransaction(cmd, 4, 0, 0);
-}
 
 #define SEC2MIN 60L
 #define SEC2HOUR (60L*SEC2MIN)
@@ -195,7 +160,7 @@ static	int	ldmsize[] =
 static int*
 yrsize(int yr)
 {
-	if( (yr % 4 == 0)) // && (yr % 100 != 0 || yr % 400 == 0) 
+	if( (yr % 4 == 0) && (yr % 100 != 0 || yr % 400 == 0))
 		return ldmsize;
 	else
 		return dmsize;
@@ -239,4 +204,53 @@ tm2sec(Tm *tm)
 	secs += tm->sec;
 
 	return secs;
+}
+
+static void
+sec2tm(ulong secs, Tm *tm)
+{
+	int d;
+	long hms, day;
+	int *d2m;
+
+	/*
+	 * break initial number into days
+	 */
+	hms = secs % SEC2DAY;
+	day = secs / SEC2DAY;
+	if(hms < 0) {
+		hms += SEC2DAY;
+		day -= 1;
+	}
+
+	/*
+	 * generate hours:minutes:seconds
+	 */
+	tm->sec = hms % 60;
+	d = hms / 60;
+	tm->min = d % 60;
+	d /= 60;
+	tm->hour = d;
+
+	/*
+	 * year number
+	 */
+	if(day >= 0)
+		for(d = 1970; day >= *yrsize(d); d++)
+			day -= *yrsize(d);
+	else
+		for (d = 1970; day < 0; d--)
+			day += *yrsize(d-1);
+	tm->year = d;
+
+	/*
+	 * generate month
+	 */
+	d2m = yrsize(tm->year);
+	for(d = 1; day >= d2m[d]; d++)
+		day -= d2m[d];
+	tm->mday = day + 1;
+	tm->mon = d;
+
+	return;
 }

@@ -2,7 +2,8 @@
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "nds.h"
+#include "jtypes.h"
+#include "spi.h"
 
 static void 
 dmaCopyWords(int8 channel, const void* src, void* dest, uint32 size, uchar sync)

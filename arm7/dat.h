@@ -15,8 +15,3 @@ enum {
 	WIFItimer = 0,
 	AUDIOtimer = 1,
 };
-
-/* Pointer to buffer used to send incoming packets to ARM9 */
-struct nds_rx_packet *rx_packet;
-/* We can only send one packet to ARM9 at a time */
-int sending_packet;

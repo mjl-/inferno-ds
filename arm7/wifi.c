@@ -20,7 +20,6 @@ Copyright (c) 2005 Stephen Stair
 
 #include "jtypes.h"
 #include "spi.h"
-#include "system.h"
 #include "wifi.h"
 
 Wifi_Data wifi_data;
@@ -660,27 +659,12 @@ void wifi_close(void)
 }
 
 /* handle a query from kernel for wifi address */
-void wifi_mac_query(void)
-{
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_MAC_QUERY,
-				    ((0 << 16) |
-				     (((u16 *) wifi_data.MacAddr)[0]))));
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_MAC_QUERY,
-				    ((1 << 16) |
-				     (((u16 *) wifi_data.MacAddr)[1]))));
-
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_MAC_QUERY,
-				    ((2 << 16) |
-				     (((u16 *) wifi_data.MacAddr)[2]))));
-}
-
-/* handle a query from kernel for wifi address */
 void wifi_stats_query(void)
 {
-	wifi_data.stats[WIFI_STATS_DEBUG3] = WIFI_REG(0xA0);
-	wifi_data.stats[WIFI_STATS_DEBUG4] = WIFI_REG(0xB8);
+	wifi_data.stats[WF_STAT_DBG3] = WIFI_REG(0xA0);
+	wifi_data.stats[WF_STAT_DBG4] = WIFI_REG(0xB8);
 
-	wifi_data.stats[WIFI_STATS_DEBUG5] = wifi_data.state;
+	wifi_data.stats[WF_STAT_DBG5] = wifi_data.state;
 
 	wifi_data.state &= ~WIFI_STATE_SAW_TX_ERR;
 
@@ -1307,12 +1291,12 @@ int Wifi_QueueRxMacData(u32 base, u32 len)
 		return 0;
 
 	if (len > sizeof(rx_packet->data)) {
-		wifi_data.stats[WIFI_STATS_RXOVERRUN]++;
+		wifi_data.stats[WF_STAT_RXOVERRUN]++;
 		return 0;
 	}
 
-	wifi_data.stats[WIFI_STATS_RXPACKETS]++;
-	wifi_data.stats[WIFI_STATS_RXDATABYTES] += len;
+	wifi_data.stats[WF_STAT_RXPKTS]++;
+	wifi_data.stats[WF_STAT_RXDATABYTES] += len;
 
 	Wifi_MACCopy((u16 *) rx_packet->data, base, macofs, len);
 	rx_packet->len = len;
@@ -1341,8 +1325,8 @@ static void Wifi_Intr_RxEnd(void)
 	cut = 0;
 
 /*
-	wifi_data.stats[WIFI_STATS_DEBUG3] = WIFI_REG(0x54);
-	wifi_data.stats[WIFI_STATS_DEBUG4] = WIFI_REG(0x5A);
+	wifi_data.stats[WF_STAT_DBG3] = WIFI_REG(0x54);
+	wifi_data.stats[WF_STAT_DBG4] = WIFI_REG(0x5A);
 */
 
 	while (WIFI_REG(0x54) != WIFI_REG(0x5A)) {
@@ -1350,9 +1334,9 @@ static void Wifi_Intr_RxEnd(void)
 		packetlen = Wifi_MACReadRx(base, 8);
 		full_packetlen = 12 + ((packetlen + 3) & (~3));
 
-		wifi_data.stats[WIFI_STATS_RXRAWPACKETS]++;
-		wifi_data.stats[WIFI_STATS_RXBYTES] += full_packetlen;
-		wifi_data.stats[WIFI_STATS_RXDATABYTES] += full_packetlen - 12;
+		wifi_data.stats[WF_STAT_RXRAWPKTS]++;
+		wifi_data.stats[WF_STAT_RXBYTES] += full_packetlen;
+		wifi_data.stats[WF_STAT_RXDATABYTES] += full_packetlen - 12;
 
 		// process packet here
 		temp = Wifi_ProcessReceivedFrame(base, full_packetlen);	// returns packet type
@@ -1361,7 +1345,7 @@ static void Wifi_Intr_RxEnd(void)
 				break;
 			if (!Wifi_QueueRxMacData(base, full_packetlen)) {
 				wifi_data.state |= WIFI_STATE_RXPENDING;
-				wifi_data.stats[WIFI_STATS_RXPACKETS]++;
+				wifi_data.stats[WF_STAT_RXPKTS]++;
 				// failed, ignore for now.
 			}
 		}
@@ -1389,7 +1373,7 @@ void wifi_rx_q_complete(void)
 		Wifi_Intr_RxEnd();
 }
 
-#define CNT_STAT_START WIFI_STATS_HW_1B0
+#define CNT_STAT_START WF_STAT_HW_1B0
 #define CNT_STAT_NUM 18
 u16 count_ofs_list[CNT_STAT_NUM] = {
 	0x1B0, 0x1B2, 0x1B4, 0x1B6, 0x1B8, 0x1BA, 0x1BC, 0x1BE, 0x1C0, 0x1C4,
@@ -1453,9 +1437,9 @@ void wifi_interrupt(void)
 {
 	int wIF;
 	while ((wIF = WIFI_IE & WIFI_IF) != 0) {
-		wifi_data.stats[WIFI_STATS_DEBUG6]++;
-		wifi_data.stats[WIFI_STATS_DEBUG1] = WIFI_IE;
-		wifi_data.stats[WIFI_STATS_DEBUG2] = WIFI_IF;
+		wifi_data.stats[WF_STAT_DBG6]++;
+		wifi_data.stats[WF_STAT_DBG1] = WIFI_IE;
+		wifi_data.stats[WF_STAT_DBG2] = WIFI_IF;
 		if (wIF & 0x0001) {
 			WIFI_IF = 0x0001;
 			Wifi_Intr_RxEnd();
@@ -1606,9 +1590,9 @@ void wifi_send_ether_packet(u16 length, uchar * data)
 */
 
 	/* stats update */
-	wifi_data.stats[WIFI_STATS_TXPACKETS]++;
-	wifi_data.stats[WIFI_STATS_TXBYTES] += packetlen + 12 - 4;
-	wifi_data.stats[WIFI_STATS_TXDATABYTES] += packetlen - 4;
+	wifi_data.stats[WF_STAT_TXPKTS]++;
+	wifi_data.stats[WF_STAT_TXBYTES] += packetlen + 12 - 4;
+	wifi_data.stats[WF_STAT_TXDATABYTES] += packetlen - 4;
 }
 
 static void wifi_send_raw(u16 length, uchar * data)
@@ -1624,9 +1608,9 @@ static void wifi_send_raw(u16 length, uchar * data)
 */
 
 	/* stats update */
-	wifi_data.stats[WIFI_STATS_TXPACKETS]++;
-	wifi_data.stats[WIFI_STATS_TXBYTES] += length;
-	wifi_data.stats[WIFI_STATS_TXDATABYTES] += length - 12;
+	wifi_data.stats[WF_STAT_TXPKTS]++;
+	wifi_data.stats[WF_STAT_TXBYTES] += length;
+	wifi_data.stats[WF_STAT_TXDATABYTES] += length - 12;
 }
 
 static int Wifi_GenMgtHeader(u8 * data, u16 headerflags)

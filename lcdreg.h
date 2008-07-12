@@ -3,9 +3,6 @@
 #define RGB8(r,g,b)  (((r)>>3)|(((g)>>3)<<5)|(((b)>>3)<<10))
 #define VRAM_OFFSET(n)	((n)<<3)
 
-#define SCREEN_HEIGHT 192
-#define SCREEN_WIDTH  256
-
 #define VRAM_ENABLE		(1<<7)
 
 /*
