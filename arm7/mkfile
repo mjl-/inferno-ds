@@ -23,8 +23,6 @@ OFILES=\
 HFILES=\
 	../mem.h\
 	jtypes.h\
-	bios.h\
-	ipc.h\
 	spi.h\
 	audio.h\
 	rtc.h\

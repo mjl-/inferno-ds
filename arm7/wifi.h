@@ -239,7 +239,7 @@ void wifi_init(void);
 void wifi_open(void);
 void wifi_close(void);
 void wifi_mac_query(void);
-void wifi_interrupt(void);
+void wifi_interrupt(void*);
 void wifi_send_ether_packet(u16 length, uchar * data);
 void wifi_stats_query(void);
 
@@ -253,5 +253,5 @@ void Wifi_GetAPMode(void);
 
 void wifi_ap_query(u16 start_stop);
 void wifi_start_scan(void);
-void wifi_timer_handler(void);
+void wifi_timer_handler(void*);
 void wifi_rx_q_complete(void);

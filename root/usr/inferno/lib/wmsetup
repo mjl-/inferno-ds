@@ -28,6 +28,7 @@ wmrun wm/sh -w 240 -h 130 -ic '
 		0x04000210/X
 		0x04000214/X'' | mdb /dev/ndsmem
 
+	cat /net/ether0/ifstats
 	auplay /usr/inferno/lib/invhit.iaf
 	'
 

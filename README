@@ -23,6 +23,8 @@ To setup/build your own i$CONF.nds file follow the INSTALL file.
 After build launch the resulting i$CONF.nds file on your DS.
 
 At boot time it prompts for the source location of the root fs,
+choose your selection using the direction keys on your DS.
+Currently the only usable option is `root from: kernel'
 after the prompt, a window manager wm(1) instance is started
 to interact/launch/control programs using a menu-like interface.
 

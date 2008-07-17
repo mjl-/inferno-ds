@@ -8,14 +8,12 @@
 #include "../io.h"
 #include "dat.h"
 #include "fns.h"
-#include "jtypes.h"
-#include "ipc.h"
 #include "audio.h"
 #include "spi.h"
 
 // TODO use SPIREG from io.h
-void 
-PM_SetAmp(u8 control) 
+static void 
+pm_setamp(uchar control) 
 {
 	busywait();
 	SPIREG->ctl = Spiena | SpiDevpower | Spi1mhz | Spicont;
@@ -25,76 +23,78 @@ PM_SetAmp(u8 control)
 	SPIREG->data = control;
 }
 
-u8 
-MIC_ReadData(void) {
-	u16 res, res2;
+static uchar 
+mic_readdata(void) {
+	ushort res[2];
+
 	busywait();
 	SPIREG->ctl = Spiena | SpiDevmic | Spi2mhz | Spicont;
 	SPIREG->data = 0xEC;	// Touchscreen cmd format for AUX
 	busywait();
 	SPIREG->data = 0x00;
 	busywait();
-	res = SPIREG->data;
+	res[1] = SPIREG->data;
 	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz;
 	SPIREG->data = 0x00;
 	busywait();
-	res2 = SPIREG->data;
-	return (((res & 0x7F) << 1) | ((res2>>7)&1));
+	res[0] = SPIREG->data;
+
+	return (((res[1] & 0x7F) << 1) | ((res[0] >> 7) & 0x01));
 }
 
-static u8* micbuf = 0;
+static uchar *micbuf = 0;
 static int micbuflen = 0;
 static int curlen = 0;
 
 static void
-clock1intr(void)
+clock1intr(void*)
 {
 	if(micbuf && micbuflen > 0) {
-		*micbuf++ = MIC_ReadData() ^ 0x80;
+		*micbuf++ = mic_readdata() ^ 0x80;
 		--micbuflen;
 		curlen++;
 	}
-	intrclear(TIMER1bit, 0);
+	intrclear(TIMERAUDIObit, 0);
 }
 
 void 
-StartRecording(u8* buffer, int length) 
+startrecording(uchar* buffer, int length) 
 {
-	TimerReg *t = TIMERREG + 1;
+	TimerReg *t = TIMERREG + AUDIOtimer;
 
 	micbuf = buffer;
 	micbuflen = length;
 	curlen = 0;
-	PM_SetAmp(PM_AMP_ON);
+	pm_setamp(PM_AMP_ON);
 	
 	// Setup a 16kHz timer
 	t->data = TIMER_BASE(Tmrdiv1) / 16000;
 	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
-	intrenable(TIMER1bit, clock1intr, 0);
+	intrenable(TIMERAUDIObit, clock1intr, 0);
 }
 
 int 
-StopRecording(void) 
+stoprecording(void) 
 {
 	TimerReg *t = TIMERREG + AUDIOtimer;
 
 	t->ctl &= ~Tmrena;
-	intrmask(TIMER1bit, 0);
+	intrmask(TIMERAUDIObit, 0);
 
-	PM_SetAmp(PM_AMP_OFF);
+	pm_setamp(PM_AMP_OFF);
 	micbuf = 0;
 	return curlen;
 }
 
-void 
-startSound(int rate, const void* d, u32 bytes, u8 ch, u8 vol, u8 pan, u8 pcm16bit) 
+static void 
+startSound(int hz, const void* d, ulong bytes, uchar ch, uchar vol, uchar pan, uchar pcm16bit) 
 {
 	SChanReg *schan = SCHANREG + ch;
 
 	POWERREG->pcr |= 1<<POWER_SOUND;
-	SNDREG->cr.ctl = Sndena | 0x7F;
+	SNDREG->cr.ctl = Sndena | Maxvol;
 
-	schan->tmr = SCHAN_FREQ(rate);
+	schan->tmr = SCHAN_BASE / hz;
 	schan->src = (ulong)d;
 	schan->wlen = bytes >> 2;
 	schan->cr.vol = vol;
@@ -102,7 +102,7 @@ startSound(int rate, const void* d, u32 bytes, u8 ch, u8 vol, u8 pan, u8 pcm16bi
 	schan->cr.ctl |= SCena | SC1shot | (pcm16bit? SCpcm16bit: SCpcm8bit);
 }
 
-int
+static int
 getFreeSoundChannel(void)
 {
 	int i;
@@ -117,7 +117,7 @@ getFreeSoundChannel(void)
 void
 vblankaudio(void)
 {
-	u32 i;
+	ulong i;
 	TransferSound *snd = IPC->soundData;
 
 	IPC->soundData = 0;

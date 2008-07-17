@@ -7,9 +7,6 @@
 
 #include	"io.h"
 
-#include	"arm7/jtypes.h"
-#include	"arm7/ipc.h"
-
 enum{
 	Qdir,
 	Qrtc,
@@ -59,15 +56,17 @@ rtcclose(Chan*)
 static long	 
 rtcread(Chan *c, void *buf, long n, vlong off)
 {
+	ulong secs;
+
 	if(c->qid.type & QTDIR)
 		return devdirread(c, buf, n, rtctab, nelem(rtctab), devgen);
 
 	switch((ulong)c->qid.path){
 	case Qrtc:
-		IPC->unixTime = 1;
-		fifoput(F9getrtc, (ulong)(&IPC->unixTime));
-		while(IPC->unixTime == 1); /* wait for arm7 write */
-		return readnum(off, buf, n, IPC->unixTime, NUMSIZE);
+		secs = 1;
+		fifoput(F9getrtc, (ulong)(&secs));
+		while(secs == 1); /* wait for arm7 write */
+		return readnum(off, buf, n, secs, NUMSIZE);
 	}
 	error(Egreg);
 	return 0;		/* not reached */
@@ -96,28 +95,12 @@ rtcwrite(Chan *c, void *buf, long n, vlong off)
 			cp++;
 		}
 		secs = strtoul(cp, 0, 0);
-		IPC->unixTime = secs;
-		fifoput(F9setrtc, (ulong)(&IPC->unixTime));
+		fifoput(F9setrtc, (ulong)(&secs));
 		return n;
 
 	}
 	error(Egreg);
 	return 0;		/* not reached */
-}
-
-static void
-rtcpower(int on)
-{
-	if(on)
-		boottime = IPC->unixTime - TK2SEC(MACHP(0)->ticks);
-	else
-		IPC->unixTime = seconds();
-}
-
-long
-rtctime(void)
-{
-	return IPC->unixTime;
 }
 
 Dev rtcdevtab = {
@@ -139,5 +122,4 @@ Dev rtcdevtab = {
 	devbwrite,
 	devremove,
 	devwstat,
-	rtcpower,
 };

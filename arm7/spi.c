@@ -1,7 +1,8 @@
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
-#include "jtypes.h"
+#include "dat.h"
+#include "fns.h"
 #include "spi.h"
 
 uchar

@@ -36,7 +36,7 @@ OBJ=\
 	$MISC\
 	$OTHERS\
 
-<| arm7/mkdeps arm7/mkfile # sets $ARM7SRC
+<| $SHELLNAME arm7/mkdeps arm7/mkfile # sets $ARM7SRC
 
 LIBNAMES=${LIBS:%=lib%.a}
 LIBDIRS=$LIBS
@@ -62,7 +62,7 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$LD -o $target -H0 -T$KTZERO -l $OBJ $CONF.$O $LIBFILES
 
 arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
-	cd arm7; mk CONF=$CONF
+	cd arm7; mk CONF'='$CONF
 
 i$CONF.kfs: root/lib/proto/$CONF'proto'
 	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
@@ -77,6 +77,7 @@ i$CONF.nds: i$CONF arm7/i$CONF # i$CONF.kfs
 	wc -c i$CONF.nds | awk '{ for(i=0; i < ($1 % 64); i++) print ""; }' >> i$CONF.nds
 	echo -n ROMZERO9 >> i$CONF.nds
 #	cat i$CONF.kfs >> i$CONF.nds
+#	dlditool misc/R4tf.dldi i$CONF.nds
 
 i$CONF.ds.gba: i$CONF.nds
 	dsbuild $prereq -o $target
@@ -87,7 +88,7 @@ i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	ksize $target
 
 i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
-	./mksymtab $prereq > $target
+	$SHELLNAME mksymtab $prereq > $target
 
 <../port/portmkfile
 
@@ -122,4 +123,4 @@ syms:   $OBJ $CONF.c $CONF.root.h $LIBNAMES
 
 vclean:V: clean
 	rm -f syms
-	cd arm7; mk CONF=$CONF vclean
+	cd arm7; mk CONF'='$CONF vclean

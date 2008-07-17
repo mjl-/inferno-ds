@@ -6,8 +6,7 @@
 #include	"io.h"
 #include	"../port/error.h"
 
-#include	"arm7/jtypes.h"
-#include	"arm7/ipc.h"
+#include	"arm7/dat.h"
 #include	"arm7/audio.h"
 
 static int debug = 0;
@@ -100,12 +99,12 @@ mxvolume(void)
 }
 
 static void
-playaudio(const void* data, u32 length)
+playaudio(const void* data, ulong length)
 {
 	snd.count = 1;
+	snddat.data = data;
+	snddat.len = length;
 	memmove(&snd.d[0], &snddat, sizeof(TransferSoundData));
-	snd.d[0].data = data;
-	snd.d[0].len = length;
 
 	dcflush(&snd, sizeof(TransferSound));
 	IPC->soundData = &snd;

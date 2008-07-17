@@ -4,6 +4,11 @@
  * 
  * use: a dldi patcher completes I/O fns, so we we can r/w,
  * tries to be simplest/sanest way of doing it i could come with.
+ *
+ * TODO: the io functions (arm-elf) provided by the dldi patcher,
+ * use the R11 (SB) without restoring it which panics the kernel.
+ *
+ * At this moment the DLDIhdr is only used to detect the card type.
  */
 
 #include	"u.h"
@@ -57,7 +62,7 @@ struct DLDIhdr{
 	ulong sgot, egot;
 	ulong sbss, ebss;
 
-	struct Ioifc io;		/* here: sizeof(DLDIhdr) = 1<<7 bytes */
+	Ioifc io;			/* here: sizeof(DLDIhdr) = 1<<7 bytes */
 	
 	/* sizeof(DLDIhdr) = 1<<LHDRSZ bytes */
 	uchar space[(1<<LHDRSZ) - (1<<7)]; 
@@ -77,15 +82,15 @@ DLDIhdr hdr=
 .dlogsz = LHDRSZ,
 .sect2fix = 0,
 .slogsz = LHDRSZ,
-.textid = "no dldi interface",
+.textid = "no interface found",
 	
-.sdata = &hdr, .etext = 0, 
+.sdata = &hdr, .etext = 0, /* .etext = &hdr + 1<<LHDRSZ */
 .sglue = 0, .eglue = 0,
 .sgot = 0, .egot = 0,
 .sbss = 0, .ebss = 0,	
 	
 .io = {
-	.type = "DLDI",
+	.type = "NONE",
 	.caps = 0,
 	
 	nulliofunc,
@@ -98,76 +103,91 @@ DLDIhdr hdr=
 };
 
 static void
-dldiinit(void){
+mbrtest(void)
+{
 	int ret;
-	int i;
+	uchar sect[SECTSZ];
+
+	memset(sect, 0, sizeof(sect));
+	ret=hdr.io.read(0, sizeof(sect)/SECTSZ, sect);
+	if (!ret){
+		print("read: failed\n");
+		return;
+	}
+
+	if (sect[SECTSZ-2] == 0x55 && sect[SECTSZ-1] == 0xaa)
+		print("bingo: mbr found\n");
 	
-	DPRINT("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
-		hdr.sdata, hdr.etext, sizeof(hdr),
-		(hdr.sect2fix & Fixall)? "all": "",
-		(hdr.sect2fix & Fixglue)? "glue": "",
-		(hdr.sect2fix & Fixgot)? "got": "",
-		(hdr.sect2fix & Fixbss)? "bss": "");
-	
-	if (hdr.sect2fix & Fixall)
-		DPRINT("hdr data %lux %lux\n", hdr.sdata, hdr.etext);
-	if (hdr.sect2fix & Fixglue)
-		DPRINT("hdr glue %lux %lux\n", hdr.sglue, hdr.eglue);
-	if (hdr.sect2fix & Fixgot)
-		DPRINT("hdr got %lux %lux\n", hdr.sgot, hdr.egot);
-	if (hdr.sect2fix & Fixbss)
-		DPRINT("hdr bss %lux %lux\n", hdr.sbss, hdr.ebss);
+	/* TODO: parse mbr table, find fat/kfs */
+}
+
+enum { MaxIoifc = 2 };
+
+static Ioifc* ioifc[MaxIoifc+1];
+
+void
+addioifc(Ioifc *io)
+{
+	static int nifc=0;
+
+	if(nifc == MaxIoifc)
+		panic("too many Ioifc");
+	ioifc[nifc++] = io;
+}
+
+static void
+dldiinit(void)
+{
+ 	int n;
 
 	if ((ulong)&hdr != hdr.sdata)
-		print("bad DLDIhdr start %lux %lux\n", &hdr, &hdr.sdata);
+		DPRINT("bad DLDIhdr start %lux %lux\n", &hdr, &hdr.sdata);
 
-	print("dldi: %s\n", hdr.textid);
 	if (hdr.io.caps){
-		print("%.4s %s%s %s%s (%lx)\n",
-		hdr.io.type, 
-		(hdr.io.caps & Cslotgba)? "gba" : "",
-		(hdr.io.caps & Cslotnds)? "nds" : "",
-		(hdr.io.caps & Cread)? "r" : "",
-		(hdr.io.caps & Cwrite)? "w" : "",
-		hdr.io.caps);
-		
-if(0){ /* fix calling elf-arm code */
-		ulong r12 = getr12();
-		uchar sect[6*SECTSZ/sizeof(ushort)];
-		extern ulong setR12;
-	
-		extern Ioifc io_r4tf;
-		memcpy(&hdr.io, &io_r4tf, sizeof(Ioifc));
+		/*
+		print("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
+			hdr.sdata, hdr.etext, sizeof(hdr),
+			(hdr.sect2fix & Fixall)? "all": "",
+			(hdr.sect2fix & Fixglue)? "glue": "",
+			(hdr.sect2fix & Fixgot)? "got": "",
+			(hdr.sect2fix & Fixbss)? "bss": "");
 
-		/* // more checks ...
-		print("io.init %lux %lux\n", &hdr.io.init, *hdr.io.init);
-		print("io.isin %lux %lux\n", &hdr.io.isin, *hdr.io.isin);
-		print("io.read %lux %lux\n", &hdr.io.read, *hdr.io.read);
-		print("io.write %lux %lux\n", &hdr.io.write, *hdr.io.write);
-		print("io.clrstat %lux %lux\n", &hdr.io.clrstat, *hdr.io.clrstat);
-		print("io.deinit %lux %lux\n", &hdr.io.deinit, *hdr.io.deinit);
+		if (hdr.sect2fix & Fixall) print("hdr data %lux %lux\n", hdr.sdata, hdr.etext);
+		if (hdr.sect2fix & Fixglue) print("hdr glue %lux %lux\n", hdr.sglue, hdr.eglue);
+		if (hdr.sect2fix & Fixgot) print("hdr got %lux %lux\n", hdr.sgot, hdr.egot);
+		if (hdr.sect2fix & Fixbss) print("hdr bss %lux %lux\n", hdr.sbss, hdr.ebss);
 		*/
 
-		//print("setR12(& %lux) %lux R12 %lux r12 (& %lux) %lux\n", &setR12, setR12, getr12(), &r12, r12);
-		print("isin: %s\n", hdr.io.isin()? "ok": "ko");
-		print("clrstat: %s\n", hdr.io.clrstat()? "ok": "ko");
-		print("init: %s\n", (ret=hdr.io.init())? "ok": "ko");
+		// check ifc against the dldi
+		for(n = 0; ioifc[n]; n++){
+			if(memcmp(ioifc[n]->type, hdr.io.type, 4))
+				continue;
+			if(ioifc[n]->caps != hdr.io.caps)
+				continue;
 
-		memset(sect, 0, sizeof(sect));
-		if (ret)
-			ret=hdr.io.read(0, sizeof(sect)/SECTSZ, sect);
-		print("read: %s\n", (ret)? "ok": "ko");
-		
-		for(i=0; ret && (i < sizeof(sect)); i++){
-			if(1 && sect[i] != 0) print("%x.", sect[i]);
-			if(0 && (sect[i] == 0x55 || sect[i] == 0xaa))
-				print("bingo %d %x\n", i, sect[i]);
+			ioifc[n]->isin();
+			ioifc[n]->clrstat();
+			if(ioifc[n]->init())
+				break;
 		}
-		print("\n");
-		// print("deinit: %d\n", hdr.io.deinit());
-		// print("while(1);\n"); while(1);
-}
+
+		if(!ioifc[n])
+			return;
+
+		print("dldi: %s\n", hdr.textid);
+		print("ioifc: %.4s %s%s %s%s (%lux)\n",
+			hdr.io.type, 
+			(hdr.io.caps & Cslotgba)? "gba" : "",
+			(hdr.io.caps & Cslotnds)? "nds" : "",
+			(hdr.io.caps & Cread)? "r" : "",
+			(hdr.io.caps & Cwrite)? "w" : "",
+			hdr.io.caps);
+		
+		// set the default io interface
+		memmove(&hdr.io, ioifc[n], sizeof(Ioifc));
+		mbrtest();
 	}
+
 }
 
 static Chan*
@@ -202,13 +222,35 @@ dldiclose(Chan *)
 static long
 dldiread(Chan* c, void* a, long n, vlong offset)
 {
-	DPRINT("dldiread a %lx n %ld o %lld\n", a, n , offset);
-	
+	int nosect, rosect;
+	int nnsect, rnsect;
+	uchar sect[SECTSZ], *p;
+
+	p = a;
 	switch ((ulong)c->qid.path) {
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		hdr.io.read(offset / SECTSZ, n / SECTSZ, a);
+		DPRINT("dldiread a %lx n %ld o %lld rn %ld ro %lld\n", a, n , offset, n % SECTSZ, offset % SECTSZ);
+		rosect = offset % SECTSZ;
+		nosect = offset / SECTSZ;
+		if(rosect>0){
+			hdr.io.read(nosect, 1, sect);
+			memmove(p, sect, rosect);
+			p += rosect;
+			nosect++;
+		}
+
+		rnsect = n % SECTSZ;
+		nnsect = n % SECTSZ;
+		if(rnsect>0){
+			hdr.io.read(nnsect, 1, sect);
+			memmove(p, sect, rnsect);
+			p += rnsect;
+			nnsect++;
+		}
+	
+		hdr.io.read(nosect, nnsect, p);
 		break;
 	default:
 		n = 0;

@@ -4,9 +4,9 @@
 #include <kern.h>
 #include "dat.h"
 #include "fns.h"
-#include "jtypes.h"
-#include "ipc.h"
 #include "spi.h"
+#include "rtc.h"
+#include "jtypes.h"
 #include "touch.h"
 
 #include "wifi.h"
@@ -40,7 +40,7 @@ nds_fifo_send(ulong v)
 }
 
 void
-fiforecvintr(void)
+fiforecvintr(void*)
 {
 	ulong v, vv;
 	nds_tx_packet *tx_packet;
@@ -50,7 +50,7 @@ fiforecvintr(void)
 		v = vv>>Fcmdwidth;
 		switch(vv&Fcmdmask) {
 		case F9SysCtl:
-			if(0)print("F9SysCtl %x %x %x %x %x\n",
+			if(0)print("F9SysCtl %lux %lux %lux %lux %lux\n",
 				v, v & SysCtlbright, v & SysCtlpoweroff, v & SysCtlreboot, v & SysCtlleds);
 				
 			if (v & SysCtlbright){
@@ -94,7 +94,7 @@ fiforecvintr(void)
 			tx_packet = nil;
 			break;
 		case F9WFctl:
-			if(0)print("F9WFctl %x %x %x %x %x\n",
+			if(0)print("F9WFctl %lux %lux %lux %lux %lux\n",
 				v, v & WFCtlopen, v & WFCtlclose, v & WFCtlscan, v & WFCtlstats);
 			
 			if(v & WFCtlopen)
@@ -116,30 +116,23 @@ fiforecvintr(void)
 	intrclear(FRECVbit, 0);
 }
 
-enum
-{
-	MaxRetry = 5,
-	MaxRange = 30,
-};
-
 void
-vblankintr(void)
+vblankintr(void*)
 {
 	int i;
-	static int heartbeat = 0;
+	static int hbt = 0;
 	touchPosition tp = {0,0,0,0,0, 0};
 	ulong bst, cbst, bup, bdown;
 	static ulong obst, opx, opy;
-	int t1, t2;
 
-	heartbeat++;
+	hbt++;
 
 	/* check buttons state */
 	bst = KEYREG->in & Btn9msk;
 	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
 
 	/* skip bogus keypresses at start */
-	if (heartbeat == 1)
+	if (hbt == 1)
 		obst = bst;
 	
 	if(~bst & 1<<Pdown) {
@@ -174,25 +167,30 @@ vblankintr(void)
 	
 	// Read the temperature
 	IPC->aux = touchRead(Tscgetaux);
-	IPC->battery  = touchRead(Tscgetbattery);
-	IPC->temperature = touchReadTemperature(&t1, &t2);;
-	//print("batt %d aux %d temp %d\n", IPC->battery, IPC->aux, IPC->temperature);
+	IPC->batt = touchRead(Tscgetbattery);
+	IPC->temp = touchReadTemperature(&IPC->td1, &IPC->td2);
+	//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
 
 	intrclear(VBLANKbit, 0);
 }
 
 void
-ipcsyncintr(void)
+ipcsyncintr(void*)
 {
 	print("ipcsyncintr\n");
 	intrclear(IPCSYNCbit, 0);	
 }
 
+enum {
+	MaxRetry = 5,
+	MaxRange = 30,
+};
+
 int 
 main(void)
 {
-	int16 dmax;
-	u8 err;
+	short dmax;
+	uchar err;
 	
 	INTREG->ime = 0;
 
@@ -213,7 +211,7 @@ main(void)
 
 	intrenable(VBLANKbit, vblankintr, 0);
 
-	intrenable(TIMER0bit, wifi_timer_handler, 0);
+	intrenable(TIMERWIFIbit, wifi_timer_handler, 0);
 	intrenable(WIFIbit, wifi_interrupt, 0);
 	IPCREG->ctl |= Ipcirqena;
 	intrenable(IPCSYNCbit, ipcsyncintr, 0);

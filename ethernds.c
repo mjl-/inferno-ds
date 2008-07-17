@@ -54,7 +54,7 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	DPRINT("ifstat\n");
 	
 	if (ether->ctlr == nil)
-		return;
+		return 0;
 
 	if(n == 0 || offset != 0)
 		return 0;
@@ -90,8 +90,13 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	// order by signal quality 
 	app = (Wifi_AccessPoint*) aplist7;
 	for(i=0; i < WIFI_MAX_AP && *(ulong*)app; app++)
-		p = seprint(p, e, "ssid:%s ch:%d f:%x\n",
-			app->ssid, app->rssi, app->flags);
+		if (app->flags & WFLAG_APDATA_ACTIVE)
+		p = seprint(p, e, "ssid:%s ch:%d f:%x %s%s %s\n",
+			app->ssid, app->rssi, app->flags,
+			(app->flags & WFLAG_APDATA_WEP? "wep": ""),
+			(app->flags & WFLAG_APDATA_WPA? "wpa": ""),
+			(app->flags & WFLAG_APDATA_ADHOC? "hoc": "man")
+			);
 
 	n = readstr(offset, a, n, tmp);
 	poperror();
@@ -151,7 +156,7 @@ attach(Ether *ether)
 
 	ctlr = (Ctlr*) ether->ctlr;
 	if (ctlr->attached == 0){
-		// TODO goes to archether
+		// TODO move to archether
 		IPCREG->ctl |= Ipcirqena;
 		intrenable(ether->itype, ether->irq, ether->interrupt, ether, "nds");
 
@@ -210,7 +215,7 @@ txloadpacket(Ether *ether)
 	tx_pkt.data = (void *)txpktbuffer;
 	freeb(b);
 
-	if(0)iprint("dump pkt[%d] @ %x:\n%s",
+	if(0)iprint("dump pkt[%xu] @ %lux:\n%s",
 		tx_pkt.len, tx_pkt.data,
 		dump_pkt((uchar*)tx_pkt.data, tx_pkt.len));
 

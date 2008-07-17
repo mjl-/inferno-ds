@@ -6,10 +6,6 @@
 #include "fns.h"
 #include "../port/error.h"
 #include "version.h"
-#include "arm7/jtypes.h"
-#include "arm7/ipc.h"
-#include <keyboard.h>
-
 
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
@@ -110,8 +106,6 @@ main(void)
 	doc("confinit...\n");
 	confinit();
 
-	/* TODO, fix printing, figure out what is wrong with locking and memory addresses  */
-	
 	doc("xinit...\n");
 	xinit();
 	doc("poolinit...\n");

@@ -15,6 +15,7 @@ Copyright (c) 2005 Stephen Stair
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
+#include <kern.h>
 #include "dat.h"
 #include "fns.h"
 
@@ -1433,7 +1434,7 @@ static void Wifi_Intr_TxErr(void)
 	wifi_data.state |= WIFI_STATE_SAW_TX_ERR;
 }
 
-void wifi_interrupt(void)
+void wifi_interrupt(void*)
 {
 	int wIF;
 	while ((wIF = WIFI_IE & WIFI_IF) != 0) {
@@ -1797,7 +1798,7 @@ void wifi_start_scan(void)
 
 	t->data = TIMER_BASE(Tmrdiv1024) / (1000 / WIFI_CHANNEL_SCAN_DWEL);
 	t->ctl = Tmrdiv1024 | Tmrena | Tmrirq;
-	intrunmask(TIMER0bit, 0);
+	intrunmask(TIMERWIFIbit, 0);
 }
 
 static void wifi_bump_scan(void)
@@ -1805,7 +1806,7 @@ static void wifi_bump_scan(void)
 	TimerReg *t = TIMERREG + WIFItimer;
 
 	if (wifi_data.scanChannel == 13) {
-		intrmask(TIMER0bit, 0);
+		intrmask(TIMERWIFIbit, 0);
 		wifi_data.state &= ~WIFI_STATE_CHANNEL_SCANNING;
 		t->ctl = 0;
 		Wifi_SetChannel(wifi_data.reqChannel);
@@ -1816,18 +1817,18 @@ static void wifi_bump_scan(void)
 	}
 }
 
-void wifi_timer_handler(void)
+void wifi_timer_handler(void*)
 {
 	TimerReg *t = TIMERREG + WIFItimer;
 
 	if (wifi_data.state & WIFI_STATE_CHANNEL_SCANNING) {
 		wifi_bump_scan();
 	} else {
-		intrmask(TIMER0bit, 0);
+		intrmask(TIMERWIFIbit, 0);
 		t->ctl = 0;
 	}
 
-	intrclear(TIMER0bit, 0);
+	intrclear(TIMERWIFIbit, 0);
 }
 
 void Wifi_SetAPMode(enum WIFI_AP_MODE mode)

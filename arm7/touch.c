@@ -2,15 +2,14 @@
 #include "../mem.h"
 #include "../io.h"
 #include "dat.h"
-#include "jtypes.h"
 #include "spi.h"
 #include "touch.h"
 
-static u8 wastouched = 0;
-static u8 nrange1 = 0;
-static u8 nrange2 = 0;
-static u8 range = 20;
-static u8 minrange = 20;
+static uchar wastouched = 0;
+static uchar nrange1 = 0;
+static uchar nrange2 = 0;
+static uchar range = 20;
+static uchar minrange = 20;
 
 static long abs(long a);
 
@@ -20,7 +19,7 @@ abs(long a)
 	return a>0 ? a : -a;
 }
 
-u8
+uchar
 chkstylus(void)
 {
 	busywait();
@@ -50,11 +49,11 @@ chkstylus(void)
 		return !(KEYREG->xy & 0x40) ? 1 : 0;
 	}
 }
-uint16 
-touchRead(uint32 cmd) 
+ushort
+touchRead(ulong cmd) 
 {
-	uint16 res, res2;
-	uint32 oldIME = INTREG->ime;
+	ushort res, res2;
+	ulong oldIME = INTREG->ime;
 	INTREG->ime=0;
 	busywait();
 	SPIREG->ctl=Spiena|Spi2mhz|SpiDevtouch|Spicont; //0x8A01;
@@ -70,16 +69,19 @@ touchRead(uint32 cmd)
 	INTREG->ime=oldIME;
 	return ((res & 0x7F) << 5) | res2;
 }
-uint32 touchReadTemperature(int * t1, int * t2) {
+
+ulong
+touchReadTemperature(int * t1, int * t2) {
 	*t1 = touchRead(Tscgettemp1);
 	*t2 = touchRead(Tscgettemp2);
 	return 8490 * (*t2 - *t1) - 273*4096;
 }
 
-int16 readtsc(uint32 cmd, int16 *dmax, u8 *err){
-	int16 values[5];
-	int32 aux1, aux2, aux3, dist, dist2, res = 0;
-	u8 i, j, k;
+short
+readtsc(ulong cmd, short *dmax, uchar *err){
+	short values[5];
+	int aux1, aux2, aux3, dist, dist2, res = 0;
+	char i, j, k;
 	*err = 1;
 	busywait();
 	SPIREG->ctl=Spiena|Spi2mhz|SpiDevtouch|Spicont;
@@ -144,7 +146,7 @@ int16 readtsc(uint32 cmd, int16 *dmax, u8 *err){
 }
 
 void 
-UpdateRange(uint8 *r, int16 lastdmax, u8 data_error, u8 wastouched)
+UpdateRange(uchar *r, short lastdmax, uchar data_error, uchar wastouched)
 {
 	if(wastouched != 0){
 		if( data_error == 0){
@@ -180,11 +182,11 @@ UpdateRange(uint8 *r, int16 lastdmax, u8 data_error, u8 wastouched)
 void
 touchReadXY(touchPosition *tp) 
 {
-	int16 dmaxy, dmaxx, dmax;
-	u8 error, errloc, usedstylus, i;
-	uint32 oldIME;
+	short dmaxy, dmaxx, dmax;
+	uchar error, errloc, usedstylus, i;
+	ulong oldIME;
 	UserInfo *pu=UserInfoAddr;
-	s16 px, py;
+	short px, py;
 
 	static char tscinit=0;
 	static int xscale, yscale;

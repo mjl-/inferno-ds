@@ -19,7 +19,8 @@ which is ready to be copied to your flashcard and run.
 REQUIREMENTS
 ------------
 The conf file (see $CONF in mkfile) and build process can require files which
-are not in a default Inferno install, these can be found in the root/ directory.
+are not in a default Inferno install, these can be found in the root/ directory,
+and should be copied to their corresponding locations.
 
 External tools
 --------------

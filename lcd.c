@@ -41,6 +41,7 @@ setlcdmode(LCDdisplay *ld)
 	VramReg *vram = VRAMREG;
 	PowerReg *power = POWERREG;
 
+	USED(ld);
 	lcd->lccr = 0;
   	
 	power->pcr = (POWER_LCD|POWER_2D_A|POWER_2D_B);

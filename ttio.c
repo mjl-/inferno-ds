@@ -4,12 +4,6 @@
 #include 	"arm7/jtypes.h"
 #include	"arm7/card.h"
 
-/* TODO
- * - math.c could be in archds.c	(optional)
- * - fifo.c could also be in archds.c 	(required)
- * - ttio.c + discio.c -> r4tf.c and card.c in arm7
- */
-
 /*
 misc/ttio.dldi:     file format binary
 
@@ -312,7 +306,7 @@ Disassembly of section .data:
  48c:	e8bd4010 	ldmia	sp!, {r4, lr}
  490:	e12fff1e 	bx	lr
 */
-void
+static void
 ttio_subread(void){
 }
 
@@ -383,7 +377,7 @@ ttio_subread(void){
  590:	e8bd41f0 	ldmia	sp!, {r4, r5, r6, r7, r8, lr}
  594:	eaffff82 	b	0x3a4
 */
-void
+static void
 ttio_subwrite(void){
 }
 
@@ -391,7 +385,7 @@ ttio_subwrite(void){
  598:	e3a00001 	mov	r0, #1	; 0x1
  59c:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_init(void){
 	return 1;
 }
@@ -400,7 +394,7 @@ ttio_init(void){
  5a0:	e3a00001 	mov	r0, #1	; 0x1
  5a4:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_isin(void){
 	return 1;
 }
@@ -428,7 +422,7 @@ ttio_isin(void){
  5f4:	e49de004 	ldr	lr, [sp], #4
  5f8:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_read(ulong start, ulong n, void *d){
 	uchar *sb = (uchar*)(0x4000000 + 417);
 	uchar *lb = (uchar*)(0x2800000 -1 - 987);
@@ -466,7 +460,7 @@ ttio_read(ulong start, ulong n, void *d){
  648:	e49de004 	ldr	lr, [sp], #4
  64c:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_write(ulong start, ulong n, const void *d){
 	/* almost the same code that ttio_read */
 	ttio_subwrite(start, d, n);
@@ -477,7 +471,7 @@ ttio_write(ulong start, ulong n, const void *d){
  650:	e3a00001 	mov	r0, #1	; 0x1
  654:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_clrstat(void){
 	return 1;
 }
@@ -486,7 +480,7 @@ ttio_clrstat(void){
  658:	e3a00001 	mov	r0, #1	; 0x1
  65c:	e12fff1e 	bx	lr
 */
-int
+static int
 ttio_deinit(void){
 	return 1;
 }
@@ -502,7 +496,7 @@ ttio_deinit(void){
  67c:	bf800098 	swilt	0x00800098
 */
 
-Ioifc io_ttio = {
+static Ioifc io_ttio = {
 	"TTIO",
 	Cread|Cwrite|Cslotnds,
 
@@ -513,3 +507,8 @@ Ioifc io_ttio = {
 	ttio_clrstat,
 	ttio_deinit
 };
+
+void
+ttiolink(void){
+	addioifc(&io_ttio);
+}

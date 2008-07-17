@@ -2,11 +2,9 @@
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "jtypes.h"
-#include "rtc.h"
-#include "spi.h"
-#include "bios.h"
+#include "dat.h"
 #include "fns.h"
+#include "rtc.h"
 
 #define RTC_DELAY 48
 #define CS_0    (1<<6)
@@ -24,20 +22,20 @@
 static void
 rtcTransaction(uchar *cmd, ulong cmdlen, uchar *res, ulong reslen)
 {
-	u8 bit;
-	u8 i;
+	uchar bit;
+	uchar i;
 
-	RTC_CR8 = CS_0 | SCK_1 | SIO_1;
+	KEYREG->rtccr = CS_0 | SCK_1 | SIO_1;
 	swiDelay(RTC_DELAY);
-	RTC_CR8 = CS_1 | SCK_1 | SIO_1;
+	KEYREG->rtccr = CS_1 | SCK_1 | SIO_1;
 	swiDelay(RTC_DELAY);
 
 	for (i = 0; i < cmdlen; i++) {
 		for (bit = 0; bit < 8; bit++) {
-			RTC_CR8 = CS_1 | SCK_0 | SIO_out | (cmd[i] >> 7);
+			KEYREG->rtccr = CS_1 | SCK_0 | SIO_out | (cmd[i] >> 7);
 			swiDelay(RTC_DELAY);
 
-			RTC_CR8 = CS_1 | SCK_1 | SIO_out | (cmd[i] >> 7);
+			KEYREG->rtccr = CS_1 | SCK_1 | SIO_out | (cmd[i] >> 7);
 			swiDelay(RTC_DELAY);
 
 			cmd[i] = cmd[i] << 1;
@@ -47,18 +45,18 @@ rtcTransaction(uchar *cmd, ulong cmdlen, uchar *res, ulong reslen)
 	for (i = 0; i < reslen; i++) {
 		res[i] = 0;
 		for (bit = 0; bit < 8; bit++) {
-			RTC_CR8 = CS_1 | SCK_0;
+			KEYREG->rtccr = CS_1 | SCK_0;
 			swiDelay(RTC_DELAY);
 			
-			RTC_CR8 = CS_1 | SCK_1;
+			KEYREG->rtccr = CS_1 | SCK_1;
 			swiDelay(RTC_DELAY);
 
-			if (RTC_CR8 & SIO_in)
+			if (KEYREG->rtccr & SIO_in)
 				res[i] |= (1 << bit);
 		}
 	}
 
-	RTC_CR8 = CS_0 | SCK_1;
+	KEYREG->rtccr = CS_0 | SCK_1;
 	swiDelay(RTC_DELAY);
 }
 
@@ -72,8 +70,8 @@ static ulong
 get_nds_seconds(uchar *time)
 {
 	struct Tm tm;
-	u8 hours;
-	u8 i;
+	uchar hours;
+	uchar i;
 
 	hours = BCDToInt(time[4] & HOUR_MASK);
 

@@ -1,8 +1,6 @@
-#!/bin/sh
 
 (
 echo 00000000 .arm; 
-
 inm -n $* | sed 's|.*: ||' | awk \
 '
 	BEGIN { s="00000000" }

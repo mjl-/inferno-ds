@@ -4,6 +4,7 @@ changes | grep  '# [ADMC]'
 svn diff > `date '+%0e%0m%0Y'`.patch
 git format-patch HEAD^
 git am -k -3 *.patch
+git archive --prefix=gds/ HEAD > gds.tar
 git checkout
 
 u mount /mnt/usb

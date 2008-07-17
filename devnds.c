@@ -8,10 +8,7 @@
 #include	"../port/error.h"
 #include	<keyboard.h>
 
-#include 	"arm7/jtypes.h"
-#include	"arm7/ipc.h"
-
-#include	"arm7/wifi.h"
+#include 	"arm7/dat.h"
 
 #define	DPRINT if(0)print
 
@@ -234,10 +231,8 @@ outl(ulong reg, ulong l)
 static long
 ndsread(Chan* c, void* a, long n, vlong offset)
 {
-	char *tmp;
-	int v, t, temp;
-	char *p, *e;
-	int len;
+	char *tmp, *p, *e;
+	int v, t, temp, len;
 	UserInfo *pu = UserInfoAddr;
 	uchar *pa;
 	uchar b;
@@ -254,9 +249,9 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			free(tmp);
 			nexterror();
 		}
-		v = IPC->battery;
-		temp = IPC->temperature;
-		t = *((uchar*)0x1d); // read console type, version from firmware
+		v = IPC->batt;
+		temp = IPC->temp;
+		t = 0xff;
 		snprint(tmp, READSTR,
 			"ds type: %x %s\n"
 			"battery: %d %s\n"

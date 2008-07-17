@@ -1,14 +1,3 @@
-// 'Networking'
-#define REG_RCNT	(*(vuint16*)0x04000134)
-#define REG_KEYXY	(*(vuint16*)0x04000136)
-#define RTC_CR		(*(vuint16*)0x04000138)
-#define RTC_CR8		(*( vuint8*)0x04000138)
-
-#define REG_SIOCNT	(*(vuint16*)0x04000128)
-
-#define SIO_DATA8       (*(vuint8*)0x0400012A)
-#define SIO_DATA32      (*(vuint32*)0x04000120)
-
 
 // Fixme: Does the hardware still support 16 bit comms mode?
 // BIOS makes use of 32 bit mode, so some regs still exist
@@ -16,7 +5,10 @@
 #define SIO_MULTI_1     (*(vuint16*)0x04000122)
 #define SIO_MULTI_2     (*(vuint16*)0x04000124)
 #define SIO_MULTI_3     (*(vuint16*)0x04000126)
+#define REG_SIOCNT	(*(vuint16*)0x04000128)
 #define SIO_MULTI_SEND  (*(vuint16*)0x0400012A)
+#define SIO_DATA8       (*(vuint8*)0x0400012A)
+#define SIO_DATA32      (*(vuint32*)0x04000120)
 
 /*
  * Power management registers

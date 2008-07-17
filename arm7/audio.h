@@ -40,8 +40,8 @@ enum {
 	Maxvol		= 0x7f,
 };
 
-/* usage: SCHANREG->tmr = SCHAN_FREQ(hz) */
-#define SCHAN_FREQ(hz)	((-0x1000000 / (hz)))
+/* usage: SCHANREG->tmr = SCHAN_BASE / hz */
+#define SCHAN_BASE	(-0x1000000)
 
 /* 
  * Master sound
@@ -78,10 +78,5 @@ enum {
 
 void vblankaudio(void);
 
-/* Read a byte from the microphone */
-u8 MIC_ReadData(void);
-
-void StartRecording(u8* buffer, int length);
-int StopRecording(void);
-
-void PM_SetAmp(u8 control);
+void startrecording(uchar *buffer, int length);
+int stoprecording(void);
