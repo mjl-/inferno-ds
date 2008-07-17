@@ -5,10 +5,10 @@
 #include	"arm7/card.h"
 
 /*
- * storage code based from libfat's disc_io
+ * r4tf flashcard, based on libfat's disc_io code
  */
 
-/* r4tf flashcard related */
+#define DPRINT if(1)
 
 static void
 cardWaitReady(u32 flags, u8 *cmd)
@@ -66,7 +66,9 @@ LogicCardRead(u32 address, u32 *dst, u32 len)
 	if ((u32)dst & 0x03)
 		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
 	else
-		cardPolledTransfer(0xa1586000, dst, len, cmd);
+		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
+	//	TODO find out why the line below fails
+	//	cardPolledTransfer(0xa1586000, dst, len, cmd);
 }
 
 static u32
@@ -124,7 +126,7 @@ LogicCardWrite(u32 address, u32 *source, u32 len)
 }
 
 static bool
-R4TF_StartUp(void)
+r4tf_init(void)
 {
 	u32 CardInfo;
 
@@ -133,16 +135,7 @@ R4TF_StartUp(void)
 }
 
 static bool
-R4TF_IsInserted(void)
-{
-	u32 CardInfo;
-
-	CardInfo = ReadCardInfo();
-	return ((CardInfo & 0x07) == 0x04);
-}
-
-static bool
-R4TF_ReadSectors(u32 sector, u8 numSecs, void* buffer)
+r4tf_read(u32 sector, u8 numSecs, void* buffer)
 {
 	u32 *u32_buffer = (u32*)buffer, i;
 
@@ -155,7 +148,7 @@ R4TF_ReadSectors(u32 sector, u8 numSecs, void* buffer)
 }
 
 static bool
-R4TF_WriteSectors(u32 sector, u8 numSecs, void* buffer)
+r4tf_write(u32 sector, u8 numSecs, void* buffer)
 {
 	u32 *u32_buffer = (u32*)buffer, i;
 
@@ -168,25 +161,25 @@ R4TF_WriteSectors(u32 sector, u8 numSecs, void* buffer)
 }
 
 static bool
-R4TF_ClearStatus(void)
+r4tf_clrstat(void)
 {
 	return true;
 }
 
-static bool
-R4TF_Shutdown(void)
-{
-	return true;
-}
-
-Ioifc io_r4tf = {
+static Ioifc io_r4tf = {
 	"R4TF",
 	Cread|Cwrite|Cslotnds,
 
-	R4TF_StartUp,
-	R4TF_IsInserted,
-	(void*)R4TF_ReadSectors,
-	(void*)R4TF_WriteSectors,
-	R4TF_ClearStatus,
-	R4TF_Shutdown
+	r4tf_init,
+	r4tf_init,
+	(void*)r4tf_read,
+	(void*)r4tf_write,
+	r4tf_clrstat,
+	r4tf_clrstat,
 };
+
+void
+r4tflink(void)
+{
+	addioifc(&io_r4tf);
+}
