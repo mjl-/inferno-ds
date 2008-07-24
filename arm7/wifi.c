@@ -367,6 +367,7 @@ static void wifi_try_to_associate(void)
 
 void Wifi_SetSSID(int off, char b1, char b2)
 {
+#ifdef NOTYET
 	wifi_data.ssid[(off * 2) + 1] = b1;
 	wifi_data.ssid[(off * 2) + 2] = b2;
 
@@ -374,6 +375,7 @@ void Wifi_SetSSID(int off, char b1, char b2)
 		wifi_data.ssid[0] = off * 2;
 	else if (!b2)
 		wifi_data.ssid[0] = off * 2 + 1;
+#endif
 	if (!b1 || !b2) {
 		/* once we see the null terminator, we are done */
 		if (wifi_data.state & WIFI_STATE_UP) {
@@ -669,7 +671,7 @@ void wifi_stats_query(void)
 
 	wifi_data.state &= ~WIFI_STATE_SAW_TX_ERR;
 
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_STATS_QUERY, 0));
+//	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_STATS_QUERY, 0));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1301,7 +1303,7 @@ int Wifi_QueueRxMacData(u32 base, u32 len)
 
 	Wifi_MACCopy((u16 *) rx_packet->data, base, macofs, len);
 	rx_packet->len = len;
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_RX, 0));
+//	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_RX, 0));
 
 	/* XOXOXO Disable rx interrupts */
 
@@ -1402,7 +1404,7 @@ static void Wifi_Intr_TxEnd(void)
 	if ((wifi_data.state & WIFI_STATE_TXPENDING)
 	    && !(WIFI_REG(0xA0) & 0x8000)) {
 		wifi_data.state &= ~WIFI_STATE_TXPENDING;
-		nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_TX_COMPLETE, 0));
+		// nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_TX_COMPLETE, 0));
 	}
 }
 
@@ -1784,8 +1786,7 @@ void wifi_ap_query(u16 start_stop)
 	else
 		wifi_data.state &= ~WIFI_STATE_APQUERYPEND;
 
-	print("wifi_ap_query %x\n", FIFO_WIFI_CMD(FIFO_WIFI_CMD_AP_QUERY, 0));
-	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_AP_QUERY, 0));
+	//nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_AP_QUERY, 0));
 }
 
 void wifi_start_scan(void)
@@ -1810,7 +1811,7 @@ static void wifi_bump_scan(void)
 		wifi_data.state &= ~WIFI_STATE_CHANNEL_SCANNING;
 		t->ctl = 0;
 		Wifi_SetChannel(wifi_data.reqChannel);
-		nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_SCAN, 1));
+		//nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_SCAN, 1));
 	} else {
 		wifi_data.scanChannel++;
 		Wifi_SetChannel(wifi_data.scanChannel);
@@ -1838,6 +1839,6 @@ void Wifi_SetAPMode(enum WIFI_AP_MODE mode)
 
 void Wifi_GetAPMode(void)
 {
-	nds_fifo_send(
-		FIFO_WIFI_CMD(FIFO_WIFI_CMD_GET_AP_MODE, wifi_data.curMode));
+	//nds_fifo_send(
+	//	FIFO_WIFI_CMD(FIFO_WIFI_CMD_GET_AP_MODE, wifi_data.curMode));
 }

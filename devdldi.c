@@ -49,20 +49,20 @@ enum
 
 typedef struct DLDIhdr DLDIhdr;
 struct DLDIhdr{
-	ulong magic;			/* magic number */
-	char magics[8];			/* magic string */
-	uchar version;			/* version number */
-	uchar dlogsz;			/* log2 size of driver */
-	uchar sect2fix;			/* sections to fix */
-	uchar slogsz;			/* log2 size of alloc space */
+	ulong magic;		/* magic number */
+	char magics[8];	/* magic string */
+	uchar version;		/* version number */
+	uchar dlogsz;		/* log2 size of driver */
+	uchar sect2fix;		/* sections to fix */
+	uchar slogsz;		/* log2 size of alloc space */
 	char textid[48];
 	
-	ulong sdata, etext;		/* offsets to sections */
+	ulong sdata, etext;	/* offsets to sections */
 	ulong sglue, eglue;
 	ulong sgot, egot;
 	ulong sbss, ebss;
 
-	Ioifc io;			/* here: sizeof(DLDIhdr) = 1<<7 bytes */
+	struct Ioifc io;		/* here: sizeof(DLDIhdr) = 1<<7 bytes */
 	
 	/* sizeof(DLDIhdr) = 1<<LHDRSZ bytes */
 	uchar space[(1<<LHDRSZ) - (1<<7)]; 
@@ -158,7 +158,7 @@ dldiinit(void)
 		if (hdr.sect2fix & Fixbss) print("hdr bss %lux %lux\n", hdr.sbss, hdr.ebss);
 		*/
 
-		// check ifc against the dldi
+		// detect card type using dldi's info
 		for(n = 0; ioifc[n]; n++){
 			if(memcmp(ioifc[n]->type, hdr.io.type, 4))
 				continue;

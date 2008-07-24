@@ -185,7 +185,7 @@ touchReadXY(touchPosition *tp)
 	short dmaxy, dmaxx, dmax;
 	uchar error, errloc, usedstylus, i;
 	ulong oldIME;
-	UserInfo *pu=UserInfoAddr;
+	UserInfo *pu=UINFOREG;
 	short px, py;
 
 	static char tscinit=0;

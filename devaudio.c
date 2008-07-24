@@ -6,7 +6,6 @@
 #include	"io.h"
 #include	"../port/error.h"
 
-#include	"arm7/dat.h"
 #include	"arm7/audio.h"
 
 static int debug = 0;
@@ -20,7 +19,8 @@ enum
 	Fmono		= 1,
 	Fin			= 2,
 	Fout		= 4,
-
+	F16bits		= 8,
+	
 	Aclosed		= 0,
 	Aread,
 	Awrite,
@@ -52,6 +52,7 @@ Dirtab audiodir[] =
 static	struct
 {
 	QLock;
+	int		flags;
 	int		amode;			/* Aclosed/Aread/Awrite for /audio */
 	int		intr;			/* boolean an interrupt has happened */
 	int		rivol[Nvol];	/* right/left input/output volumes */
@@ -84,30 +85,37 @@ static	struct
 static	char	Emode[]		= "illegal open mode";
 static	char	Evolume[]	= "illegal volume specifier";
 
-static TransferSound snd;
-static TransferSoundData snddat;
+static TxSound snddat;
 
 static void
 mxvolume(void)
 {
-	int bits = 8;
-
+	int rov, lov;
+	
+	rov = audio.rovol[Vaudio];
+	lov = audio.lovol[Vaudio];
+	
+	snddat.chans = (audio.flags & Fmono? 1: 2);
 	snddat.rate = audio.lovol[Vspeed];
-	snddat.vol = (Maxvol - Minvol) * audio.lovol[Vaudio] / 100;
-	snddat.pan = (Maxvol - Minvol) * (audio.rovol[Vaudio] - audio.lovol[Vaudio]) / 100;
-	snddat.fmt = (bits == 16);
+	snddat.vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
+	snddat.pan = (Maxvol - Minvol) * rov / (2*lov+1);
+	snddat.fmt = audio.flags & F16bits;
 }
 
 static void
 playaudio(const void* data, ulong length)
 {
-	snd.count = 1;
 	snddat.data = data;
 	snddat.len = length;
-	memmove(&snd.d[0], &snddat, sizeof(TransferSoundData));
+	fifoput(F9TAudio|F9Auplay, (ulong)&snddat);
+}
 
-	dcflush(&snd, sizeof(TransferSound));
-	IPC->soundData = &snd;
+static void
+recaudio(const void* data, ulong length)
+{
+	snddat.data = data;
+	snddat.len = length;
+	fifoput(F9TAudio|F9Aurec, (ulong)&snddat);
 }
 
 static void
@@ -128,7 +136,7 @@ audioinit(void)
 {
 	audio.amode = Aclosed;
 	resetlevel();
-//	powerenable(audiopower);
+	fifoput(F9TAudio|F9Aupower, 1);
 }
 
 static Chan*
@@ -177,9 +185,6 @@ audioread(Chan *c, void *v, long n, vlong offset)
 	case Qdir:
 		return devdirread(c, v, n, audiodir, nelem(audiodir), devgen);
 
-	case Qaudio:
-		break;
-
 	case Qaudioctl:
 		buf[0] = 0;
 		s = buf;
@@ -214,6 +219,10 @@ audioread(Chan *c, void *v, long n, vlong offset)
 		}
 		return readstr(offset, p, n, buf);
 		break;
+
+	case Qaudio:
+		recaudio(p, n);
+		break;
 	}
 
 	return n;
@@ -226,7 +235,6 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 	int i, nf, v, left, right, in, out;
 	char buf[255], *field[Ncmd];
 	char *p;
-	int bits, chans; /* TODO currently ignored */
 
 	p = vp;
 	switch((ulong)c->qid.path) {
@@ -254,11 +262,11 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 			if(field[i][0] >= '0' && field[i][0] <= '9') {
 				m = strtoul(field[i], 0, 10);
 				if(v == Vspeed){
-//					if(archaudiospeed(m, 0) < 0)
-//						error(Evolume);
+					; /* ignored as m specifies speed */
 				}else
 					if(m < 0 || m > 100)
 						error(Evolume);
+	
 				if(left && out)
 					audio.lovol[v] = m;
 				if(left && in)
@@ -292,16 +300,24 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 			if(strcmp(field[i], "bits") == 0) {
 				if(++i >= nf)
 					error(Evolume);
-				bits = strtol(field[i], 0, 0);
-				if(bits != 8 && bits != 16)
+				m = strtol(field[i], 0, 0);
+				if(m == 8) 
+					audio.flags &= ~F16bits;
+				else if (m == 16)
+					audio.flags |= F16bits;
+				else
 					error(Evolume);
 				goto cont0;
 			}
 			if(strcmp(field[i], "chans") == 0) {
 				if(++i >= nf)
 					error(Evolume);
-				chans = strtol(field[i], 0, 0);
-				if(chans != 1 && chans != 2)
+				m = strtol(field[i], 0, 0);
+				if (m == 1)
+					audio.flags |= Fmono;
+				else if (m == 2)
+					audio.flags &= ~Fmono;
+				else
 					error(Evolume);
 				goto cont0;
 			}

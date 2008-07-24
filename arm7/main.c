@@ -6,6 +6,7 @@
 #include "fns.h"
 #include "spi.h"
 #include "rtc.h"
+#include "audio.h"
 #include "jtypes.h"
 #include "touch.h"
 
@@ -17,26 +18,26 @@ extern char edata[];
 extern char end[];
 
 int
-nbfifoput(ulong cmd, ulong v)
+nbfifoput(ulong cmd, ulong data)
 {
 	if(FIFOREG->ctl & FifoTfull)
 		return 0;
-	FIFOREG->send = (cmd|v<<Fcmdwidth);
+	FIFOREG->send = (data<<Fcmdlen|cmd);
 	return 1;
 }
 
 void
-fifoput(ulong cmd, ulong v)
+fifoput(ulong cmd, ulong data)
 {
-	FIFOREG->send = (cmd|v<<Fcmdwidth);
+	FIFOREG->send = (data<<Fcmdlen|cmd);
 }
 
 void
-nds_fifo_send(ulong v)
+nds_fifo_send(ulong data)
 {
 	if(FIFOREG->ctl & FifoTfull)
 		return;
-	FIFOREG->send = v;
+	FIFOREG->send = data;
 }
 
 void
@@ -44,71 +45,115 @@ fiforecvintr(void*)
 {
 	ulong v, vv;
 	nds_tx_packet *tx_packet;
+	uchar ndstype[1];
+	TxSound *snd;
 
 	while(!(FIFOREG->ctl & FifoRempty)) {
 		vv = FIFOREG->recv;
-		v = vv>>Fcmdwidth;
-		switch(vv&Fcmdmask) {
-		case F9SysCtl:
-			if(0)print("F9SysCtl %lux %lux %lux %lux %lux\n",
-				v, v & SysCtlbright, v & SysCtlpoweroff, v & SysCtlreboot, v & SysCtlleds);
-				
-			if (v & SysCtlbright){
-				uchar ndstype[1], bright;
-				
-				bright = v>>SysCtlsz;
+		v = vv>>Fcmdlen;
+		switch(vv&Fcmdtmask) {
+		case F9TSystem:
+			if(0)print("F9S %lux\n", v & Fcmdsmask);
+			switch(vv&Fcmdsmask){
+			case F9Sysbright:
 				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
 				if(ndstype[0] == Dslite || ndstype[0] == Ds)
-					power_write(POWER_BACKLIGHT, bright&Brightmask);
-			}
-			if (v & SysCtlpoweroff)
-				power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
-			if (v & SysCtlreboot)
-				swiSoftReset();	// TODO: doesn't work
-			if (v & SysCtlleds)
-				power_write(POWER_CONTROL, v); // BUG: messes bligth bits
-			break;
+					power_write(POWER_BACKLIGHT, v&Brightmask);
+				break;
 			
-		case F9getrtc:
-			(*(ulong*)v) = nds_get_time7();
+			case F9Syspoweroff:
+				power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
+				break;
+			case F9Sysreboot:
+				swiSoftReset();	// TODO: doesn't work
+				break;
+			case F9Sysleds:
+				power_write(POWER_CONTROL, v); // BUG: messes bligth bits
+				break;
+			case F9Sysrrtc:
+				(*(ulong*)v) = nds_get_time7();
+				break;
+			case F9Syswrtc:
+				nds_set_time7(*(ulong*)v);
+				break;
+			}
 			break;
-		case F9setrtc:
-			nds_set_time7(*(ulong*)v);
+		
+		case F9TWifi:
+			if(0)print("F9W %lux\n", v & Fcmdsmask);
+			switch(vv&Fcmdsmask){
+			case F9WFrmac:
+				memmove((void*)v, wifi_data.MacAddr, 6);
+				break;
+			case F9WFwstats:
+				wifi_data.stats = (volatile ulong *)v;
+				break;
+			case F9WFapquery:
+				wifi_data.aplist = (Wifi_AccessPoint*)v;
+				break;
+			case F9WFrxpkt:
+				rx_packet = (nds_rx_packet*)v;
+				break;
+			case F9WFtxpkt:
+				tx_packet = (nds_tx_packet*)v;
+				wifi_send_ether_packet(tx_packet->len, tx_packet->data);
+				tx_packet = nil;
+				break;
+			case F9WFwstate:
+				if(v)
+					wifi_open();
+				else
+					wifi_close();
+				break;
+			case F9WFscan:
+				wifi_start_scan();
+				break;
+			case F9WFstats:
+				wifi_stats_query();
+				break;
+			case F9WFwap:
+				Wifi_SetAPMode(v);
+				break;
+			case F9WFwssid:
+				memmove(&wifi_data.ssid[1], (void*)v, sizeof(wifi_data.ssid));
+				wifi_data.ssid[0] = strlen(&wifi_data.ssid[1]);
+				Wifi_SetSSID(0, 0, 0);
+				if(0)print("%d %s\n", wifi_data.ssid[0], &wifi_data.ssid[1]);
+				break;
+			case F9WFwchan:
+				Wifi_RequestChannel(v);
+				break;
+			case F9WFwwepmode:
+				Wifi_SetWepMode(v);
+				break;
+			}
 			break;
 
-		case F9WFmacqry:
-			memmove((void*)v, wifi_data.MacAddr, 6);
+		case F9TAudio:
+			if(0)print("F9A %lux\n", v & Fcmdsmask);
+			switch(vv&Fcmdsmask){
+				case F9Auplay:
+					snd = (TxSound*)v;
+					if (snd != nil)
+						playsound(snd);
+				break;
+				case F9Aurec:
+					snd = (TxSound*)v;
+					if (snd != nil)
+						startrec(snd);
+				break;
+				case F9Aupower:
+					if(v)
+						POWERREG->pcr |= 1<<POWER_SOUND;
+					else
+						POWERREG->pcr &= ~(1<<POWER_SOUND);
+				break;
+
+			}
 			break;
-		case F9WFstats:
-			wifi_data.stats = (volatile ulong *)v;
-			break;
-		case F9WFapquery:
-			wifi_data.aplist = (Wifi_AccessPoint*)v;
-			break;
-		case F9WFrxpkt:
-			rx_packet = (nds_rx_packet*)v;
-			break;
-		case F9WFtxpkt:
-			tx_packet = (nds_tx_packet*)v;
-			wifi_send_ether_packet(tx_packet->len, tx_packet->data);
-			tx_packet = nil;
-			break;
-		case F9WFctl:
-			if(0)print("F9WFctl %lux %lux %lux %lux %lux\n",
-				v, v & WFCtlopen, v & WFCtlclose, v & WFCtlscan, v & WFCtlstats);
-			
-			if(v & WFCtlopen)
-				wifi_open();
-			if(v & WFCtlclose)
-				wifi_close();
-			if(v & WFCtlscan)
-				wifi_start_scan();
-			if(v & WFCtlstats)
-				wifi_stats_query();
-			break;
-				
+
 		default:
-			print("fiforecv7: unhandled msg: %lux\n", vv);
+			print("F7rx err %lux\n", vv);
 			break;
 		}
 	}
@@ -162,8 +207,6 @@ vblankintr(void*)
 		nbfifoput(F7keyup, bup);
 	if(bdown)
 		nbfifoput(F7keydown, bdown);
-
-	vblankaudio();
 	
 	// Read the temperature
 	IPC->aux = touchRead(Tscgetaux);
@@ -196,7 +239,7 @@ main(void)
 
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 
-	read_firmware(0x03FE00, UserInfoAddr, sizeof(UserInfoAddr));
+	read_firmware(0x03FE00, (ulong*)UINFOMEM, sizeof(UserInfo));
 
 	/* dummy read to enable the touchpad PENIRQ */
 	dmax = MaxRetry; err = MaxRange;

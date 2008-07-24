@@ -14,8 +14,6 @@ typedef struct TouchCal TouchCal;
 
 typedef ulong Instr;
 
-#define ISAOPTLEN 16
-#define NISAOPT 8
 struct Conf
 {
 	ulong	nmach;			/* processors */
@@ -41,6 +39,7 @@ struct Conf
 	int		textwrite;		/* writeable text segment, for debug */
 };
 
+#define NISAOPT 8
 struct ISAConf {
 	char	type[KNAMELEN];
 	ulong	port;
@@ -53,7 +52,7 @@ struct ISAConf {
 	ulong	freq;
 
 	int	nopt;
-	char	opt[NISAOPT][ISAOPTLEN];
+	char	*opt[NISAOPT];
 };
 
 /*

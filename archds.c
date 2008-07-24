@@ -52,13 +52,13 @@ archconsole(void)
 void
 archpowerdown(void)
 {
-	fifoput(F9SysCtl, SysCtlpoweroff);
+	fifoput(F9TSystem|F9Syspoweroff, 1);
 }
 
 void
 archreboot(void)
 {
-	fifoput(F9SysCtl, SysCtlreboot);
+	fifoput(F9TSystem|F9Sysreboot, 1);
 }
 
 /* no need for this? */
@@ -142,13 +142,15 @@ archether(int ctlno, Ether *ether)
 	ether->nopt = 0;
 	ether->port = 0;
 	ether->irq = IPCSYNCbit;
-	ether->interrupt = nil;
 	ether->itype = 0;
 	ether->mbps = 2;
 	ether->maxmtu = 1492;
 
+	/* IPCSYNC irq from arm7 when there's wifi activity (tx/rx) */
+	IPCREG->ctl |= Ipcirqena;
+	
 	memset(ether->ea, 0xff, Eaddrlen);
-	nbfifoput(F9WFmacqry, (ulong)ether->ea);	/* mac from arm7 */
+	nbfifoput(F9TWifi|F9WFrmac, (ulong)ether->ea);	/* mac from arm7 */
 	
 	if(1){	/* workaround for desmume */
 		uchar i, maczero[Eaddrlen];
@@ -159,10 +161,7 @@ archether(int ctlno, Ether *ether)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 
-	if(0)
-		strcpy(opt, "mode=0 essid=Limbo station=ds crypt=off");	/* peertopeer */
-	else
-		strcpy(opt, "mode=managed essid=Vitanuova1 station=ds crypt=off");
+	strcpy(opt, "mode=managed channel=1 crypt=off essid=THOMSON station=ds");
 	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;

@@ -50,7 +50,7 @@ fiforecv(ulong vv)
 	static uchar mousemod = 0;
 	int i;
 
-	v = vv>>Fcmdwidth;
+	v = vv>>Fcmdlen;
 	switch(vv&Fcmdmask) {
 	case F7keyup:
 		if(v&(1<<Lclose))
@@ -94,7 +94,7 @@ fiforecv(ulong vv)
 		break;
 
 	default:
-		print("fiforecv9: unhandled msg: %lux\n", vv);
+		print("F9rx err %lux\n", vv);
 		break;
 	}
 }
@@ -168,28 +168,6 @@ ndsclose(Chan*)
 {
 }
 
-/* settings flags */
-enum {
-	Nickmax	= 10,
-	Msgmax	= 26,
-
-	LJapanese = 0,
-	LEnglish,
-	LFrench,
-	LGerman,
-	LItalian,
-	LSpanish,
-	LChinese,
-	LOther,
-	Langmask	= 7,
-
-	Gbalowerscreen	= 1<<3,
-	Backlightshift	= 4,
-	Backlightmask	= 3,
-	Autostart	= 1<<6,
-	Nosettings	= 1<<9,
-};
-
 /* in/out used to access Qmem */
 
 static uchar
@@ -233,7 +211,7 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 {
 	char *tmp, *p, *e;
 	int v, t, temp, len;
-	UserInfo *pu = UserInfoAddr;
+	UserInfo *pu = UINFOREG;
 	uchar *pa;
 	uchar b;
 	ushort s;
@@ -360,7 +338,7 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		if(nf != 2)
 			error(Ebadarg);
 		if(strcmp(fields[0], "brightness") == 0)
-			fifoput(F9SysCtl, atoi(fields[1])<<SysCtlsz | SysCtlbright);
+			fifoput(F9TSystem|F9Sysbright, atoi(fields[1]));
 		else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
 				blankscreen(1);

@@ -6,10 +6,8 @@ typedef struct SChanReg SChanReg;
 struct SChanReg {
 	union {
 		struct {
-			uchar vol;
-			uchar pad1;
-			uchar pan;
-			uchar pad2;
+			ushort vol;
+			ushort pan;
 		};
 		ulong ctl;
 	} cr;
@@ -25,9 +23,14 @@ struct SChanReg {
 /* SCHANREG->cr.ctl bits */
 enum {
 	NSChannels	= 16,	/* number of channels */
-
-	SCrepeat	= 1<<27,
-	SC1shot		= 1<<28,
+	
+	SCvoldiv		= 3<<8,
+	SChold		= 1<<15,
+	SCwduty		= 7<<24,
+	
+	SCrepman	= 0<<27,
+	SCreploop	= 1<<27,
+	SCrep1shot	= 2<<27,
 	
 	SCpcm8bit	= 0<<29,
 	SCpcm16bit	= 1<<29,
@@ -36,8 +39,8 @@ enum {
 
 	SCena		= 1<<31,
 
-	Minvol		= 0x00,
-	Maxvol		= 0x7f,
+	Minvol		= 0,
+	Maxvol		= 127,
 };
 
 /* usage: SCHANREG->tmr = SCHAN_BASE / hz */
@@ -76,7 +79,19 @@ enum {
 #define SOUND518	(SNDREG->s518)
 #define SOUND51C	(SNDREG->s51c)
 
-void vblankaudio(void);
+typedef struct TxSound TxSound;
+struct TxSound {
+  uchar chans;
+  const void *data;
+  ulong len;
+  ulong rate;
+  uchar vol;
+  uchar pan;
+  uchar fmt;
 
-void startrecording(uchar *buffer, int length);
-int stoprecording(void);
+  uchar pad;
+};
+
+void startrec(TxSound *snd);
+int stoprec(TxSound *snd);
+void playsound(TxSound *snd);

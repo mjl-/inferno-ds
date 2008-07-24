@@ -19,24 +19,6 @@ enum {
 	TIMERAUDIObit = TIMER0bit+AUDIOtimer,
 };
 
-typedef struct TransferSoundData TransferSoundData;
-struct TransferSoundData {
-  const void *data;
-  ulong len;
-  ulong rate;
-  uchar vol;
-  uchar pan;
-  uchar fmt;
-  uchar PADDING;
-};
-
-typedef struct TransferSound TransferSound;
-struct TransferSound {
-  TransferSoundData d[16];
-  uchar count;
-  uchar PADDING[3];
-};
-
 #define IPCMEM 0x027FF000
 #define IPC ((volatile TransferRegion*)IPCMEM)
 typedef struct TransferRegion TransferRegion;
@@ -72,7 +54,6 @@ struct TransferRegion {
 	ushort aux;		//		 i have no idea...
 
 /*	 Don't rely on these below, will change or be removed in the future */
-	TransferSound *soundData; 
 
 	ulong mailAddr;
 	ulong mailData;

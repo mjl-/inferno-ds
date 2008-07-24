@@ -11,11 +11,27 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
+#define DPRINT if(1)iprint
+
+enum
+{
+	WNameLen = 34,
+};
+
+typedef struct Stats Stats;
+struct Stats
+{
+	ulong	collisions;
+	ulong	toolongs;
+	ulong	tooshorts;
+	ulong	aligns;
+	ulong	txerrors;
+};
+
 typedef struct Ctlr Ctlr;
 struct Ctlr {
 	Lock;
 
-	int 	attached;
 	uchar	*base;
 	int	type;
 	int	rev;
@@ -24,31 +40,30 @@ struct Ctlr {
 	int	bank;	/* currently selected bank */
 	Block*	waiting;	/* waiting for space in FIFO */
 
-	ulong	collisions;
-	ulong	toolongs;
-	ulong	tooshorts;
-	ulong	aligns;
-	ulong	txerrors;
-	int	oddworks;
-	int	bus32bit;
+	int 	attached;
+	int	ptype;
+	int	chan;
+	int	crypt;			// encryption off/on
+	char	netname[WNameLen];
+	char	wantname[WNameLen];
+	char	nodename[WNameLen];
+
+	Stats;
+
+	/* communication interface with ARM7 */
+	volatile nds_tx_packet txpkt;
+	volatile nds_rx_packet rxpkt;
+	volatile ulong stats7[WF_STAT_MAX];
+	volatile Wifi_AccessPoint aplist7[WIFI_MAX_AP];
+	volatile uchar txpktbuf[MAX_PACKET_SIZE];
 };
-
-#define DPRINT if(1)iprint
-
-/*
- * Communication interface with ARM7.
- */
-static volatile nds_tx_packet tx_pkt = {0,0,0};
-static volatile nds_rx_packet rx_pkt;
-static volatile u32 stats7[WF_STAT_MAX];
-static volatile Wifi_AccessPoint aplist7[WIFI_MAX_AP];
-static volatile u8 txpktbuffer[MAX_PACKET_SIZE];
 
 static long
 ifstat(Ether* ether, void* a, long n, ulong offset)
 {
 	Wifi_AccessPoint *app;
 	char *p, *e, *tmp;
+	Ctlr *ctlr;
 	int i;
 
 	DPRINT("ifstat\n");
@@ -59,6 +74,7 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	if(n == 0 || offset != 0)
 		return 0;
 
+	ctlr = ether->ctlr;
 	tmp = p = smalloc(READSTR);
 	if(waserror()) {
 		free(tmp);
@@ -66,29 +82,29 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	}
 	e = tmp+READSTR;
 
-	dcflush(stats7, sizeof(stats7));
-	fifoput(F9WFctl, WFCtlstats);
-	fifoput(F9WFctl, WFCtlscan);
+	dcflush(ctlr->stats7, sizeof(ctlr->stats7));
+	fifoput(F9TWifi|F9WFstats, 0);
+	fifoput(F9TWifi|F9WFscan, 0);
 	
 	p = seprint(p, e, "TxPackets: %lud (%lud bytes)\n",
-		(ulong) stats7[WF_STAT_TXPKTS], (ulong) stats7[WF_STAT_TXDATABYTES]);
+		(ulong) ctlr->stats7[WF_STAT_TXPKTS], (ulong) ctlr->stats7[WF_STAT_TXDATABYTES]);
 	p = seprint(p, e, "RxPackets: %lud (%lud bytes)\n",
-		(ulong) stats7[WF_STAT_RXPKTS], (ulong) stats7[WF_STAT_RXDATABYTES]);
-	p = seprint(p, e, "Dropped: %lud\n", stats7[WF_STAT_TXQREJECT]);
+		(ulong) ctlr->stats7[WF_STAT_RXPKTS], (ulong) ctlr->stats7[WF_STAT_RXDATABYTES]);
+	p = seprint(p, e, "Dropped: %lud\n", ctlr->stats7[WF_STAT_TXQREJECT]);
 
 	// raw stats	
 	p = seprint(p, e, "TxPackets (raw): %lud (%lud bytes)\n",
-		(ulong) stats7[WF_STAT_RXRAWPKTS], (ulong) stats7[WF_STAT_TXBYTES]);
+		(ulong) ctlr->stats7[WF_STAT_RXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_TXBYTES]);
 	p = seprint(p, e, "RxPackets (raw): %lud (%lud bytes)\n",
-		(ulong) stats7[WF_STAT_RXRAWPKTS], (ulong) stats7[WF_STAT_RXBYTES]);
+		(ulong) ctlr->stats7[WF_STAT_RXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_RXBYTES]);
 	
-	p = seprint(p, e, "WIFI_IE: 0x%ux\n", (ushort) stats7[WF_STAT_DBG1]);
-	p = seprint(p, e, "WIFI_IF: 0x%ux\n", (ushort) stats7[WF_STAT_DBG2]);
-	p = seprint(p, e, "wifi state: 0x%ux\n", (ushort) stats7[WF_STAT_DBG5]);
-	p = seprint(p, e, "Interrupts: 0x%lux\n", (ulong) stats7[WF_STAT_DBG6]);
+	p = seprint(p, e, "WIFI_IE: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG1]);
+	p = seprint(p, e, "WIFI_IF: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG2]);
+	p = seprint(p, e, "wifi state: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG5]);
+	p = seprint(p, e, "Interrupts: 0x%lux\n", (ulong) ctlr->stats7[WF_STAT_DBG6]);
 	
 	// order by signal quality 
-	app = (Wifi_AccessPoint*) aplist7;
+	app = (Wifi_AccessPoint*) ctlr->aplist7;
 	for(i=0; i < WIFI_MAX_AP && *(ulong*)app; app++)
 		if (app->flags & WFLAG_APDATA_ACTIVE)
 		p = seprint(p, e, "ssid:%s ch:%d f:%x %s%s %s\n",
@@ -108,8 +124,101 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 static int
 w_option(Ctlr* ctlr, char* buf, long n)
 {
-	USED(ctlr, buf, n);
-	return 0;
+	char *p;
+	int i, r;
+	Cmdbuf *cb;
+
+	USED(ctlr);
+	/* TODO: complete parsing of ctl vars */
+	r = 0;
+
+	cb = parsecmd(buf, n);
+	if(cb->nf < 2)
+		r = -1;
+	else if(cistrcmp(cb->f[0], "essid") == 0){
+		if (cistrcmp(cb->f[1],"default") == 0)
+			p = "";
+		else
+			p = cb->f[1];
+		switch(ctlr->ptype){
+		case WIFI_AP_ADHOC:
+		case WIFI_AP_INFRA:
+			memset(ctlr->netname, 0, sizeof(ctlr->netname));
+			strncpy(ctlr->netname, p, WNameLen);
+			
+			//dcflush(ctlr->netname, WNameLen);
+			nbfifoput(F9TWifi|F9WFwssid, (ulong)ctlr->netname);
+			break;
+		}
+	}
+	else if(cistrcmp(cb->f[0], "station") == 0){
+		memset(ctlr->nodename, 0, sizeof(ctlr->nodename));
+		strncpy(ctlr->nodename, cb->f[1], WNameLen);
+	}
+	else if(cistrcmp(cb->f[0], "channel") == 0){
+		if((i = atoi(cb->f[1])) >= 1 && i <= 16)
+			ctlr->chan = i;
+		else
+			r = -1;
+		
+		if (!r){
+			//dcflush(&ctlr->chan, sizeof(ctlr->chan));
+			nbfifoput(F9TWifi|F9WFwchan, ctlr->chan);
+		}
+	}
+	else if(cistrcmp(cb->f[0], "mode") == 0){
+		if(cistrcmp(cb->f[1], "managed") == 0)
+			ctlr->ptype = WIFI_AP_INFRA;
+		else if(cistrcmp(cb->f[1], "adhoc") == 0)
+			ctlr->ptype = WIFI_AP_ADHOC;
+		else if((i = atoi(cb->f[1])) >= 0 && i <= 3)
+			ctlr->ptype = i;
+		else
+			r = -1;
+
+		if (!r){
+			//dcflush(&ctlr->ptype, sizeof(ctlr->ptype));
+			nbfifoput(F9TWifi|F9WFwap, ctlr->ptype);
+		}
+	}
+	else if(cistrcmp(cb->f[0], "crypt") == 0){
+		if(cistrcmp(cb->f[1], "off") == 0)
+			ctlr->crypt = 0;
+		else if(cistrcmp(cb->f[1], "on") == 0)
+			ctlr->crypt = 1;
+		else if((i = atoi(cb->f[1])) >= 0 && i < 3)
+			ctlr->crypt = i;
+		else
+			r = -1;
+
+		if (!r){
+			//dcflush(&ctlr->cypt, sizeof(ctlr->crypt));
+			nbfifoput(F9TWifi|F9WFwwepmode, ctlr->crypt);
+		}
+	}
+/*	else if(strncmp(cb->f[0], "key", 3) == 0){
+		if((i = atoi(cb->f[0]+3)) >= 1 && i <= WNKeys){
+			ctlr->txkey = i-1;
+			key = &ctlr->keys.keys[ctlr->txkey];
+			key->len = strlen(cb->f[1]);
+			if (key->len > WKeyLen)
+				key->len = WKeyLen;
+			memset(key->dat, 0, sizeof(key->dat));
+			memmove(key->dat, cb->f[1], key->len);
+		}
+		else
+			r = -1;
+	}
+	else if(cistrcmp(cb->f[0], "txkey") == 0){
+		if((i = atoi(cb->f[1])) >= 1 && i <= WNKeys)
+			ctlr->txkey = i-1;
+		else
+			r = -1;
+	}
+*/	else
+		r = -2;
+	free(cb);
+	return r;
 }
 
 static long
@@ -156,12 +265,8 @@ attach(Ether *ether)
 
 	ctlr = (Ctlr*) ether->ctlr;
 	if (ctlr->attached == 0){
-		// TODO move to archether
-		IPCREG->ctl |= Ipcirqena;
-		intrenable(ether->itype, ether->irq, ether->interrupt, ether, "nds");
-
-		// enable rx/tx, ...
-		fifoput(F9WFctl, WFCtlopen);
+		/* enable arm7 wifi */
+		fifoput(F9TWifi|F9WFwstate, 1);
 		ctlr->attached = 1;
 	}
 }
@@ -210,19 +315,19 @@ txloadpacket(Ether *ether)
 	lenb = BLEN(b);
 	
 	// wrap up packet information and send it to arm7
-	memmove((void *)txpktbuffer, b->rp, lenb);
-	tx_pkt.len = lenb;
-	tx_pkt.data = (void *)txpktbuffer;
+	memmove((void *)ctlr->txpktbuf, b->rp, lenb);
+	ctlr->txpkt.len = lenb;
+	ctlr->txpkt.data = (void *)ctlr->txpktbuf;
 	freeb(b);
 
-	if(0)iprint("dump pkt[%xu] @ %lux:\n%s",
-		tx_pkt.len, tx_pkt.data,
-		dump_pkt((uchar*)tx_pkt.data, tx_pkt.len));
+	if(1)print("dump pkt[%ld] @ %lux:\n%s",
+		ctlr->txpkt.len, ctlr->txpkt.data,
+		dump_pkt((uchar*)ctlr->txpkt.data, ctlr->txpkt.len));
 
 	// write data to memory before ARM7 gets hands on
-	//dcflush(&tx_pkt, sizeof(tx_pkt));
-	dcflush(txpktbuffer, lenb);
-	fifoput(F9WFtxpkt, (ulong)&tx_pkt);
+	dcflush(&ctlr->txpkt, sizeof(ctlr->txpkt));
+	//dcflush(txpktbuf, txpkt.len);
+	fifoput(F9TWifi|F9WFtxpkt, (ulong)&ctlr->txpkt);
 }
 
 static void
@@ -256,10 +361,6 @@ transmit(Ether *ether)
 static void
 interrupt(Ureg*, void *arg)
 {
-	/* TODO
-	 * called when arm7 tx/rx a pkt:
-	 * use IPCSYNC to emulate a WIFI7 tx/rx intr
-	 */
 	USED(arg);
 	DPRINT("interrupt\n");
 }
@@ -287,18 +388,18 @@ etherndsreset(Ether* ether)
 	ilock(ctlr);
 	
 	/* Initialise stats buffer and send address to ARM7 */
-	memset(stats7, 0, sizeof(stats7));
-	dcflush(stats7, sizeof(stats7));
-	nbfifoput(F9WFstats, (ulong)stats7);
+	memset(ctlr->stats7, 0, sizeof(ctlr->stats7));
+	dcflush(ctlr->stats7, sizeof(ctlr->stats7));
+	nbfifoput(F9TWifi|F9WFwstats, (ulong)ctlr->stats7);
 	
 	/* Initialise AP list buffer and send address to ARM7 */
-	memset(aplist7, 0, sizeof(aplist7));
-	dcflush(aplist7, sizeof(aplist7));
-	nbfifoput(F9WFapquery, (ulong)aplist7);
+	memset(ctlr->aplist7, 0, sizeof(ctlr->aplist7));
+	dcflush(ctlr->aplist7, sizeof(ctlr->aplist7));
+	nbfifoput(F9TWifi|F9WFapquery, (ulong)ctlr->aplist7);
 	
-	memset(&rx_pkt, 0, sizeof(rx_pkt));
-	dcflush(&rx_pkt, sizeof(rx_pkt));
-	nbfifoput(F9WFrxpkt, (ulong)&rx_pkt);
+	memset(&ctlr->rxpkt, 0, sizeof(ctlr->rxpkt));
+	dcflush(&ctlr->rxpkt, sizeof(ctlr->rxpkt));
+	nbfifoput(F9TWifi|F9WFrxpkt, (ulong)&ctlr->rxpkt);
 	
 	memset(ea, 0, sizeof(ea));
 	if(memcmp(ether->ea, ea, Eaddrlen) == 0)

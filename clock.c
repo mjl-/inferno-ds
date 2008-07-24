@@ -89,29 +89,6 @@ clockintr(Ureg *ur, void *a)
 	intrclear(TIMER0bit, 0);
 }
 
-/*
-int
-cticks(void)
-{
-	return m->ticks;
-}
-*/
-
-/*
- * Synchronize to the next SCLK tick boundary at best SPI rate.
- */
-void
-spi_tsync(void)
-{
-	/* Why has this been commented out? */
-
-	// don't need to waste any time here
-	//ulong t0;
-
-	//t0 = OSTMR->oscr;
-	//while (OSTMR->oscr == t0);
-}
-
 void
 timerdisable( int timer )
 {

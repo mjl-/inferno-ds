@@ -64,7 +64,7 @@ rtcread(Chan *c, void *buf, long n, vlong off)
 	switch((ulong)c->qid.path){
 	case Qrtc:
 		secs = 1;
-		fifoput(F9getrtc, (ulong)(&secs));
+		fifoput(F9TSystem|F9Sysrrtc, (ulong)(&secs));
 		while(secs == 1); /* wait for arm7 write */
 		return readnum(off, buf, n, secs, NUMSIZE);
 	}
@@ -95,7 +95,7 @@ rtcwrite(Chan *c, void *buf, long n, vlong off)
 			cp++;
 		}
 		secs = strtoul(cp, 0, 0);
-		fifoput(F9setrtc, (ulong)(&secs));
+		fifoput(F9TSystem|F9Syswrtc, (ulong)(&secs));
 		return n;
 
 	}

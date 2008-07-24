@@ -510,7 +510,6 @@ etherreset(void)
 
 			if(ether->interrupt != nil)
 				intrenable(ether->itype, ether->irq, ether->interrupt, ether, name);
-
 			i = sprint(buf, "#l%d: %s: %dMbps port 0x%luX irq %lud",
 				ctlrno, ether->type, ether->mbps, ether->port, ether->irq);
 			if(ether->mem)

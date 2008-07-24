@@ -20,25 +20,25 @@ fifocanget(void*)
 }
 
 int
-nbfifoput(ulong cmd, ulong v)
+nbfifoput(ulong cmd, ulong data)
 {
 	if(FIFOREG->ctl & FifoTfull)
 		return 0;
-	FIFOREG->send = (cmd|v<<Fcmdwidth);
+	FIFOREG->send = (data<<Fcmdlen|cmd);
 	return 1;
 }
 
 void
-fifoput(ulong cmd, ulong param)
+fifoput(ulong cmd, ulong data)
 {
 	qlock(&putl);
 	sleep(&putr, fifocanput, nil);
-	FIFOREG->send = (cmd|param<<Fcmdwidth);
+	FIFOREG->send = (data<<Fcmdlen|cmd);
 	qunlock(&putl);
 }
 
 ulong
-fifoget(ulong *param)
+fifoget(ulong *data)
 {
 	ulong r;
 
@@ -47,9 +47,9 @@ fifoget(ulong *param)
 	r = FIFOREG->recv;
 	qunlock(&getl);
 
-	if(param != nil)
-		*param = r>>Fcmdwidth;
-	return r&Fcmdwidth;
+	if(data != nil)
+		*data = r>>Fcmdlen;
+	return r&Fcmdlen;
 }
 
 extern void fiforecv(ulong);

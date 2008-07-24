@@ -69,89 +69,67 @@ enum
  */
 enum
 {
-	Fcmdwidth =	4,
-	Fcmdmask =	(1<<Fcmdwidth)-1,
+	Fcmdtlen =	2,
+	Fcmdslen =	4,
+	Fcmdlen =	Fcmdtlen + Fcmdslen,		
 
-	/* from arm9 to arm7 */	
-	F9SysCtl = 0,
+	Fcmdtmask =	((1<<Fcmdtlen) - 1)<<Fcmdslen,	/* cmd type */
+	Fcmdsmask =	(1<<Fcmdslen) - 1,		/* cmd subtype */
+	Fcmdmask =	Fcmdtmask | Fcmdsmask,		/* cmd type | subtype */
+
+	Fdatalen =	32 - Fcmdlen, 			/* >= 26 bits >= sizeof(EWRAM addr) */
+	Fdatamask =	((1<<Fdatalen) - 1)<<Fcmdlen,	/* Fdatamask allows tx/rx of pointers */
+
+	/* message types */
+	F9TSystem =	0<<Fcmdslen,
+	F9TAudio =	1<<Fcmdslen,
+	F9TWifi =	2<<Fcmdslen,
+};
+
+/* F9 msgs: from arm9 to arm7 */	
+enum
+{
+	/* System */
+	F9Sysbright = 0,
+	F9Syspoweroff,
+	F9Sysreboot,
+	F9Sysleds,
+	F9Sysrrtc,
+	F9Syswrtc,
 	
-	F9getrtc,
-	F9setrtc,
-	
-	/* TODO group F9WFinit = stats + apquery + ... */
-	F9WFmacqry,
-	F9WFstats,
+	/* Wifi */
+	F9WFrmac = 0,
+	F9WFwstats,
 	F9WFapquery,
 	F9WFrxpkt,
 	F9WFtxpkt,
-	F9WFinit,
- 	F9WFctl,
- 		
-	/* from arm7 to arm9 */
+	F9WFwstate,
+	F9WFscan,
+	F9WFstats,
+	
+ 	F9WFwssid,
+ 	F9WFrap,
+ 	F9WFwap,
+ 	F9WFwchan,
+ 	F9WFwwepkey,
+ 	F9WFwwepkeyid,
+ 	F9WFwwepmode,
+ 	
+	/* Audio */
+ 	F9Auplay = 0,
+	F9Aurec,
+	F9Aupower,
+};
+ 	
+
+/* F7 msgs: from arm7 to arm9 */
+enum
+{
 	F7keyup = 0,
 	F7keydown,
 	F7mousedown,
 	F7mouseup,
 	F7print,
-};
-
-enum	
-{
-	/*F9Sysctl flags, use msb */
-	SysCtlbright = 1<<0,
-	SysCtlpoweroff = 1<<1,
-	SysCtlreboot = 1<<2,
-	SysCtlleds = 1<<3,
-	
-	SysCtlsz = 4,
-};
-
-enum	
-{
-	/*F9WFctl flags */
-	WFCtlopen = 1<<0,
-	WFCtlclose = 1<<1,
-	WFCtlscan = 1<<2,
-	WFCtlstats = 1<<3,
-	
-	WFCtlsz = 4,
-};
-
-/* 
- * Fifo wifi commands are encoded as follows:
- * |3 bits FIFO_WIFI | 5 bits FIFO_CMD_WIFI_x | 24 bits command data |
- *  
- *  How command data is used depends on the command.
- *  Some commands, like recieve and transmit, send offsets into 0x02 RAM
- *  telling the other side where to read packet data from.
- *  Other commands, like those for setting WEP keys or the essid, further
- *  divide the command data into flags and actual data.
- */
-#define FIFO_WIFI     (4 << 29)
-#define FIFO_WIFI_CMD(c, d) (FIFO_WIFI | ((c & 0x1f) << 24) | (d & 0x00ffffff))
-#define FIFO_WIFI_GET_CMD(c) ((c >> 24) & 0x1f)
-#define FIFO_WIFI_GET_DATA(d) (d & 0x00ffffff)
-#define FIFO_WIFI_DECODE_ADDRESS(a) ((a) + 0x02000000)
-
-enum FIFO_WIFI_CMDS
-{
-	FIFO_WIFI_CMD_UP,
-	FIFO_WIFI_CMD_DOWN,
-	FIFO_WIFI_CMD_MAC_QUERY,
-	FIFO_WIFI_CMD_TX,
-	FIFO_WIFI_CMD_TX_COMPLETE,
-	FIFO_WIFI_CMD_RX,
-	FIFO_WIFI_CMD_RX_COMPLETE,
-	FIFO_WIFI_CMD_STATS_QUERY,
-	FIFO_WIFI_CMD_SET_ESSID,
-	FIFO_WIFI_CMD_SET_CHANNEL,
-	FIFO_WIFI_CMD_SET_WEPKEY,
-	FIFO_WIFI_CMD_SET_WEPKEYID,
-	FIFO_WIFI_CMD_SET_WEPMODE,
-	FIFO_WIFI_CMD_AP_QUERY,
-	FIFO_WIFI_CMD_SCAN,
-	FIFO_WIFI_CMD_SET_AP_MODE,
-	FIFO_WIFI_CMD_GET_AP_MODE,
 };
 
 /* 
@@ -377,7 +355,8 @@ struct NDShdr{
 };
 
 /* ram address to save UserInfo aka: user personal data */
-#define UserInfoAddr ((UserInfo*)0x27FFC80)
+#define UINFOMEM  (0x27FFC80)
+#define UINFOREG ((UserInfo*)UINFOMEM)
 typedef struct UserInfo UserInfo;
 struct UserInfo{
 	uchar version;
@@ -389,35 +368,56 @@ struct UserInfo{
 
 	uchar RESERVED1[1];	// ???
 
-	Rune name[10];		// The user's name in UTF-16 format.
-	ushort nameLen;		// The length of the user's name in characters.
+	Rune name[10];		// user's name in UTF-16 format.
+	ushort nameLen;		// length of the user's name in characters.
 
-	Rune message[26];	// The user's message.
-	ushort messageLen;	// The length of the user's message in characters.
+	Rune message[26];	// user's message.
+	ushort messageLen;	// length of the user's message in characters.
 
-	uchar alarmHour;	// What hour the alarm clock is set to (0-23).
-	uchar alarmMinute;	// What minute the alarm clock is set to (0-59).
+	uchar alarmHour;	// alarm clock hour (0-23).
+	uchar alarmMinute;	// alarm clock minute (0-59).
 				// 0x027FFCD3  alarm minute
 
 	uchar RESERVED2[2];	// ???
 	ushort alarmOn;
-				// 0x027FFCD4  ??
+				/* Touchscreen calibration */
+	ushort calX1;		// 1st X touch
+	ushort calY1;		// 1st Y touch
+	uchar calX1px;		// 1st X touch pixel
+	uchar calY1px;		// 1st X touch pixel
 
-	ushort calX1;		// Touchscreen calibration: first X touch
-	ushort calY1;		// Touchscreen calibration: first Y touch
-	uchar calX1px;		// Touchscreen calibration: first X touch pixel
-	uchar calY1px;		// Touchscreen calibration: first X touch pixel
-
-	ushort calX2;		// Touchscreen calibration: second X touch
-	ushort calY2;		// Touchscreen calibration: second Y touch
-	uchar calX2px;		// Touchscreen calibration: second X touch pixel
-	uchar calY2px;		// Touchscreen calibration: second Y touch pixel
+	ushort calX2;		// 2nd X touch
+	ushort calY2;		// 2nd Y touch
+	uchar calX2px;		// 2nd X touch pixel
+	uchar calY2px;		// 2nd Y touch pixel
 
 	ushort flags;
 
 	ushort	RESERVED3;
 	ulong	rtcOffset;
 	ulong	RESERVED4;
+};
+
+/* UserInfo settings flags */
+enum {
+	Nickmax	= 10,
+	Msgmax	= 26,
+
+	LJapanese = 0,
+	LEnglish,
+	LFrench,
+	LGerman,
+	LItalian,
+	LSpanish,
+	LChinese,
+	LOther,
+	Langmask	= 7,
+
+	Gbalowerscreen	= 1<<3,
+	Backlightshift	= 4,
+	Backlightmask	= 3,
+	Autostart	= 1<<6,
+	Nosettings	= 1<<9,
 };
 
 /* 

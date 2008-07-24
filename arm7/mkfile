@@ -21,6 +21,7 @@ OFILES=\
 	wifi.$O\
 
 HFILES=\
+	../io.h\
 	../mem.h\
 	jtypes.h\
 	spi.h\

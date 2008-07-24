@@ -47,9 +47,10 @@ static int micbuflen = 0;
 static int curlen = 0;
 
 static void
-clock1intr(void*)
+recintr(void*)
 {
 	if(micbuf && micbuflen > 0) {
+//		print("%x ", *micbuf);
 		*micbuf++ = mic_readdata() ^ 0x80;
 		--micbuflen;
 		curlen++;
@@ -58,26 +59,26 @@ clock1intr(void*)
 }
 
 void 
-startrecording(uchar* buffer, int length) 
+startrec(TxSound *snd) 
 {
 	TimerReg *t = TIMERREG + AUDIOtimer;
 
-	micbuf = buffer;
-	micbuflen = length;
+	micbuf = (uchar*)snd->data;
+	micbuflen = snd->len;
 	curlen = 0;
 	pm_setamp(PM_AMP_ON);
 	
-	// Setup a 16kHz timer
-	t->data = TIMER_BASE(Tmrdiv1) / 16000;
+	t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
 	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
-	intrenable(TIMERAUDIObit, clock1intr, 0);
+	intrenable(TIMERAUDIObit, recintr, 0);
 }
 
 int 
-stoprecording(void) 
+stoprec(TxSound *snd) 
 {
 	TimerReg *t = TIMERREG + AUDIOtimer;
 
+	USED(snd);
 	t->ctl &= ~Tmrena;
 	intrmask(TIMERAUDIObit, 0);
 
@@ -86,49 +87,24 @@ stoprecording(void)
 	return curlen;
 }
 
-static void 
-startSound(int hz, const void* d, ulong bytes, uchar ch, uchar vol, uchar pan, uchar pcm16bit) 
+void 
+playsound(TxSound *snd)
 {
-	SChanReg *schan = SCHANREG + ch;
+	int ch;
+	SChanReg *schan;
 
-	POWERREG->pcr |= 1<<POWER_SOUND;
 	SNDREG->cr.ctl = Sndena | Maxvol;
+	SNDREG->bias = 0x200;
 
-	schan->tmr = SCHAN_BASE / hz;
-	schan->src = (ulong)d;
-	schan->wlen = bytes >> 2;
-	schan->cr.vol = vol;
-	schan->cr.pan = pan;
-	schan->cr.ctl |= SCena | SC1shot | (pcm16bit? SCpcm16bit: SCpcm8bit);
-}
+	for (ch=0; ch < snd->chans; ch++){
+		schan = SCHANREG + ch;
 
-static int
-getFreeSoundChannel(void)
-{
-	int i;
-	for (i=0; i<NSChannels; i++) {
-		if (((SCHANREG+i)->cr.ctl & SCena) == 0)
-			return i;
+		schan->rpt = 0;
+		schan->tmr = SCHAN_BASE / (int)snd->rate;
+		schan->src = (ulong) snd->data;
+		schan->wlen = snd->fmt? snd->len>>2: snd->len>>1;
+		schan->cr.vol = snd->vol;
+		schan->cr.pan = snd->pan;
+		schan->cr.ctl |= SCena | SCrep1shot | (snd->fmt? SCpcm16bit: SCpcm8bit);
 	}
-	return -1;
 }
-
-// TODO use dma
-void
-vblankaudio(void)
-{
-	ulong i;
-	TransferSound *snd = IPC->soundData;
-
-	IPC->soundData = 0;
-
-	if (snd)
-	for (i=0; i<snd->count; i++) {
-		int chan = getFreeSoundChannel();
-		if (chan >= 0)
-			startSound(snd->d[i].rate, snd->d[i].data, snd->d[i].len, chan, snd->d[i].vol, snd->d[i].pan, snd->d[i].fmt);
-	}
-
-	// intrclear(VBLANKbit, 0);
-}
-
