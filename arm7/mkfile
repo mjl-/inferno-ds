@@ -44,7 +44,6 @@ i$CONF: $OFILES
 
 i$CONF.p9: $OFILES
 	$LD -o $target -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
-	ksize $target
 
 syms:   $OFILES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE defaultARM7.c >syms

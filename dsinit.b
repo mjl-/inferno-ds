@@ -361,7 +361,7 @@ lfs(file: string): int
 	if(iskfs(file))
 		return lkfs(file);
 	c := chan of string;
-	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: file :: "-m" :: "/n/local" :: nil, nil);
+	spawn startfs(c, "/dis/dossrv.dis", "dossrv" :: "-f" :: file :: "-m" :: "/n/local" :: nil, nil); # for debugging add :: "-F" 
 	if(<-c != nil)
 		return -1;
 	return 0;

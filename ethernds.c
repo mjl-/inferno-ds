@@ -4,7 +4,6 @@
 #include "dat.h"
 #include "fns.h"
 #include "io.h"
-#include "arm7/jtypes.h"
 #include "arm7/wifi.h"
 
 #include "../port/error.h"
@@ -274,7 +273,7 @@ attach(Ether *ether)
 static char*
 dump_pkt(uchar *data, ushort len)
 {
-	u8 *c;
+	uchar *c;
 	static char buff[2024];
 	char *c2;
 

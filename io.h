@@ -208,20 +208,160 @@ struct LcdReg {
 	ulong lccr;	/* control */
 	ushort lcsr;	/* status */
 	ushort vcount;	/* vline count */
+
+	ushort bgctl[4];
+	struct {
+		ushort xofs;
+		ushort yofs;
+	} bgofs[4];
+
+	/* bg2 rotation/scaling */
+	struct {
+		ushort dx;
+		ushort dmx;
+		ushort dy;
+		ushort dmy;
+
+		ulong x;
+		ulong y;
+	} bg2rs;
+
+	/* bg3 rotation/scaling */
+	struct {
+		ushort dx;
+		ushort dmx;
+		ushort dy;
+		ushort dmy;
+
+		ulong x;
+		ulong y;
+	} bg3rs;
+
+	struct {
+		ushort x[2];
+		ushort y[2];
+
+		ushort in;
+		ushort out;
+	} win;
+	
+	ushort mosaicsz;
+	ushort pad1;
+
+	struct {
+		ushort ctl;
+		ushort alpha;
+		ushort bright;
+	} blend;
+	uchar pad2[10];
+	
+	ushort d3dctl;
+	ulong dcapctl;
+	ulong mmdfifo;
+	ushort brighctl;
 };
 
 /*
- * LCDREG status bits
+ * LCDREG bits
  */
 enum
 {
+	/* lcd sz */
+	Scrwidth	=	256,
+	Scrheight	=	192,
+
+	/* lccr */
+	Disp3dmode	=	1<<3,	/* 2d/3d mode */
+	Disptilemap	=	1<<4,
+	Dispiobj2ddim	=	1<<5,
+	Dispobjmap	=	1<<6,
+	Displhblank	=	1<<7,	/* forced hblank */
+
+	Dispbg0ena	=	1<<8,
+	Dispbg1ena	=	1<<9,
+	Dispbg2ena	=	1<<10,
+	Dispbg3ena	=	1<<11,
+	Dispobjena	= 	1<<12,
+
+	Dispwin0ena	=	1<<13,
+	Dispwin1ena	=	1<<14,
+	Dispowinena	=	1<<15,
+
+	Disp2dmode	=	1<<16,	/* TODO: not sure about these */
+	Dispfbmode	=	1<<17,
+
+	Disp1dsz32	=	0<<20,
+	Disp1dsz64	=	1<<20,
+	Disp1dsz128	=	2<<20,
+	Disp1dsz256	=	3<<20,
+	Disp1dbmpsz128	=	0<<22,
+	Disp1dbmpsz256	=	1<<22,
+
+	Disphblankobj	=	1<<23,
+	Dispextbgpal	=	1<<30,
+	Dispextobjpal	=	1<<31,
+
+	/* lcsr */
 	DispInVblank	= 0,		/* display currently in a vertical blank. */
 	DispInHblank	= 1,		/* display currently in a horizontal blank. */
 	DispInVcount	= 2,		/* current scanline and %DISP_Y match. */
 	DispIrqVblank	= 3,		/* Irq on vblank */
 	DispIrqHblank	= 4,		/* Irq on hblank */
 	DispIrqVcount	= 5,		/* Irq on Vcount*/
+
+	/* blend */
+	Blendnone		= (0<<6),
+	Blendalpha		= (1<<6),
+	Blendfadewhite		= (2<<6),
+	Blendfadeblack		= (3<<6),
+
+	Blendsrcbg0		= (1<<0),
+	Blendsrcbg1		= (1<<1),
+	Blendsrcbg2		= (1<<2),
+	Blendsrcbg3		= (1<<3),
+	Blendsrcsprite		= (1<<4),
+	Blendsrcbackdrop	= (1<<5),
+
+	Blenddstbg0		= (1<<8),
+	Blenddstbg1		= (1<<9),
+	Blenddstbg2		= (1<<10),
+	Blenddstbg3		= (1<<11),
+	
+	Blenddstsprite		= (1<<12),
+	Blenddstbackdrop	= (1<<13),
+	
+	/* bgctl */
+	Bgctlpriomsk		= (1<<2)  - 1,
+	
+	Bgctl16bpc		= 1<<2,
+	Bgmosaic			= 1<<6,
+	Bgctl16bpp		= 1<<7,
+	Bgctlwrap			= 1<<13,
+	
+	Bgctlrs16x16		= 0<<14,
+	Bgctlrs32x32		= 1<<14,
+	Bgctlrs64x64		= 2<<14,
+	Bgctlrs128x128	= 3<<14,
+	
+	/* capture ctl */
+	Dcapena		= 1<<31,
+	
+	Dcapa		= 0,
+	Dcapb		= 8,
+	Dcapbank		= 16,
+	Dcapoffset	= 18,
+	Dcapsz		= 20,
+	Dcapsrc		= 24,
+	Dcapdst		= 26,
+	Dcapmode	= 29,
 };
+
+#define Bgctltilebase(base)	((base) << 2)
+#define Bgctlmapbase(base)	((base) << 8)
+#define Bgctlbmpbase(base)	((base) << 8)
+
+/* set bg active with nbg in [0-3] */
+#define Dispbgactive(nbg)	 (1 << (8 + (nbg)))
 
 /*
  * VRAM & WRAM bank control
@@ -241,28 +381,33 @@ struct VramReg {
 	uchar icr;
 };
 
+enum
+{
+	Vramena = 1<<7,
+};
+
+/*
+ * Power control 
+ */
 #define POWERREG ((PowerReg*)POWER)
 typedef struct PowerReg PowerReg;
 struct PowerReg {
 	ushort pcr;
 };
 
-enum ARM7_power
+enum
 {
-	POWER_SOUND,	//	Controls the power for the sound controller.
-	POWER_WIFI,	//	Controls the power for the wifi device.
-};
+	/* arm7 exclusive */
+	POWER_SOUND	= 0,
+	POWER_WIFI	= 1,
 
-/*
- * POWERREG bits
- */
-enum ARM9_power
-{
+	/* arm9 exclusive */
 	POWER_LCD =			1<<0,
 	POWER_2D_A =		1<<1,
 	POWER_MATRIX = 		1<<2,
 	POWER_3D_CORE = 		1<<3,
 	POWER_2D_B =		1<<9,
+
 	POWER_SWAP_LCDS =	1<<15,
 };
 
@@ -291,7 +436,6 @@ enum
 	SpiDevfirmware =	1<<8,
 	SpiDevnvram =	 	1<<8,
 	SpiDevtouch = 		2<<8,
-	SpiDevmic =		2<<8,
 
 	// SPI transfer length
 	Spibytetx =		0<<10,
@@ -398,7 +542,7 @@ struct UserInfo{
 	ulong	RESERVED4;
 };
 
-/* UserInfo settings flags */
+/* UserInfo.flags */
 enum {
 	Nickmax	= 10,
 	Msgmax	= 26,
@@ -468,13 +612,6 @@ enum
 	Dbgbtn7	= 	3,	// debug btn
 	Pdown7	= 	6,	// pen down
 	Lclose7	= 	7,	// lid closed
-};
-
-enum
-{
-	Button1 =	1<<0,
-	Button2 =	1<<1,
-	Button3 =	1<<2,
 };
 
 /*

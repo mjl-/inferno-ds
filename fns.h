@@ -130,9 +130,7 @@ void 	microdelay(int us);
 
 void	dispfont(void);
 
-void	setsublcdmode(void);
 void	putlogo(uchar *addr);
-void	setlcdblight(int on);
 
 long	ldiv(long num, long denom);
 vlong	vldiv(vlong num, vlong denom);

@@ -115,7 +115,7 @@ mbrtest(void)
 		return;
 	}
 
-	if (sect[SECTSZ-2] == 0x55 && sect[SECTSZ-1] == 0xaa)
+	if (0 && sect[SECTSZ-2] == 0x55 && sect[SECTSZ-1] == 0xaa)
 		print("bingo: mbr found\n");
 	
 	/* TODO: parse mbr table, find fat/kfs */
@@ -174,7 +174,7 @@ dldiinit(void)
 		if(!ioifc[n])
 			return;
 
-		print("dldi: %s\n", hdr.textid);
+		DPRINT("dldi: %s\n", hdr.textid);
 		print("ioifc: %.4s %s%s %s%s (%lux)\n",
 			hdr.io.type, 
 			(hdr.io.caps & Cslotgba)? "gba" : "",
@@ -231,7 +231,7 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		DPRINT("dldiread a %lx n %ld o %lld rn %ld ro %lld\n", a, n , offset, n % SECTSZ, offset % SECTSZ);
+		DPRINT("dldiread a %lx n %ld o %lld\n", a, n, offset);
 		rosect = offset % SECTSZ;
 		nosect = offset / SECTSZ;
 		if(rosect>0){
@@ -242,14 +242,14 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 		}
 
 		rnsect = n % SECTSZ;
-		nnsect = n % SECTSZ;
+		nnsect = n / SECTSZ;
 		if(rnsect>0){
 			hdr.io.read(nnsect, 1, sect);
 			memmove(p, sect, rnsect);
 			p += rnsect;
 			nnsect++;
 		}
-	
+
 		hdr.io.read(nosect, nnsect, p);
 		break;
 	default:
@@ -262,7 +262,7 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 static long
 dldiwrite(Chan* c, void* a, long n, vlong offset)
 {
-	DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n , offset);
+	DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n, offset);
 
 	switch ((ulong)c->qid.path) {
 	case Qdir:

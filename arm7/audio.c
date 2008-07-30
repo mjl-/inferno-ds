@@ -10,8 +10,8 @@
 #include "fns.h"
 #include "audio.h"
 #include "spi.h"
+#include "touch.h"
 
-// TODO use SPIREG from io.h
 static void 
 pm_setamp(uchar control) 
 {
@@ -24,12 +24,12 @@ pm_setamp(uchar control)
 }
 
 static uchar 
-mic_readdata(void) {
+mic_auxread(void) {
 	ushort res[2];
 
 	busywait();
-	SPIREG->ctl = Spiena | SpiDevmic | Spi2mhz | Spicont;
-	SPIREG->data = 0xEC;	// Touchscreen cmd format for AUX
+	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz | Spicont;
+	SPIREG->data = Tscgetmic;	// Touchscreen cmd format for AUX
 	busywait();
 	SPIREG->data = 0x00;
 	busywait();
@@ -42,18 +42,22 @@ mic_readdata(void) {
 	return (((res[1] & 0x7F) << 1) | ((res[0] >> 7) & 0x01));
 }
 
-static uchar *micbuf = 0;
-static int micbuflen = 0;
-static int curlen = 0;
+static struct {
+	uchar *d;
+	int rn;	// samples to record
+	int n;	// recorded samples
+} micdata;
 
 static void
 recintr(void*)
-{
-	if(micbuf && micbuflen > 0) {
-//		print("%x ", *micbuf);
-		*micbuf++ = mic_readdata() ^ 0x80;
-		--micbuflen;
-		curlen++;
+{	
+	uchar s;
+
+	if(micdata.d && micdata.rn > 0) {
+		s = mic_auxread() ^ 0x80;
+		micdata.d[micdata.n++] =  s;
+//		print("%x ", *s);
+		--micdata.rn;
 	}
 	intrclear(TIMERAUDIObit, 0);
 }
@@ -63,9 +67,10 @@ startrec(TxSound *snd)
 {
 	TimerReg *t = TIMERREG + AUDIOtimer;
 
-	micbuf = (uchar*)snd->data;
-	micbuflen = snd->len;
-	curlen = 0;
+	micdata.d = (uchar*)snd->data;
+	micdata.rn = snd->len;
+	micdata.n = 0;
+
 	pm_setamp(PM_AMP_ON);
 	
 	t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
@@ -83,8 +88,8 @@ stoprec(TxSound *snd)
 	intrmask(TIMERAUDIObit, 0);
 
 	pm_setamp(PM_AMP_OFF);
-	micbuf = 0;
-	return curlen;
+	micdata.d = 0;
+	return micdata.n;
 }
 
 void 

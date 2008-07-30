@@ -1,5 +1,3 @@
-#define Scrwidth	256
-#define Scrheight	192
 
 #define Tscgettemp1    0x84
 #define TscgetY        0x90
@@ -8,10 +6,11 @@
 #define TscgetZ2       0xC4
 #define TscgetX        0xD0
 #define Tscgetaux      0xE4
+#define Tscgetmic      0xEC
 #define Tscgettemp2    0xF4
 
-typedef struct touchPosition touchPosition;
-struct touchPosition {
+typedef struct TouchPos TouchPos;
+struct TouchPos {
 	short	x;
 	short	y;
 	short	px;
@@ -20,7 +19,7 @@ struct touchPosition {
 	short	z2;
 };
 
-void touchReadXY(touchPosition *tp);
+void touchReadXY(TouchPos *tp);
 
 ushort touchRead(ulong cmd);
 ulong touchReadTemperature(int * t1, int * t2);

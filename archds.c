@@ -15,6 +15,8 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
+#define DPRINT if(0)print
+
 // swi bios calls (not used)
 enum {
 	Dssoftreset = 0x00,
@@ -68,30 +70,67 @@ archpowerup(void)
 	;
 }
 
+enum
+{
+	/* Opera memory expansion */
+	Operactl = 0x08240000, 			/* set to 0x0001 when enabled */
+	Operastart = 0x09000000,		/* start and len of psram (bytes) */
+	Operalen = 8*1024*1024,			/* 8 Mb available */
+
+	Canary = 0x11223344,
+};
+
+static int
+ramcheck(ulong *s, ulong n)
+{
+	ulong *p, *e;
+
+	p = s;
+	e = s + n;
+	while(p < e){
+		*p = Canary;
+		if (*p != Canary)
+			return 0;
+		//print("ok %x %x\n", p, *p);
+		p += 256;
+	}
+	return 1;
+}
+
 void
 archconfinit(void)
 {
-	ushort *operactl = (ushort*)0x08240000; /* set to 0x0001 to enble ram*/
+	ushort *operactl = (ushort*)Operactl;
 
 	// arm9 is the owner of ram, slot-1 & slot-2 
 	EXMEMREG->ctl &= ~(Arm7hasds|Arm7hasgba|Arm7hasram);
 
-	/* detect/enable slot2 memory expansions */
+	/* default memory bank */
+	conf.base0 = PGROUND((ulong)end);
+	conf.npage0 = (EWRAMTOP - conf.base0)/BY2PG;
+	conf.topofmem = EWRAMTOP;
+	
+	/* extra memory bank: slot2 expansion */
 	if (*operactl){
-		*operactl = 0x0001;
+		*operactl = 1;
 
-		conf.base1 = ROMZERO + (ROMTOP - ROMZERO + 1)/2;
-		conf.npage1 = (ROMTOP - conf.base1)/BY2PG;
-		if(0)print("opera base1 %lux npage1 %lud\n", conf.base1, conf.npage1);
+		if (0 && ramcheck((ulong*)Operastart, Operalen/4)){
+			conf.base1 = PGROUND(Operastart);
+			conf.npage1 = (Operalen)/BY2PG;
+		}
+		else if	(ramcheck((ulong*)ROMZERO, Operalen)){
+			/* another desmume trick */
+			conf.base1 = PGROUND(ROMZERO);
+			conf.npage1 = (Operalen)/BY2PG;
+		}
+		else{
+			conf.base1 = 0;
+			conf.npage1 = 0;
+		}
+
+		DPRINT("opera base1 %lux npage1 %lud\n", conf.base1, conf.npage1);
 	}
 
-	conf.base1 = 0;
-	conf.npage1 = 0;
-
-	conf.topofmem = EWRAMTOP;
-	conf.base0 = PGROUND((ulong)end);
-	conf.npage0 = (conf.topofmem - conf.base0)/BY2PG;
-	
 	m->cpuhz = 66*1000000;
 	conf.bsram = SRAMTOP;
 	conf.brom = ROMTOP;

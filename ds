@@ -16,6 +16,8 @@ dev
 #	ata
 
 	nds
+	dldi
+	audio
 
 ip
 #	il

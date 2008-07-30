@@ -1,14 +1,14 @@
 
 // Fixme: Does the hardware still support 16 bit comms mode?
 // BIOS makes use of 32 bit mode, so some regs still exist
-#define SIO_MULTI_0     (*(vuint16*)0x04000120)
-#define SIO_MULTI_1     (*(vuint16*)0x04000122)
-#define SIO_MULTI_2     (*(vuint16*)0x04000124)
-#define SIO_MULTI_3     (*(vuint16*)0x04000126)
-#define REG_SIOCNT	(*(vuint16*)0x04000128)
-#define SIO_MULTI_SEND  (*(vuint16*)0x0400012A)
-#define SIO_DATA8       (*(vuint8*)0x0400012A)
-#define SIO_DATA32      (*(vuint32*)0x04000120)
+#define SIO_MULTI_0     (*(ushort*)0x04000120)
+#define SIO_MULTI_1     (*(ushort*)0x04000122)
+#define SIO_MULTI_2     (*(ushort*)0x04000124)
+#define SIO_MULTI_3     (*(ushort*)0x04000126)
+#define REG_SIOCNT	(*(ushort*)0x04000128)
+#define SIO_MULTI_SEND  (*(ushort*)0x0400012A)
+#define SIO_DATA8       (*(uchar*)0x0400012A)
+#define SIO_DATA32      (*(ulong*)0x04000120)
 
 /*
  * Power management registers
@@ -53,6 +53,7 @@ enum {
 #define PM_AMP_OFFSET  2
 #define PM_AMP_ON      1
 #define PM_AMP_OFF     0
+
 #define FIRMWARE_WREN 0x06
 #define FIRMWARE_WRDI 0x04
 #define FIRMWARE_RDID 0x9F
@@ -66,16 +67,9 @@ enum {
 #define FIRMWARE_DP   0xB9
 #define FIRMWARE_RDP  0xAB
 
-/*
- Warning: These functions use the SPI chain, and are thus 'critical'
- sections, make sure to disable interrupts during the call if you've
- got a VBlank IRQ polling the touch screen, etc...
- */
-
+/* warning: make sure to disable interrupts during SPI acceses */
 uchar power_read(int reg);
 uchar power_write(int reg, int cmd);
-
 void busywait(void);
-
 void read_firmware(ulong, void *, ulong);
 

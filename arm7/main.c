@@ -7,7 +7,6 @@
 #include "spi.h"
 #include "rtc.h"
 #include "audio.h"
-#include "jtypes.h"
 #include "touch.h"
 
 #include "wifi.h"
@@ -166,7 +165,7 @@ vblankintr(void*)
 {
 	int i;
 	static int hbt = 0;
-	touchPosition tp = {0,0,0,0,0, 0};
+	TouchPos tp = {0,0,0,0,0,0};
 	ulong bst, cbst, bup, bdown;
 	static ulong obst, opx, opy;
 

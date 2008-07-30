@@ -4,7 +4,6 @@
 #include	"dat.h"
 #include	"fns.h"
 #include	"io.h"
-#include	"lcdreg.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
 
@@ -57,11 +56,11 @@ fiforecv(ulong vv)
 			blankscreen(0);
 
 		if(v&(1<<Pdown))
-			mousemod &= Button1;
+			mousemod &= 1<<0;
 		if(v&(1<<Rbtn))
-			mousemod &= Button2;
+			mousemod &= 1<<1;
 		if(v&(1<<Lbtn))
-			mousemod &= Button3;
+			mousemod &= 1<<2;
 
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
 			if (i==Rbtn||i==Lbtn){
@@ -73,11 +72,11 @@ fiforecv(ulong vv)
 		break;
 	case F7keydown:
 		if(v&(1<<Pdown))
-			mousemod |= Button1;
+			mousemod |= 1<<0;
 		if(v&(1<<Rbtn))
-			mousemod |= Button2;
+			mousemod |= 1<<1;
 		if(v&(1<<Lbtn))
-			mousemod |= Button3;
+			mousemod |= 1<<2;
 
 		if(v&(1<<Lclose))
 			blankscreen(1);

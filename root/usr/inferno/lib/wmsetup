@@ -30,5 +30,6 @@ wmrun wm/sh -w 240 -h 130 -ic '
 
 	cat /net/ether0/ifstats
 	auplay /usr/inferno/lib/invhit.iaf
+	date
 	'
 

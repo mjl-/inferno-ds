@@ -180,7 +180,7 @@ UpdateRange(uchar *r, short lastdmax, uchar data_error, uchar wastouched)
 }
 
 void
-touchReadXY(touchPosition *tp) 
+touchReadXY(TouchPos *tp) 
 {
 	short dmaxy, dmaxx, dmax;
 	uchar error, errloc, usedstylus, i;

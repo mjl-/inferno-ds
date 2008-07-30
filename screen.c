@@ -210,8 +210,6 @@ screeninit(void)
 	if(printbufpos)
 		screenputs("", 0);
 	blanktime = 3;	/* minutes */
-
-	setsublcdmode();
 }
 
 uchar*

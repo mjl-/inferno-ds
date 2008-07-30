@@ -6,30 +6,30 @@
  */
 
 // Wifi regs
-#define WIFI_REG(ofs)   (*(volatile u16*)(0x04800000+(ofs)))
-#define WIFI_WEPKEY0    ( (volatile u16*)0x04805F80)
-#define WIFI_WEPKEY1    ( (volatile u16*)0x04805FA0)
-#define WIFI_WEPKEY2    ( (volatile u16*)0x04805FC0)
-#define WIFI_WEPKEY3    ( (volatile u16*)0x04805FE0)
+#define WIFI_REG(ofs)   (*(volatile ushort*)(0x04800000+(ofs)))
+#define WIFI_WEPKEY0    ( (volatile ushort*)0x04805F80)
+#define WIFI_WEPKEY1    ( (volatile ushort*)0x04805FA0)
+#define WIFI_WEPKEY2    ( (volatile ushort*)0x04805FC0)
+#define WIFI_WEPKEY3    ( (volatile ushort*)0x04805FE0)
 
-#define WIFI_MODE_RST   (*(volatile u16*)0x04800004)
-#define WIFI_MODE_WEP   (*(volatile u16*)0x04800006)
-#define WIFI_IF         (*(volatile u16*)0x04800010)
-#define WIFI_IE         (*(volatile u16*)0x04800012)
-#define WIFI_MACADDR    ( (volatile u16*)0x04800018)
-#define WIFI_BSSID      ( (volatile u16*)0x04800020)
-#define WIFI_AIDS       (*(volatile u16*)0x04800028)
-#define WIFI_RETRLIMIT  (*(volatile u16*)0x0480002C)
-#define WIFI_POWERSTATE (*(volatile u16*)0x0480003C)
-#define WIFI_RANDOM     (*(volatile u16*)0x04800044)
+#define WIFI_MODE_RST   (*(volatile ushort*)0x04800004)
+#define WIFI_MODE_WEP   (*(volatile ushort*)0x04800006)
+#define WIFI_IF         (*(volatile ushort*)0x04800010)
+#define WIFI_IE         (*(volatile ushort*)0x04800012)
+#define WIFI_MACADDR    ( (volatile ushort*)0x04800018)
+#define WIFI_BSSID      ( (volatile ushort*)0x04800020)
+#define WIFI_AIDS       (*(volatile ushort*)0x04800028)
+#define WIFI_RETRLIMIT  (*(volatile ushort*)0x0480002C)
+#define WIFI_POWERSTATE (*(volatile ushort*)0x0480003C)
+#define WIFI_RANDOM     (*(volatile ushort*)0x04800044)
 
-#define WIFI_BBSIOCNT   (*(volatile u16*)0x04800158)
-#define WIFI_BBSIOWRITE (*(volatile u16*)0x0480015A)
-#define WIFI_BBSIOREAD  (*(volatile u16*)0x0480015C)
-#define WIFI_BBSIOBUSY  (*(volatile u16*)0x0480015E)
-#define WIFI_RFSIODATA2 (*(volatile u16*)0x0480017C)
-#define WIFI_RFSIODATA1 (*(volatile u16*)0x0480017E)
-#define WIFI_RFSIOBUSY  (*(volatile u16*)0x04800180)
+#define WIFI_BBSIOCNT   (*(volatile ushort*)0x04800158)
+#define WIFI_BBSIOWRITE (*(volatile ushort*)0x0480015A)
+#define WIFI_BBSIOREAD  (*(volatile ushort*)0x0480015C)
+#define WIFI_BBSIOBUSY  (*(volatile ushort*)0x0480015E)
+#define WIFI_RFSIODATA2 (*(volatile ushort*)0x0480017C)
+#define WIFI_RFSIODATA1 (*(volatile ushort*)0x0480017E)
+#define WIFI_RFSIOBUSY  (*(volatile ushort*)0x04800180)
 
 enum WEPMODES {
 	WEPMODE_NONE = 0,
@@ -105,67 +105,67 @@ enum WIFI_STATE {
 
 typedef struct WIFI_TXHEADER  Wifi_TxHeader;
 struct WIFI_TXHEADER {
-	u16 enable_flags;
-	u16 unknown;
-	u16 countup;
-	u16 beaconfreq;
-	u16 tx_rate;
-	u16 tx_length;
+	ushort enable_flags;
+	ushort unknown;
+	ushort countup;
+	ushort beaconfreq;
+	ushort tx_rate;
+	ushort tx_length;
 };
 
 typedef struct WIFI_RXHEADER Wifi_RxHeader;
 struct WIFI_RXHEADER {
-	u16 a;
-	u16 b;
-	u16 c;
-	u16 d;
-	u16 byteLength;
-	u16 rssi_;
+	ushort a;
+	ushort b;
+	ushort c;
+	ushort d;
+	ushort byteLength;
+	ushort rssi_;
 };
 
 typedef struct WIFI_ACCESSPOINT Wifi_AccessPoint;
 struct WIFI_ACCESSPOINT {
 	char ssid[33];		// 0-32byte data, zero
 	char ssid_len;
-	u8 bssid[6];
-	u8 macaddr[6];
-	u16 maxrate;		// max rate is measured in steps of 1/2Mbit - 5.5Mbit will be represented as 11, or 0x0B
-	u32 timectr;
-	u16 rssi;
-	u16 flags;
+	uchar bssid[6];
+	uchar macaddr[6];
+	ushort maxrate;		// max rate is measured in steps of 1/2Mbit - 5.5Mbit will be represented as 11, or 0x0B
+	ulong timectr;
+	ushort rssi;
+	ushort flags;
 /*
-	u32 spinlock;
+	ulong spinlock;
 */
-	u8 channel;
-	u8 rssi_past[8];
-	u8 base_rates[16];	// terminated by a 0 entry
+	uchar channel;
+	uchar rssi_past[8];
+	uchar base_rates[16];	// terminated by a 0 entry
 };
 
 typedef struct Wifi_Data_Struct Wifi_Data;
 struct Wifi_Data_Struct {
 
-	u16 curChannel, reqChannel;
-	u16 curMode, reqMode;
-	u16 authlevel, authctr;
-	u8 curWepmode, reqWepMode;
+	ushort curChannel, reqChannel;
+	ushort curMode, reqMode;
+	ushort authlevel, authctr;
+	uchar curWepmode, reqWepMode;
 	char ssid[34];
-	u8 baserates[16];
+	uchar baserates[16];
 
-	u16 scanChannel;
+	ushort scanChannel;
 
-	u16 state;
+	ushort state;
 
-	u8 MacAddr[6];
-	u8 bssid[6];
-	u8 apmac[6];
-	u8 wepkey[4][MAX_KEY_SIZE + 1];
-	u16 maxrate;
-	u16 wepkeyid;
+	uchar MacAddr[6];
+	uchar bssid[6];
+	uchar apmac[6];
+	uchar wepkey[4][MAX_KEY_SIZE + 1];
+	ushort maxrate;
+	ushort wepkeyid;
 
-	u8 FlashData[512];
+	uchar FlashData[512];
 
 	/* pointers to buffers we get handed from ARM9 */
-	volatile u32 *stats;
+	volatile ulong *stats;
 	Wifi_AccessPoint *aplist;
 
 };
@@ -220,14 +220,14 @@ enum WIFI_AP_MODE
 /* Used for transmission to arm7 */
 typedef struct nds_tx_packet nds_tx_packet;
 struct nds_tx_packet {
-	u16 len;	
+	ushort len;	
 	uchar *data;
 	void *skb;
 };
 
 typedef struct nds_rx_packet nds_rx_packet;
 struct nds_rx_packet {
-	u16 len;	
+	ushort len;	
 	uchar data[MAX_PACKET_SIZE];
 };
 
@@ -240,18 +240,18 @@ void wifi_open(void);
 void wifi_close(void);
 void wifi_mac_query(void);
 void wifi_interrupt(void*);
-void wifi_send_ether_packet(u16 length, uchar * data);
+void wifi_send_ether_packet(ushort length, uchar * data);
 void wifi_stats_query(void);
 
 void Wifi_RequestChannel(int channel);
-void Wifi_SetWepKey(int key, int off, u8 b1, u8 b2);
+void Wifi_SetWepKey(int key, int off, uchar b1, uchar b2);
 void Wifi_SetWepKeyID(int key);
 void Wifi_SetWepMode(int wepmode);
 void Wifi_SetSSID(int off, char b1, char b2);
 void Wifi_SetAPMode(enum WIFI_AP_MODE mode);
 void Wifi_GetAPMode(void);
 
-void wifi_ap_query(u16 start_stop);
+void wifi_ap_query(ushort start_stop);
 void wifi_start_scan(void);
 void wifi_timer_handler(void*);
 void wifi_rx_q_complete(void);
