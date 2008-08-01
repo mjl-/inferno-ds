@@ -73,6 +73,18 @@ nulliofunc(void){
 	return 0;
 }
 
+static Ioifc io_none = {
+	.type = "none",
+	.caps = 0,
+	
+	nulliofunc,
+	nulliofunc,
+	(void*) nulliofunc,
+	(void*) nulliofunc,
+	nulliofunc,
+	nulliofunc,
+};
+
 static
 DLDIhdr hdr=
 {
@@ -89,8 +101,8 @@ DLDIhdr hdr=
 .sgot = 0, .egot = 0,
 .sbss = 0, .ebss = 0,	
 	
-.io = {
-	.type = "NONE",
+.io =	{
+	.type = "none",
 	.caps = 0,
 	
 	nulliofunc,
@@ -171,8 +183,11 @@ dldiinit(void)
 				break;
 		}
 
-		if(!ioifc[n])
+		if(!ioifc[n]){
+			/* restore hdr.io in case of dldi-autopatching */
+			memmove(&hdr.io, &io_none, sizeof(Ioifc));
 			return;
+		}
 
 		DPRINT("dldi: %s\n", hdr.textid);
 		print("ioifc: %.4s %s%s %s%s (%lux)\n",
