@@ -86,8 +86,8 @@ static	char	Emode[]		= "illegal open mode";
 static	char	Evolume[]	= "illegal volume specifier";
 
 /* TODO: use the 16 sound channels available */
-static int chan = 0;	/* sound channel index */
-static TxSound snd[17];	/* play and record */
+static int chan = 0;			/* sound channel index */
+static TxSound snd[NSChannels+1];	/* play and record */
 
 static void
 mxvolume(void)
@@ -109,6 +109,7 @@ playaudio(void* d, ulong len)
 {
 	snd[chan].d = d;
 	snd[chan].n = len;
+	snd[chan].chan = chan;
 	fifoput(F9TAudio|F9Auplay, (ulong)&snd[chan]);
 }
 

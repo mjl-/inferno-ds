@@ -6,11 +6,10 @@
 #include "mem.h"
 #include "io.h"
 #include <kern.h>
-#include "arm7/jtypes.h"
 #include "arm7/card.h"
 
 void
-cardWriteCommand(const uint8 * cmd){
+cardWriteCommand(const uchar * cmd){
 	int index;
 
 	CARD_CR1 |= Spiena|Spiirqena;
@@ -21,9 +20,9 @@ cardWriteCommand(const uint8 * cmd){
 }
 
 void
-cardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, const uint8 * cmd){
-	u32 data;
-	uint32 * target;
+cardPolledTransfer(ulong flags, ulong * dst, ulong len, const uchar * cmd){
+	ulong data;
+	ulong * target;
 
 	CARD_CR2 = flags;
 	cardWriteCommand(cmd);
@@ -40,23 +39,23 @@ cardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, const uint8 * cmd){
 }
 
 void
-cardStartTransfer(const uint8 * cmd, uint32 * dst, int ch, uint32 flags){
+cardStartTransfer(const uchar * cmd, ulong * dst, int ch, ulong flags){
 	DmaReg *dma;
 
 	cardWriteCommand(cmd);
 	
 	// Set up a DMA channel to transfer a word every time the card makes one
 	dma = DMAREG + ch;
-	dma->src = (uint32)&CARD_DATA_RD;
-	dma->dst = (uint32)dst;
+	dma->src = (ulong)&CARD_DATA_RD;
+	dma->dst = (ulong)dst;
 	dma->ctl = Dmaena | Dmastartcard | Dma32bit | Dmarepeat | Dmasrcfix | 0x0001;
 
 	CARD_CR2 = flags;
 }
 
 
-uint32
-cardWriteAndRead(const uint8 * cmd, uint32 flags){
+ulong
+cardWriteAndRead(const uchar * cmd, ulong flags){
 	cardWriteCommand(cmd);
 	CARD_CR2 = flags | CARD_ACTIVATE | CARD_nRESET | 0x07000000;
 	while (!(CARD_CR2 & CARD_DATA_READY)) ;
@@ -65,8 +64,8 @@ cardWriteAndRead(const uint8 * cmd, uint32 flags){
 
 
 void
-cardRead00(uint32 addr, uint32 * dst, uint32 len, uint32 flags){
-	uint8 cmd[8];
+cardRead00(ulong addr, ulong * dst, ulong len, ulong flags){
+	uchar cmd[8];
 
 	cmd[7] = 0;
 	cmd[6] = (addr >> 24) & 0xff;
@@ -81,14 +80,14 @@ cardRead00(uint32 addr, uint32 * dst, uint32 len, uint32 flags){
 
 
 void
-cardReadHeader(uint8 * header){
-	cardRead00(0, (uint32 *)header, 512, 0xA93F1FFF);
+cardReadHeader(uchar * header){
+	cardRead00(0, (ulong *)header, 512, 0xA93F1FFF);
 }
 
 
 int
-cardReadID(uint32 flags){
-	uint8 command[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90};
+cardReadID(ulong flags){
+	uchar command[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90};
 	return cardWriteAndRead(command, flags);
 }
 
@@ -98,14 +97,14 @@ void EepromWaitBusy(void){
 	while (CARD_CR1 & /*BUSY*/0x80);
 }
 
-uint8
-cardEepromReadID(uint8 i){
+uchar
+cardEepromReadID(uchar i){
     return cardEepromCommand(/*READID*/0xAB, i&1);
 }
 
-uint8
-cardEepromCommand(uint8 command, uint32 address){
-    uint8 retval;
+uchar
+cardEepromCommand(uchar command, ulong address){
+    uchar retval;
     int k;
     CARD_CR1 = Spiena|Spiselect|Spihold;
 
@@ -138,10 +137,10 @@ cardEepromCommand(uint8 command, uint32 address){
 int
 cardEepromGetType(void)
 {
-        uint8 c00;
-        uint8 c05;
-        uint8 c9f;
-        uint8 c03;
+        uchar c00;
+        uchar c05;
+        uchar c9f;
+        uchar c03;
 
         c03=cardEepromCommand(0x03,0);
         c05=cardEepromCommand(0x05,0);
@@ -161,7 +160,7 @@ cardEepromGetType(void)
         return 0;
 }
 
-uint32
+ulong
 cardEepromGetSize(void){
 
     int type = cardEepromGetType();
@@ -173,12 +172,12 @@ cardEepromGetSize(void){
     if(type == 1)
         return 512;
     if(type == 2) {
-        static const uint32 offset0 = (8*1024-1);        //      8KB
-        static const uint32 offset1 = (2*8*1024-1);      //      16KB
-        u8 buf1;     //      +0k data        read -> write
-        u8 buf2;     //      +8k data        read -> read
-        u8 buf3;     //      +0k ~data          write
-        u8 buf4;     //      +8k data new    comp buf2
+        static const ulong offset0 = (8*1024-1);        //      8KB
+        static const ulong offset1 = (2*8*1024-1);      //      16KB
+        uchar buf1;     //      +0k data        read -> write
+        uchar buf2;     //      +8k data        read -> read
+        uchar buf3;     //      +0k ~data          write
+        uchar buf4;     //      +8k data new    comp buf2
         cardReadEeprom(offset0,&buf1,1,type);
         cardReadEeprom(offset1,&buf2,1,type);
         buf3=~buf1;
@@ -191,7 +190,7 @@ cardEepromGetSize(void){
             return 64*1024; //      64KB(512kbit)
     }
     if(type == 3) {
-        uint8 c9f;
+        uchar c9f;
         c9f=cardEepromCommand(0x9f,0);
 
         if(c9f==0x14)         
@@ -208,7 +207,7 @@ cardEepromGetSize(void){
 
 
 void
-cardReadEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
+cardReadEeprom(ulong address, uchar *data, ulong length, ulong addrtype){
 
     CARD_CR1 = Spiena|Spiselect|Spihold;
     CARD_EEPDATA = 0x03 | ((addrtype == 1) ? address>>8<<3 : 0);
@@ -241,9 +240,9 @@ cardReadEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
 
 
 void
-cardWriteEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
+cardWriteEeprom(ulong address, uchar *data, ulong length, ulong addrtype){
 
-	uint32 address_end = address + length;
+	ulong address_end = address + length;
 	int i;
     int maxblocks = 32;
     if(addrtype == 1) maxblocks = 16;
@@ -321,7 +320,7 @@ cardEepromChipErase(void) {
 
 //  COMMAND Sec.erase 0xD8
 void
-cardEepromSectorErase(uint32 address)
+cardEepromSectorErase(ulong address)
 {
         // set WEL (Write Enable Latch)
        CARD_CR1 = Spiena|Spiselect|Spihold;

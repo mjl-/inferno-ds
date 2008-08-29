@@ -1,7 +1,6 @@
 #include	"u.h"
 #include	"io.h"
 #include	"mem.h"
-#include 	"arm7/jtypes.h"
 #include	"arm7/card.h"
 
 /*
@@ -307,7 +306,8 @@ Disassembly of section .data:
  490:	e12fff1e 	bx	lr
 */
 static void
-ttio_subread(void){
+ttio_subread(ulong start, ulong d, ulong n){
+	USED(start, d, n);
 }
 
 /*
@@ -378,7 +378,8 @@ ttio_subread(void){
  594:	eaffff82 	b	0x3a4
 */
 static void
-ttio_subwrite(void){
+ttio_subwrite(ulong start, ulong d, ulong n){
+	USED(start, d, n);
 }
 
 /*
@@ -433,7 +434,7 @@ ttio_read(ulong start, ulong n, void *d){
 	if (*lb == 0)
 		start <<= 9;
 	
-	ttio_subread(start, d, n);
+	ttio_subread(start, (ulong)d, n);
 	return 0;
 }
 
@@ -463,7 +464,7 @@ ttio_read(ulong start, ulong n, void *d){
 static int
 ttio_write(ulong start, ulong n, const void *d){
 	/* almost the same code that ttio_read */
-	ttio_subwrite(start, d, n);
+	ttio_subwrite(start, (ulong)d, n);
 	return 0;
 }
 

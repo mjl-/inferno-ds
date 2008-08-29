@@ -12,6 +12,7 @@ menu Halt		{ wmrun shutdown -h }
 #wmrun wm/date
 
 wmrun wm/keyboard -t
+wmrun wm/about
 wmrun wm/sh -w 240 -h 130 -ic '
 	echo welcome `{cat /dev/user}!;
 	

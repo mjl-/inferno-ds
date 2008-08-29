@@ -1,7 +1,6 @@
 #include	"u.h"
 #include	"io.h"
 #include	"mem.h"
-#include 	"arm7/jtypes.h"
 #include	"arm7/card.h"
 
 /*
@@ -22,7 +21,7 @@
 static void
 openSpi(void)
 {
-	volatile u32 temp;
+	volatile ulong temp;
 	
 	CARD_CR1 |= Spiena|Spiirqena;
 	CARD_COMMAND[0] = 0xF2;
@@ -45,7 +44,7 @@ openSpi(void)
 void 
 closeSpi(void)
 {
-	volatile u32 temp;
+	volatile ulong temp;
 
 	CARD_CR1 |= Spiena|Spiirqena;
 	CARD_COMMAND[0] = 0xF2;
@@ -68,15 +67,15 @@ closeSpi(void)
 	while (CARD_CR1 & Spibusy);
 }
 	
-static u8 
-transferSpiByte(u8 send)
+static uchar 
+transferSpiByte(uchar send)
 {
 	CARD_EEPDATA = send;
 	while (CARD_CR1 & Spibusy);
 	return CARD_EEPDATA;
 }
 
-static u8
+static uchar
 getSpiByte(void)
 {
 	CARD_EEPDATA = 0xFF;
@@ -85,18 +84,18 @@ getSpiByte(void)
 }
 
 static uchar
-sendCommand(u8 command, u32 argument)
+sendCommand(uchar command, ulong argument)
 {
-	u8 commandData[6];
+	uchar commandData[6];
 	int timeout;
-	u8 spiByte;
+	uchar spiByte;
 	int i;
 
 	commandData[0] = command | 0x40; 
-	commandData[1] = (u8)(argument >> 24);
-	commandData[2] = (u8)(argument >> 16);
-	commandData[3] = (u8)(argument >>  8);
-	commandData[4] = (u8)(argument >>  0);
+	commandData[1] = (uchar)(argument >> 24);
+	commandData[2] = (uchar)(argument >> 16);
+	commandData[3] = (uchar)(argument >>  8);
+	commandData[4] = (uchar)(argument >>  0);
 	commandData[5] = 0x95;	// Fake CRC, 0x95 is only important for SD CMD 0
 	
 	// Send read sector command
@@ -115,18 +114,18 @@ sendCommand(u8 command, u32 argument)
 }
 
 static int
-sdRead(u32 sector, u8* dest)
+sdRead(ulong sector, uchar* dest)
 {
-	u8 spiByte;
+	uchar spiByte;
 	int timeout;
 	int i;
-	volatile u32 temp;
+	volatile ulong temp;
 	
 	openSpi ();
 	
 	if (sendCommand (READ_SINGLE_BLOCK, sector * BYTES_PER_SECTOR) != 0x00) {
 		closeSpi ();
-		return false;
+		return 0;
 	}
 
 	// Wait for data start token
@@ -137,7 +136,7 @@ sdRead(u32 sector, u8* dest)
 
 	if (spiByte != 0xFE) {
 		closeSpi ();
-		return false;
+		return 0;
 	}
 	
 	for (i = BYTES_PER_SECTOR; i > 0; i--) {
@@ -149,11 +148,11 @@ sdRead(u32 sector, u8* dest)
 	temp = getSpiByte();
 	
 	closeSpi ();
-	return true;
+	return 1;
 }
 
 static int
-sdWrite(u32 sector, u8* src)
+sdWrite(ulong sector, uchar* src)
 {
 	int i;
 	int timeout;
@@ -162,7 +161,7 @@ sdWrite(u32 sector, u8* src)
 	
 	if (sendCommand (WRITE_SINGLE_BLOCK, sector * BYTES_PER_SECTOR) != 0) {
 		closeSpi ();
-		return false;
+		return 0;
 	}
 	
 	// Send start token
@@ -181,7 +180,7 @@ sdWrite(u32 sector, u8* src)
 	// Get data response
 	if ((getSpiByte() & 0x0F) != SD_WRITE_OK) {
 		closeSpi ();
-		return false;
+		return 0;
 	}
 	
 	// Wait for card to write data
@@ -191,52 +190,52 @@ sdWrite(u32 sector, u8* src)
 	closeSpi();
 	
 	if (timeout == 0) {
-		return false;
+		return 0;
 	}
 	
-	return true;
+	return 1;
 }
 
 static int
 gmtf_init(void){
-	return true;
+	return 1;
 }
 
 static int
 gmtf_clrstat(void){
-	return true;
+	return 1;
 }
 
 static int
-gmtf_read(u32 sector, u32 numSectors, void* buffer) {
-	u8* data = (u8*)buffer;
+gmtf_read(ulong sector, ulong numSectors, void* buffer) {
+	uchar* data = (uchar*)buffer;
 	
 	while (numSectors > 0) {
 		if (!sdRead (sector, data)) {
-			return false;
+			return 0;
 		}
 		sector ++;
 		data += BYTES_PER_SECTOR;
 		numSectors --;
 	}
 	
-	return true;
+	return 1;
 }
 
 static int
-gmtf_write(u32 sector, u32 numSectors, void* buffer) {
-	u8* data = (u8*)buffer;
+gmtf_write(ulong sector, ulong numSectors, void* buffer) {
+	uchar* data = (uchar*)buffer;
 	
 	while (numSectors > 0) {
 		if (!sdWrite (sector, data)) {
-			return false;
+			return 0;
 		}
 		sector ++;
 		data += BYTES_PER_SECTOR;
 		numSectors --;
 	}
 	
-	return true;
+	return 1;
 }
 
 static Ioifc io_gmtf = {

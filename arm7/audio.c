@@ -94,8 +94,10 @@ playsound(TxSound *snd)
 	SNDREG->cr.ctl = Sndena | Maxvol;
 	SNDREG->bias = 0x200;
 
-	schan = SCHANREG + snd->chan;
+	if(snd->chan < 0 || NSChannels < snd->chan)
+		return;
 
+	schan = SCHANREG + snd->chan;
 	schan->rpt = 0;
 	schan->tmr = SCHAN_BASE / (int)snd->rate;
 	schan->src = (ulong) snd->d;

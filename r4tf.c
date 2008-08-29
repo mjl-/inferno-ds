@@ -1,7 +1,6 @@
 #include	"u.h"
 #include	"io.h"
 #include	"mem.h"
-#include 	"arm7/jtypes.h"
 #include	"arm7/card.h"
 
 /*
@@ -12,24 +11,24 @@
 #define DPRINT if(1)
 
 static void
-cardWaitReady(u32 flags, u8 *cmd)
+cardWaitReady(ulong flags, uchar *cmd)
 {
-	bool ready = false;
+	int ready = 0;
 
 	do {
 		cardWriteCommand(cmd);
 		CARD_CR2 = flags;
 		do {
 			if (CARD_CR2 & CARD_DATA_READY)
-				if (!CARD_DATA_RD) ready = true;
+				if (!CARD_DATA_RD) ready = 1;
 		} while (CARD_CR2 & CARD_BUSY);
 	} while (!ready);
 }
 
 static void
-bytecardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, uint8 * cmd) {
-	u32 data;
-	uint32 *target;
+bytecardPolledTransfer(ulong flags, ulong * dst, ulong len, uchar* cmd) {
+	ulong data;
+	ulong *target;
 
 	cardWriteCommand(cmd);
 	CARD_CR2 = flags;
@@ -39,10 +38,10 @@ bytecardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, uint8 * cmd) {
 		if (CARD_CR2 & CARD_DATA_READY) {
 			data=CARD_DATA_RD;
 			if (dst < target) {
-				((uint8*)dst)[0] = data & 0xff;
-				((uint8*)dst)[1] = (data >> 8) & 0xff;
-				((uint8*)dst)[2] = (data >> 16) & 0xff;
-				((uint8*)dst)[3] = (data >> 24) & 0xff;
+				((uchar*)dst)[0] = data & 0xff;
+				((uchar*)dst)[1] = (data >> 8) & 0xff;
+				((uchar*)dst)[2] = (data >> 16) & 0xff;
+				((uchar*)dst)[3] = (data >> 24) & 0xff;
 			}
 			dst++;
 		}
@@ -50,9 +49,9 @@ bytecardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, uint8 * cmd) {
 }
 
 static void
-LogicCardRead(u32 address, u32 *dst, u32 len)
+LogicCardRead(ulong address, ulong *dst, ulong len)
 {
-	u8 cmd[8];
+	uchar cmd[8];
 
 	cmd[7] = 0xb9;
 	cmd[6] = (address >> 24) & 0xff;
@@ -64,7 +63,7 @@ LogicCardRead(u32 address, u32 *dst, u32 len)
 	cmd[0] = 0;
 	cardWaitReady(0xa7586000, cmd);
 	cmd[7] = 0xba;
-	if ((u32)dst & 0x03)
+	if ((ulong)dst & 0x03)
 		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
 	else
 		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
@@ -72,11 +71,11 @@ LogicCardRead(u32 address, u32 *dst, u32 len)
 	//	cardPolledTransfer(0xa1586000, dst, len, cmd);
 }
 
-static u32
+static ulong
 ReadCardInfo(void)
 {
-	u8 cmd[8];
-	u32 ret;
+	uchar cmd[8];
+	ulong ret;
 
 	cmd[7] = 0xb0;
 	cmd[6] = 0;
@@ -91,11 +90,11 @@ ReadCardInfo(void)
 }
 
 static void
-LogicCardWrite(u32 address, u32 *source, u32 len)
+LogicCardWrite(ulong address, ulong *source, ulong len)
 {
-	u8 cmd[8];
-	u32 data = 0;
-	u32 * target;
+	uchar cmd[8];
+	ulong data = 0;
+	ulong * target;
 
 	cmd[7] = 0xbb;
 	cmd[6] = (address >> 24) & 0xff;
@@ -113,8 +112,8 @@ LogicCardWrite(u32 address, u32 *source, u32 len)
 		// Write data if ready
 		if (CARD_CR2 & CARD_DATA_READY) {
 			if (source < target) {
-				if ((u32)source & 0x03)
-					data = ((uint8*)source)[0] | (((uint8*)source)[1] << 8) | (((uint8*)source)[2] << 16) | (((uint8*)source)[3] << 24);
+				if ((ulong)source & 0x03)
+					data = ((uchar*)source)[0] | (((uchar*)source)[1] << 8) | (((uchar*)source)[2] << 16) | (((uchar*)source)[3] << 24);
 				else
 					data = *source;
 			}
@@ -126,45 +125,45 @@ LogicCardWrite(u32 address, u32 *source, u32 len)
 	cardWaitReady(0xa7586000, cmd);
 }
 
-static bool
+static int
 r4tf_init(void)
 {
-	u32 CardInfo;
+	ulong CardInfo;
 
 	CardInfo = ReadCardInfo();
 	return ((CardInfo & 0x07) == 0x04);
 }
 
-static bool
-r4tf_read(u32 sector, u8 numSecs, void* buffer)
+static int
+r4tf_read(ulong sector, uchar numSecs, void* buffer)
 {
-	u32 *u32_buffer = (u32*)buffer, i;
+	ulong *ulong_buffer = (ulong*)buffer, i;
 
 	for (i = 0; i < numSecs; i++) {
-		LogicCardRead(sector << 9, u32_buffer, 128);
+		LogicCardRead(sector << 9, ulong_buffer, 128);
 		sector++;
-		u32_buffer += 128;
+		ulong_buffer += 128;
 	}
-	return true;
+	return 1;
 }
 
-static bool
-r4tf_write(u32 sector, u8 numSecs, void* buffer)
+static int
+r4tf_write(ulong sector, uchar numSecs, void* buffer)
 {
-	u32 *u32_buffer = (u32*)buffer, i;
+	ulong *ulong_buffer = (ulong*)buffer, i;
 
 	for (i = 0; i < numSecs; i++) {
-		LogicCardWrite(sector << 9, u32_buffer, 128);
+		LogicCardWrite(sector << 9, ulong_buffer, 128);
 		sector++;
-		u32_buffer += 128;
+		ulong_buffer += 128;
 	}
-	return true;
+	return 1;
 }
 
-static bool
+static int
 r4tf_clrstat(void)
 {
-	return true;
+	return 1;
 }
 
 static Ioifc io_r4tf = {

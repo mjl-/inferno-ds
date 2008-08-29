@@ -23,13 +23,12 @@ OFILES=\
 HFILES=\
 	../io.h\
 	../mem.h\
-	jtypes.h\
-	spi.h\
-	audio.h\
-	rtc.h\
-	touch.h\
 	dat.h\
 	fns.h\
+	spi.h\
+	rtc.h\
+	touch.h\
+	audio.h\
 	wifi.h\
 	
 LIBS=\

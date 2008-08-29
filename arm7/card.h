@@ -1,17 +1,17 @@
 
 // Card bus
-#define CARD_CR1	(*(vuint16*)0x040001A0)
-#define CARD_CR1H	(*(vuint8*)0x040001A1)
-#define CARD_EEPDATA	(*(vuint8*)0x040001A2)
-#define CARD_CR2	(*(vuint32*)0x040001A4)
-#define CARD_COMMAND	((vuint8*)0x040001A8)
+#define CARD_CR1	(*(volatile ushort*)0x040001A0)
+#define CARD_CR1H	(*(volatile uchar*)0x040001A1)
+#define CARD_EEPDATA	(*(volatile uchar*)0x040001A2)
+#define CARD_CR2	(*(volatile ulong*)0x040001A4)
+#define CARD_COMMAND	((volatile uchar*)0x040001A8)
 
-#define CARD_DATA_RD	(*(vuint32*)0x04100010)
+#define CARD_DATA_RD	(*(volatile ulong*)0x04100010)
 
-#define CARD_1B0	(*(vuint32*)0x040001B0)
-#define CARD_1B4	(*(vuint32*)0x040001B4)
-#define CARD_1B8	(*(vuint16*)0x040001B8)
-#define CARD_1BA	(*(vuint16*)0x040001BA)
+#define CARD_1B0	(*(volatile ulong*)0x040001B0)
+#define CARD_1B4	(*(volatile ulong*)0x040001B4)
+#define CARD_1B8	(*(volatile ushort*)0x040001B8)
+#define CARD_1BA	(*(volatile ushort*)0x040001BA)
 
 /*
  * CARD_CR2 register
@@ -31,20 +31,20 @@
 #define CARD_BUSY	(1<<31)	// when reading, still expecting incomming data?
 #define CARD_DATA_READY (1<<23)	// when reading, CARD_DATA_RD or CARD_DATA has another word of data and is good to go
 
-void cardWriteCommand(const uint8 * cmd);
+void cardWriteCommand(const uchar * cmd);
 
-void cardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, const uint8 * cmd);
-void cardStartTransfer(const uint8 * cmd, uint32 * dst, int ch, uint32 flags);
-uint32 cardWriteAndRead(const uint8 * cmd, uint32 flags);
+void cardPolledTransfer(ulong flags, ulong * dst, ulong len, const uchar * cmd);
+void cardStartTransfer(const uchar * cmd, ulong * dst, int ch, ulong flags);
+ulong cardWriteAndRead(const uchar * cmd, ulong flags);
 
-void cardRead00(uint32 address, uint32 * dst, uint32 len, uint32 flags);
-void cardReadHeader(uint8 * header);
-int cardReadID(uint32 flags);
-void cardReadEeprom(uint32 address, uint8 *data, uint32 len, uint32 addrtype);
-void cardWriteEeprom(uint32 address, uint8 *data, uint32 len, uint32 addrtype);
+void cardRead00(ulong address, ulong * dst, ulong len, ulong flags);
+void cardReadHeader(uchar * header);
+int cardReadID(ulong flags);
+void cardReadEeprom(ulong address, uchar *data, ulong len, ulong addrtype);
+void cardWriteEeprom(ulong address, uchar *data, ulong len, ulong addrtype);
 
-uint8 cardEepromReadID(uint8 i); 
-uint8 cardEepromCommand(uint8 cmd, uint32 address); 
+uchar cardEepromReadID(uchar i); 
+uchar cardEepromCommand(uchar cmd, ulong address); 
 
 /*
  * -1:no card or no EEPROM
@@ -55,9 +55,9 @@ uint8 cardEepromCommand(uint8 cmd, uint32 address);
  */
 int cardEepromGetType(void);
 
-uint32 cardEepromGetSize(void);
+ulong cardEepromGetSize(void);
 
 void cardEepromChipErase(void);
 
-void cardEepromSectorErase(uint32 address);
+void cardEepromSectorErase(ulong address);
 

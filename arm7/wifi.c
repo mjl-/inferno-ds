@@ -19,7 +19,6 @@ Copyright (c) 2005 Stephen Stair
 #include "dat.h"
 #include "fns.h"
 
-#include "jtypes.h"
 #include "spi.h"
 #include "wifi.h"
 
@@ -34,7 +33,7 @@ static void Wifi_RxSetup(void);
 static void Wifi_TxSetup(void);
 static void Wifi_CopyMacAddr(volatile void *dest, volatile void *src);
 static void Wifi_SendAuthPacket(int wepmode);
-static void Wifi_SendBackChallengeText(u8 * challenge);
+static void Wifi_SendBackChallengeText(uchar * challenge);
 static void Wifi_SendAssocPacket(void);
 static void Wifi_Intr_RxEnd(void);
 
@@ -114,7 +113,7 @@ void wifi_init(void)
 	for (i = 0; i < sizeof(wifi_data.ssid); i++)
 		wifi_data.ssid[i] = '\0';
 	for (i = 0; i < sizeof(wifi_data.wepkey); i++)
-		((u8 *) wifi_data.wepkey)[i] = 0;
+		((uchar *) wifi_data.wepkey)[i] = 0;
 
 	for (i = 0; i < 6; i++)
 		wifi_data.MacAddr[i] = ReadFlashByte(0x36 + i);
@@ -277,7 +276,7 @@ void Wifi_RequestChannel(int channel)
 		Wifi_SetChannel(channel);
 }
 
-void Wifi_SetWepKey(int key, int off, u8 b1, u8 b2)
+void Wifi_SetWepKey(int key, int off, uchar b1, uchar b2)
 {
 	if (key < 0 || key > 3 || off < 0 || off > ((MAX_KEY_SIZE + 1) >> 1))
 		return;
@@ -290,16 +289,16 @@ void Wifi_SetWepKey(int key, int off, u8 b1, u8 b2)
 
 	switch (key) {
 	case 0:
-		WIFI_WEPKEY0[off] = (((u16) b1) << 8) | (u16) b2;
+		WIFI_WEPKEY0[off] = (((ushort) b1) << 8) | (ushort) b2;
 		break;
 	case 1:
-		WIFI_WEPKEY1[off] = (((u16) b1) << 8) | (u16) b2;
+		WIFI_WEPKEY1[off] = (((ushort) b1) << 8) | (ushort) b2;
 		break;
 	case 2:
-		WIFI_WEPKEY2[off] = (((u16) b1) << 8) | (u16) b2;
+		WIFI_WEPKEY2[off] = (((ushort) b1) << 8) | (ushort) b2;
 		break;
 	case 3:
-		WIFI_WEPKEY3[off] = (((u16) b1) << 8) | (u16) b2;
+		WIFI_WEPKEY3[off] = (((ushort) b1) << 8) | (ushort) b2;
 		break;
 	}
 }
@@ -346,9 +345,9 @@ static void wifi_try_to_associate(void)
 	}
 	for (j = 0; j < 16; j++)
 		wifi_data.baserates[j] = wifi_data.aplist[i].base_rates[j];
-	WIFI_BSSID[0] = ((u16 *) wifi_data.bssid)[0];
-	WIFI_BSSID[1] = ((u16 *) wifi_data.bssid)[1];
-	WIFI_BSSID[2] = ((u16 *) wifi_data.bssid)[2];
+	WIFI_BSSID[0] = ((ushort *) wifi_data.bssid)[0];
+	WIFI_BSSID[1] = ((ushort *) wifi_data.bssid)[1];
+	WIFI_BSSID[2] = ((ushort *) wifi_data.bssid)[2];
 	//WIFI_REG(0xD0) &= ~0x0400;
 	WIFI_REG(0xD0) |= 0x0400;
 
@@ -448,7 +447,7 @@ static void Wifi_Shutdown(void)
 
 static void Wifi_WakeUp(void)
 {
-	u32 i;
+	ulong i;
 	WIFI_REG(0x8036) = 0;
 	for (i = 0; i < 100000; i++)
 		i++;
@@ -592,7 +591,7 @@ void wifi_open(void)
 		    POWER0_LED_BLINK);
 
 	POWERREG->pcr |= (1<<POWER_WIFI);		// enable power for the wifi
-	*((volatile u16 *)0x04000206) = 0x30;	// ???
+	*((volatile ushort *)0x04000206) = 0x30;	// ???
 
 	// reset/shutdown wifi:
 	WIFI_REG(0x4) = 0xffff;
@@ -614,19 +613,19 @@ void wifi_open(void)
 	Wifi_BBInit();
 
 	// Set Default Settings
-	WIFI_MACADDR[0] = ((u16 *) wifi_data.MacAddr)[0];
-	WIFI_MACADDR[1] = ((u16 *) wifi_data.MacAddr)[1];
-	WIFI_MACADDR[2] = ((u16 *) wifi_data.MacAddr)[2];
+	WIFI_MACADDR[0] = ((ushort *) wifi_data.MacAddr)[0];
+	WIFI_MACADDR[1] = ((ushort *) wifi_data.MacAddr)[1];
+	WIFI_MACADDR[2] = ((ushort *) wifi_data.MacAddr)[2];
 
 	WIFI_RETRLIMIT = 7;
 	Wifi_SetMode(2);
 	Wifi_SetWepMode(wifi_data.curWepmode);
 
 	for (i = 0; i < (MAX_KEY_SIZE + 1) >> 1; i++) {
-		WIFI_WEPKEY0[i] = ((u16 *) wifi_data.wepkey[0])[i];
-		WIFI_WEPKEY1[i] = ((u16 *) wifi_data.wepkey[1])[i];
-		WIFI_WEPKEY2[i] = ((u16 *) wifi_data.wepkey[2])[i];
-		WIFI_WEPKEY3[i] = ((u16 *) wifi_data.wepkey[3])[i];
+		WIFI_WEPKEY0[i] = ((ushort *) wifi_data.wepkey[0])[i];
+		WIFI_WEPKEY1[i] = ((ushort *) wifi_data.wepkey[1])[i];
+		WIFI_WEPKEY2[i] = ((ushort *) wifi_data.wepkey[2])[i];
+		WIFI_WEPKEY3[i] = ((ushort *) wifi_data.wepkey[3])[i];
 	}
 
 	Wifi_SetChannel(wifi_data.reqChannel);
@@ -679,7 +678,7 @@ void wifi_stats_query(void)
 //  MAC Copy functions (This deals with Tx and Rx buffers)
 //
 
-u16 Wifi_MACReadRx(u32 MAC_Base, u32 MAC_Offset)
+ushort Wifi_MACReadRx(ulong MAC_Base, ulong MAC_Offset)
 {
 	MAC_Base += MAC_Offset;
 
@@ -691,7 +690,7 @@ u16 Wifi_MACReadRx(u32 MAC_Base, u32 MAC_Offset)
 }
 
 #ifdef NOTDEF
-static void Wifi_MACCopyRx(u16 * dest, u32 MAC_Base, u32 MAC_Offset, u32 length)
+static void Wifi_MACCopyRx(ushort * dest, ulong MAC_Base, ulong MAC_Offset, ulong length)
 {
 	int endrange, subval;
 	int thislength;
@@ -721,7 +720,7 @@ static void Wifi_MACCopyRx(u16 * dest, u32 MAC_Base, u32 MAC_Offset, u32 length)
 }
 #endif
 
-static void Wifi_MACWriteTX(u16 * src, u32 MAC_Base, u32 MAC_Offset, u32 length)
+static void Wifi_MACWriteTX(ushort * src, ulong MAC_Base, ulong MAC_Offset, ulong length)
 {
 	if (MAC_Offset > TX_MTU_BYTES)
 		return;
@@ -752,7 +751,7 @@ static void Wifi_MACWriteTX(u16 * src, u32 MAC_Base, u32 MAC_Offset, u32 length)
 #endif
 }
 
-void Wifi_MACCopy(u16 * dest, u32 MAC_Base, u32 MAC_Offset, u32 length)
+void Wifi_MACCopy(ushort * dest, ulong MAC_Base, ulong MAC_Offset, ulong length)
 {
 	int endrange, subval;
 	int thislength;
@@ -777,32 +776,32 @@ void Wifi_MACCopy(u16 * dest, u32 MAC_Base, u32 MAC_Offset, u32 length)
 
 static void Wifi_CopyMacAddr(volatile void *dest, volatile void *src)
 {
-	((u16 *) dest)[0] = ((u16 *) src)[0];
-	((u16 *) dest)[1] = ((u16 *) src)[1];
-	((u16 *) dest)[2] = ((u16 *) src)[2];
+	((ushort *) dest)[0] = ((ushort *) src)[0];
+	((ushort *) dest)[1] = ((ushort *) src)[1];
+	((ushort *) dest)[2] = ((ushort *) src)[2];
 }
 
 int Wifi_CmpMacAddr(volatile void *mac1, volatile void *mac2)
 {
-	return (((u16 *) mac1)[0] == ((u16 *) mac2)[0])
-	    && (((u16 *) mac1)[1] == ((u16 *) mac2)[1])
-	    && (((u16 *) mac1)[2] == ((u16 *) mac2)[2]);
+	return (((ushort *) mac1)[0] == ((ushort *) mac2)[0])
+	    && (((ushort *) mac1)[1] == ((ushort *) mac2)[1])
+	    && (((ushort *) mac1)[2] == ((ushort *) mac2)[2]);
 }
 
 static int Wifi_ProcessBeaconFrame(int macbase, int framelen)
 {
 	Wifi_RxHeader packetheader;
-	u8 data[512];
-	u8 wepmode, fromsta;
-	u8 segtype, seglen;
-	u8 channel;
-	u8 wpamode;
-	u8 rateset[16];
-	u16 ptr_ssid;
-	u16 maxrate;
-	u16 curloc;
-	u32 datalen;
-	u16 i, j, compatible;
+	uchar data[512];
+	uchar wepmode, fromsta;
+	uchar segtype, seglen;
+	uchar channel;
+	uchar wpamode;
+	uchar rateset[16];
+	ushort ptr_ssid;
+	ushort maxrate;
+	ushort curloc;
+	ulong datalen;
+	ushort i, j, compatible;
 
 	USED(framelen);
 	
@@ -810,15 +809,15 @@ static int Wifi_ProcessBeaconFrame(int macbase, int framelen)
 	if (wifi_data.state & WIFI_STATE_APQUERYPEND)
 		return WFLAG_PACKET_BEACON;
 
-	Wifi_MACCopy((u16 *) & packetheader, macbase, 0, 12);
+	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
 
 	datalen = packetheader.byteLength;
 
 	if (datalen > 512)
 		datalen = 512;
-	Wifi_MACCopy((u16 *) data, macbase, 12, (datalen + 1) & ~1);
+	Wifi_MACCopy((ushort *) data, macbase, 12, (datalen + 1) & ~1);
 	wepmode = 0;
-	if (((u16 *) data)[5 + 12] & 0x0010) {	// capability info, WEP bit
+	if (((ushort *) data)[5 + 12] & 0x0010) {	// capability info, WEP bit
 		wepmode = 1;
 	}
 	fromsta = Wifi_CmpMacAddr(data + 10, data + 16);
@@ -1038,21 +1037,21 @@ static int Wifi_ProcessReassocResponse(int macbase, int framelen)
 {
 	Wifi_RxHeader packetheader;
 	int datalen, i;
-	u8 data[64];
-	u16 *fixed_params = (u16 *) (data + 24);
-	u8 *tagged_params = data + 30;
-	u16 status;
-	u8 tag_length;
+	uchar data[64];
+	ushort *fixed_params = (ushort *) (data + 24);
+	uchar *tagged_params = data + 30;
+	ushort status;
+	uchar tag_length;
 
 	USED(framelen);
 	
-	Wifi_MACCopy((u16 *) & packetheader, macbase, 0, 12);
+	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
 
 	datalen = packetheader.byteLength;
 	if (datalen > 64)
 		datalen = 64;
 
-	Wifi_MACCopy((u16 *) data, macbase, 12, (datalen + 1) & ~1);
+	Wifi_MACCopy((ushort *) data, macbase, 12, (datalen + 1) & ~1);
 
 	// if packet is not sent to us.
 	if (!Wifi_CmpMacAddr(data + 4, wifi_data.MacAddr)) {
@@ -1073,7 +1072,7 @@ static int Wifi_ProcessReassocResponse(int macbase, int framelen)
 		//assert(tagged_params[1] == 1);
 		tag_length = tagged_params[1];
 		for (i = 0; i < tag_length; i++) {
-			u8 rate = tagged_params[2 + i];
+			uchar rate = tagged_params[2 + i];
 			if (rate == 0x84 || rate == 0x04) {
 				wifi_data.maxrate = 0x14;	// 2Mbit
 			}
@@ -1109,22 +1108,22 @@ static int Wifi_ProcessAuthenticationFrame(int macbase, int framelen)
 	Wifi_RxHeader packetheader;
 	int datalen;
 	// size = 24+6+130
-	u8 data[160];
-	u16 *fixed_params = (u16 *) (data + 24);
-	u8 *tagged_params = data + 30;
-	u16 auth_algorithm;
-	u16 auth_sequence;
-	u16 status;
+	uchar data[160];
+	ushort *fixed_params = (ushort *) (data + 24);
+	uchar *tagged_params = data + 30;
+	ushort auth_algorithm;
+	ushort auth_sequence;
+	ushort status;
 
 	USED(framelen);
 	
-	Wifi_MACCopy((u16 *) & packetheader, macbase, 0, 12);
+	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
 
 	datalen = packetheader.byteLength;
 	if (datalen > 160)
 		datalen = 160;
 
-	Wifi_MACCopy((u16 *) data, macbase, 12, (datalen + 1) & ~1);
+	Wifi_MACCopy((ushort *) data, macbase, 12, (datalen + 1) & ~1);
 
 	// if packet is not sent to us.
 	if (!Wifi_CmpMacAddr(data + 4, wifi_data.MacAddr)) {
@@ -1179,17 +1178,17 @@ static int Wifi_ProcessDeAuthenticationFrame(int macbase, int framelen)
 {
 	Wifi_RxHeader packetheader;
 	int datalen;
-	u8 data[64];
+	uchar data[64];
 
 	USED(framelen);
 	
-	Wifi_MACCopy((u16 *) & packetheader, macbase, 0, 12);
+	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
 
 	datalen = packetheader.byteLength;
 	if (datalen > 64)
 		datalen = 64;
 
-	Wifi_MACCopy((u16 *) data, macbase, 12, (datalen + 1) & ~1);
+	Wifi_MACCopy((ushort *) data, macbase, 12, (datalen + 1) & ~1);
 
 	// if packet is not sent to us.
 	if (!Wifi_CmpMacAddr(data + 4, wifi_data.MacAddr)) {
@@ -1229,7 +1228,7 @@ static int Wifi_ProcessDeAuthenticationFrame(int macbase, int framelen)
 
 static int Wifi_ProcessReceivedFrame(int macbase, int framelen)
 {
-	u16 control_802;
+	ushort control_802;
 
 	USED(framelen);
 	
@@ -1282,7 +1281,7 @@ static int Wifi_ProcessReceivedFrame(int macbase, int framelen)
 	}
 }
 
-int Wifi_QueueRxMacData(u32 base, u32 len)
+int Wifi_QueueRxMacData(ulong base, ulong len)
 {
 	int macofs;
 
@@ -1301,7 +1300,7 @@ int Wifi_QueueRxMacData(u32 base, u32 len)
 	wifi_data.stats[WF_STAT_RXPKTS]++;
 	wifi_data.stats[WF_STAT_RXDATABYTES] += len;
 
-	Wifi_MACCopy((u16 *) rx_packet->data, base, macofs, len);
+	Wifi_MACCopy((ushort *) rx_packet->data, base, macofs, len);
 	rx_packet->len = len;
 	IPCREG->ctl |= Ipcgenirq|I7WFrxdone;
 
@@ -1378,7 +1377,7 @@ void wifi_rx_q_complete(void)
 
 #define CNT_STAT_START WF_STAT_HW_1B0
 #define CNT_STAT_NUM 18
-u16 count_ofs_list[CNT_STAT_NUM] = {
+ushort count_ofs_list[CNT_STAT_NUM] = {
 	0x1B0, 0x1B2, 0x1B4, 0x1B6, 0x1B8, 0x1BA, 0x1BC, 0x1BE, 0x1C0, 0x1C4,
 	0x1D0, 0x1D2, 0x1D4, 0x1D6, 0x1D8, 0x1DA, 0x1DC, 0x1DE
 };
@@ -1388,7 +1387,7 @@ static void Wifi_Intr_CntOverflow(void)
 	int d;
 	for (i = 0; i < CNT_STAT_NUM; i++) {
 		d = WIFI_REG(count_ofs_list[i]);
-		((u16 *) (&wifi_data.stats[CNT_STAT_START]))[i] = d & 0xFFFF;
+		((ushort *) (&wifi_data.stats[CNT_STAT_START]))[i] = d & 0xFFFF;
 		// wifi_data.stats[s++] += (d&0xFF);
 		// wifi_data.stats[s++] += ((d>>8)&0xFF);
 	}
@@ -1410,7 +1409,7 @@ static void Wifi_Intr_TxEnd(void)
 
 static void Wifi_Intr_TBTT(void)
 {
-	u16 active_reg = 0;
+	ushort active_reg = 0;
 
 	if (WIFI_REG(0xA0) & 0x8000) {
 		active_reg |= 1;
@@ -1515,10 +1514,10 @@ void wifi_interrupt(void*)
  * Strip the 14 byte ether header packet.
  * Add 48 bytes if wifi headers
  */
-void wifi_send_ether_packet(u16 length, uchar * data)
+void wifi_send_ether_packet(ushort length, uchar * data)
 {
 	int packetlen, framelen, hdrlen;
-	u16 framehdr[6 + 12 + 2];
+	ushort framehdr[6 + 12 + 2];
 	int i;
 
 	for (i = 0; i < 20; i++)
@@ -1539,12 +1538,12 @@ void wifi_send_ether_packet(u16 length, uchar * data)
 		framehdr[6] = 0x0008;
 		Wifi_CopyMacAddr(framehdr + 14, wifi_data.bssid);
 		Wifi_CopyMacAddr(framehdr + 11, wifi_data.MacAddr);
-		Wifi_CopyMacAddr(framehdr + 8, ((u8 *) data));
+		Wifi_CopyMacAddr(framehdr + 8, ((uchar *) data));
 	} else {
 		framehdr[6] = 0x0108;
 		Wifi_CopyMacAddr(framehdr + 8, wifi_data.bssid);
 		Wifi_CopyMacAddr(framehdr + 11, wifi_data.MacAddr);
-		Wifi_CopyMacAddr(framehdr + 14, ((u8 *) data));
+		Wifi_CopyMacAddr(framehdr + 14, ((uchar *) data));
 	}
 	if (wifi_data.curWepmode != WEPMODE_NONE) {
 		framehdr[6] |= 0x4000;
@@ -1578,11 +1577,11 @@ void wifi_send_ether_packet(u16 length, uchar * data)
 	framehdr[0] = 0xAAAA;
 	framehdr[1] = 0x0003;
 	framehdr[2] = 0x0000;
-	framehdr[3] = ((u16 *) data)[6];	// frame type
+	framehdr[3] = ((ushort *) data)[6];	// frame type
 
 	Wifi_MACWriteTX(framehdr, TX1_MAC_START, hdrlen * 2, 4 * 2);
 
-	Wifi_MACWriteTX((u16 *) (data + 14), TX1_MAC_START, hdrlen * 2 + 4 * 2,
+	Wifi_MACWriteTX((ushort *) (data + 14), TX1_MAC_START, hdrlen * 2 + 4 * 2,
 			length - 14);
 
 	/* Scheduled to be sent */
@@ -1598,11 +1597,11 @@ void wifi_send_ether_packet(u16 length, uchar * data)
 	wifi_data.stats[WF_STAT_TXDATABYTES] += packetlen - 4;
 }
 
-static void wifi_send_raw(u16 length, uchar * data)
+static void wifi_send_raw(ushort length, uchar * data)
 {
 	length = (length + 3) & (~3);
 
-	Wifi_MACWriteTX((u16 *) data, TX2_MAC_START, 0, length);
+	Wifi_MACWriteTX((ushort *) data, TX2_MAC_START, 0, length);
 
 	/* Scheduled to be sent */
 	WIFI_REG(0x80A4) = TX2_SETUP_VAL;
@@ -1616,29 +1615,29 @@ static void wifi_send_raw(u16 length, uchar * data)
 	wifi_data.stats[WF_STAT_TXDATABYTES] += length - 12;
 }
 
-static int Wifi_GenMgtHeader(u8 * data, u16 headerflags)
+static int Wifi_GenMgtHeader(uchar * data, ushort headerflags)
 {
 	// tx header
-	((u16 *) data)[0] = 0;
-	((u16 *) data)[1] = 0;
-	((u16 *) data)[2] = 0;
-	((u16 *) data)[3] = 0;
-	((u16 *) data)[4] = 0;
-	((u16 *) data)[5] = 0;
+	((ushort *) data)[0] = 0;
+	((ushort *) data)[1] = 0;
+	((ushort *) data)[2] = 0;
+	((ushort *) data)[3] = 0;
+	((ushort *) data)[4] = 0;
+	((ushort *) data)[5] = 0;
 	// fill in most header fields
-	((u16 *) data)[6] = headerflags;
-	((u16 *) data)[7] = 0x0000;
+	((ushort *) data)[6] = headerflags;
+	((ushort *) data)[7] = 0x0000;
 	Wifi_CopyMacAddr(data + 16, wifi_data.apmac);
 	Wifi_CopyMacAddr(data + 22, wifi_data.MacAddr);
 	Wifi_CopyMacAddr(data + 28, wifi_data.bssid);
-	((u16 *) data)[17] = 0;
+	((ushort *) data)[17] = 0;
 
 	// fill in wep-specific stuff
 	if (headerflags & 0x4000) {
-		((u16 *) data)[18] =
+		((ushort *) data)[18] =
 		    (WIFI_RANDOM ^ (WIFI_RANDOM << 7) ^ (WIFI_RANDOM << 15)) &
 		    0xFFFF;
-		((u16 *) data)[19] =
+		((ushort *) data)[19] =
 		    ((WIFI_RANDOM ^ (WIFI_RANDOM >> 7)) & 0xFF) | (wifi_data.
 								   wepkeyid <<
 								   14);
@@ -1651,13 +1650,13 @@ static int Wifi_GenMgtHeader(u8 * data, u16 headerflags)
 static void Wifi_SendAuthPacket(int wepmode)
 {
 	// max size is 12+24+4+6 = 46
-	u8 data[64];
+	uchar data[64];
 	int i;
-	u16 *fixed_params;
+	ushort *fixed_params;
 
 	i = Wifi_GenMgtHeader(data, 0x00B0);	// Auth
 
-	fixed_params = (u16 *) (data + i);
+	fixed_params = (ushort *) (data + i);
 
 	if (wepmode == WEPMODE_NONE) {
 		fixed_params[0] = 0;	// Authentication algorithm number (0=open system)
@@ -1667,24 +1666,24 @@ static void Wifi_SendAuthPacket(int wepmode)
 	fixed_params[1] = 1;	// Authentication sequence number
 	fixed_params[2] = 0;	// Authentication status code (reserved for this message, =0)
 
-	((u16 *) data)[4] = 0x000A;	// 1Mbit
-	((u16 *) data)[5] = i + 6 - 12 + 4;	// length
+	((ushort *) data)[4] = 0x000A;	// 1Mbit
+	((ushort *) data)[5] = i + 6 - 12 + 4;	// length
 
 	wifi_send_raw(i + 6, data);
 }
 
-static void Wifi_SendBackChallengeText(u8 * challenge)
+static void Wifi_SendBackChallengeText(uchar * challenge)
 {
 	// size is 12+28+4+6+130
-	u8 data[180];
+	uchar data[180];
 	int i;
 	int j;
-	u16 *fixed_params;
-	u8 *tagged_params;
+	ushort *fixed_params;
+	uchar *tagged_params;
 
 	i = Wifi_GenMgtHeader(data, 0x40B0);	// Auth + WEP
 
-	fixed_params = (u16 *) (data + i);
+	fixed_params = (ushort *) (data + i);
 
 	fixed_params[0] = 1;	// Authentication algorithm number (1=shared key)
 	fixed_params[1] = 3;	// Authentication sequence number
@@ -1697,8 +1696,8 @@ static void Wifi_SendBackChallengeText(u8 * challenge)
 		tagged_params[j] = challenge[j];
 	}
 
-	((u16 *) data)[4] = 0x000A;	// 1Mbit
-	((u16 *) data)[5] = i + 6 - 12 + 4 + 130 + 4;	// length
+	((ushort *) data)[4] = 0x000A;	// 1Mbit
+	((ushort *) data)[5] = i + 6 - 12 + 4 + 130 + 4;	// length
 
 	wifi_send_raw(i + 6 + 130, data);
 }
@@ -1706,18 +1705,18 @@ static void Wifi_SendBackChallengeText(u8 * challenge)
 static void Wifi_SendAssocPacket(void)
 {
 	// max size is 12+24+4+34+4 = 66
-	u8 data[96];
+	uchar data[96];
 	int i, j, numrates;
 
 	i = Wifi_GenMgtHeader(data, 0x0000);
 
 	if (wifi_data.curWepmode) {
-		((u16 *) (data + i))[0] = 0x0011;	// CAPS info
+		((ushort *) (data + i))[0] = 0x0011;	// CAPS info
 	} else {
-		((u16 *) (data + i))[0] = 0x0001;	// CAPS info
+		((ushort *) (data + i))[0] = 0x0001;	// CAPS info
 	}
 
-	((u16 *) (data + i))[1] = WIFI_REG(0x8E);	// Listen interval
+	((ushort *) (data + i))[1] = WIFI_REG(0x8E);	// Listen interval
 	i += 4;
 	data[i++] = 0;		// SSID element
 	data[i++] = wifi_data.ssid[0];
@@ -1749,8 +1748,8 @@ static void Wifi_SendAssocPacket(void)
 		data[i++] = wifi_data.baserates[j];
 
 	// reset header fields with needed data
-	((u16 *) data)[4] = 0x000A;
-	((u16 *) data)[5] = i - 12 + 4;
+	((ushort *) data)[4] = 0x000A;
+	((ushort *) data)[5] = i - 12 + 4;
 
 	wifi_send_raw(i, data);
 }
@@ -1759,18 +1758,18 @@ static void Wifi_SendAssocPacket(void)
 static int Wifi_SendPSPollFrame(void)
 {
 	// max size is 12+16 = 28
-	u8 data[32];
+	uchar data[32];
 	// int i;
 	// tx header
-	((u16 *) data)[0] = 0;
-	((u16 *) data)[1] = 0;
-	((u16 *) data)[2] = 0;
-	((u16 *) data)[3] = 0;
-	((u16 *) data)[4] = wifi_data.maxrate;
-	((u16 *) data)[5] = 16 + 4;
+	((ushort *) data)[0] = 0;
+	((ushort *) data)[1] = 0;
+	((ushort *) data)[2] = 0;
+	((ushort *) data)[3] = 0;
+	((ushort *) data)[4] = wifi_data.maxrate;
+	((ushort *) data)[5] = 16 + 4;
 	// fill in packet header fields
-	((u16 *) data)[6] = 0x01A4;
-	((u16 *) data)[7] = 0xC000 | WIFI_AIDS;
+	((ushort *) data)[6] = 0x01A4;
+	((ushort *) data)[7] = 0xC000 | WIFI_AIDS;
 	Wifi_CopyMacAddr(data + 16, wifi_data.apmac);
 	Wifi_CopyMacAddr(data + 22, wifi_data.MacAddr);
 
@@ -1779,7 +1778,7 @@ static int Wifi_SendPSPollFrame(void)
 }
 #endif
 
-void wifi_ap_query(u16 start_stop)
+void wifi_ap_query(ushort start_stop)
 {
 	if (start_stop)
 		wifi_data.state |= WIFI_STATE_APQUERYPEND;
