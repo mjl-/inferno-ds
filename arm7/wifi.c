@@ -1303,7 +1303,7 @@ int Wifi_QueueRxMacData(u32 base, u32 len)
 
 	Wifi_MACCopy((u16 *) rx_packet->data, base, macofs, len);
 	rx_packet->len = len;
-//	nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_RX, 0));
+	IPCREG->ctl |= Ipcgenirq|I7WFrxdone;
 
 	/* XOXOXO Disable rx interrupts */
 
@@ -1404,7 +1404,7 @@ static void Wifi_Intr_TxEnd(void)
 	if ((wifi_data.state & WIFI_STATE_TXPENDING)
 	    && !(WIFI_REG(0xA0) & 0x8000)) {
 		wifi_data.state &= ~WIFI_STATE_TXPENDING;
-		// nds_fifo_send(FIFO_WIFI_CMD(FIFO_WIFI_CMD_TX_COMPLETE, 0));
+		IPCREG->ctl |= Ipcgenirq|I7WFtxdone;
 	}
 }
 
@@ -1791,7 +1791,7 @@ void wifi_ap_query(u16 start_stop)
 
 void wifi_start_scan(void)
 {
-	TimerReg *t = TIMERREG + WIFItimer;
+	TimerReg *t = TMRREG + WIFItimer;
 
 	wifi_data.state |= WIFI_STATE_CHANNEL_SCANNING;
 	wifi_data.scanChannel = 1;
@@ -1804,7 +1804,7 @@ void wifi_start_scan(void)
 
 static void wifi_bump_scan(void)
 {
-	TimerReg *t = TIMERREG + WIFItimer;
+	TimerReg *t = TMRREG + WIFItimer;
 
 	if (wifi_data.scanChannel == 13) {
 		intrmask(TIMERWIFIbit, 0);
@@ -1820,7 +1820,7 @@ static void wifi_bump_scan(void)
 
 void wifi_timer_handler(void*)
 {
-	TimerReg *t = TIMERREG + WIFItimer;
+	TimerReg *t = TMRREG + WIFItimer;
 
 	if (wifi_data.state & WIFI_STATE_CHANNEL_SCANNING) {
 		wifi_bump_scan();

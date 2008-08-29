@@ -70,26 +70,16 @@ enum {
 	Sndena		= 1<<15,
 };
 
-// not sure on the following
-
-#define SOUND_BIAS 	(SNDREG->bias)
-#define SOUND508	(SNDREG->s508)
-#define SOUND510	(SNDREG->s510)
-#define SOUND514	(SNDREG->s514)
-#define SOUND518	(SNDREG->s518)
-#define SOUND51C	(SNDREG->s51c)
-
 typedef struct TxSound TxSound;
 struct TxSound {
-  uchar chans;
-  const void *data;
-  ulong len;
+  char *d;
+  ulong n;
   ulong rate;
+
+  uchar chan;
   uchar vol;
   uchar pan;
   uchar fmt;
-
-  uchar pad;
 };
 
 void startrec(TxSound *snd);

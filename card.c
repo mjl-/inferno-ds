@@ -1,30 +1,7 @@
-/*---------------------------------------------------------------------------------
-	$Id: card.c,v 1.11 2007/07/09 15:54:33 wntrmute Exp $
-
-	Copyright (C) 2005
-		Michael Noland (joat)
-		Jason Rogers (dovoto)
-		Dave Murphy (WinterMute)
-
-	This software is provided 'as-is', without any express or implied
-	warranty.  In no event will the authors be held liable for any
-	damages arising from the use of this software.
-
-	Permission is granted to anyone to use this software for any
-	purpose, including commercial applications, and to alter it and
-	redistribute it freely, subject to the following restrictions:
-
-	1.	The origin of this software must not be misrepresented; you
-		must not claim that you wrote the original software. If you use
-		this software in a product, an acknowledgment in the product
-		documentation would be appreciated but is not required.
-	2.	Altered source versions must be plainly marked as such, and
-		must not be misrepresented as being the original software.
-	3.	This notice may not be removed or altered from any source
-		distribution.
-
-
----------------------------------------------------------------------------------*/
+/*
+ * Copyright (C) 2005
+ * Michael Noland (joat), Jason Rogers (dovoto), Dave Murphy (WinterMute)
+ */
 #include "u.h"
 #include "mem.h"
 #include "io.h"
@@ -32,21 +9,11 @@
 #include "arm7/jtypes.h"
 #include "arm7/card.h"
 
-#define DMA_SRC(ch)	((DmaReg*)(DMAREG + (ch)))->src
-#define DMA_DEST(ch)	((DmaReg*)(DMAREG + (ch)))->dst
-#define DMA_CR(ch)	((DmaReg*)(DMAREG + (ch)))->ctl
-
-#define DMA_ENABLE	Dmaena
-#define DMA_START_CARD	Dmastartcard
-#define DMA_32_BIT	Dma32bit
-#define DMA_REPEAT	Dmarepeat
-#define DMA_SRC_FIX	Dmasrcfix
-
 void
 cardWriteCommand(const uint8 * cmd){
 	int index;
 
-	CARD_CR1H = CARD_CR1_ENABLE | CARD_CR1_IRQ;
+	CARD_CR1 |= Spiena|Spiirqena;
 
 	for (index = 0; index < 8; index++) {
 		CARD_COMMAND[7-index] = cmd[index];
@@ -74,12 +41,15 @@ cardPolledTransfer(uint32 flags, uint32 * dst, uint32 len, const uint8 * cmd){
 
 void
 cardStartTransfer(const uint8 * cmd, uint32 * dst, int ch, uint32 flags){
-	cardWriteCommand(cmd);
+	DmaReg *dma;
 
+	cardWriteCommand(cmd);
+	
 	// Set up a DMA channel to transfer a word every time the card makes one
-	DMA_SRC(ch) = (uint32)&CARD_DATA_RD;
-	DMA_DEST(ch) = (uint32)dst;
-	DMA_CR(ch) = DMA_ENABLE | DMA_START_CARD | DMA_32_BIT | DMA_REPEAT | DMA_SRC_FIX | 0x0001;;
+	dma = DMAREG + ch;
+	dma->src = (uint32)&CARD_DATA_RD;
+	dma->dst = (uint32)dst;
+	dma->ctl = Dmaena | Dmastartcard | Dma32bit | Dmarepeat | Dmasrcfix | 0x0001;
 
 	CARD_CR2 = flags;
 }
@@ -137,7 +107,7 @@ uint8
 cardEepromCommand(uint8 command, uint32 address){
     uint8 retval;
     int k;
-    CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+    CARD_CR1 = Spiena|Spiselect|Spihold;
 
     CARD_CR1 = 0xFFFF;
     CARD_EEPDATA = command;
@@ -161,7 +131,7 @@ cardEepromCommand(uint8 command, uint32 address){
         EepromWaitBusy();
     }
 
-    CARD_CR1 = /*MODE*/0x40;
+    CARD_CR1 = Spihold;
     return retval;
 }
 
@@ -172,10 +142,6 @@ cardEepromGetType(void)
         uint8 c05;
         uint8 c9f;
         uint8 c03;
-
-#ifdef ARM9
-        sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
-#endif
 
         c03=cardEepromCommand(0x03,0);
         c05=cardEepromCommand(0x05,0);
@@ -244,7 +210,7 @@ cardEepromGetSize(void){
 void
 cardReadEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
 
-    CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+    CARD_CR1 = Spiena|Spiselect|Spihold;
     CARD_EEPDATA = 0x03 | ((addrtype == 1) ? address>>8<<3 : 0);
     EepromWaitBusy();
 
@@ -270,7 +236,7 @@ cardReadEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
     }
 
     EepromWaitBusy();
-    CARD_CR1 = /*MODE*/0x40;
+    CARD_CR1 = Spihold;
 }
 
 
@@ -286,12 +252,12 @@ cardWriteEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
 
 	while (address < address_end) {
 		// set WEL (Write Enable Latch)
-		CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+		CARD_CR1 = Spiena|Spiselect|Spihold;
 		CARD_EEPDATA = 0x06; EepromWaitBusy();
 		CARD_CR1 = /*MODE*/0x40;
 
 		// program maximum of 32 bytes
-		CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+		CARD_CR1 = Spiena|Spiselect|Spihold;
 
         if(addrtype == 1) {
         //  WRITE COMMAND 0x02 + A8 << 3
@@ -323,14 +289,14 @@ cardWriteEeprom(uint32 address, uint8 *data, uint32 length, uint32 addrtype){
             CARD_EEPDATA = *data++; 
             EepromWaitBusy(); 
         }
-		CARD_CR1 = /*MODE*/0x40;
+		CARD_CR1 = Spihold;
 
 		// wait programming to finish
-		CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+		CARD_CR1 = Spiena|Spiselect|Spihold;
 		CARD_EEPDATA = 0x05; EepromWaitBusy();
 		do { CARD_EEPDATA = 0; EepromWaitBusy(); } while (CARD_EEPDATA & 0x01);	// WIP (Write In Progress) ?
         EepromWaitBusy();
-        CARD_CR1 = /*MODE*/0x40;
+        CARD_CR1 = Spihold;
 	}
 }
 
@@ -358,14 +324,14 @@ void
 cardEepromSectorErase(uint32 address)
 {
         // set WEL (Write Enable Latch)
-        CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+       CARD_CR1 = Spiena|Spiselect|Spihold;
         CARD_EEPDATA = 0x06;
         EepromWaitBusy();
 
         CARD_CR1 = /*MODE*/0x40;
 
         // SectorErase 0xD8
-        CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+        CARD_CR1 = Spiena|Spiselect|Spihold;
         CARD_EEPDATA = 0xD8;
         EepromWaitBusy();
         CARD_EEPDATA = (address >> 16) & 0xFF;
@@ -375,10 +341,10 @@ cardEepromSectorErase(uint32 address)
         CARD_EEPDATA = address & 0xFF;
         EepromWaitBusy();
 
-        CARD_CR1 = /*MODE*/0x40;
+        CARD_CR1 = Spihold;
 
         // wait erase to finish
-        CARD_CR1 = /*E*/0x8000 | /*SEL*/0x2000 | /*MODE*/0x40;
+        CARD_CR1 = Spiena|Spiselect|Spihold;
         CARD_EEPDATA = 0x05;
         EepromWaitBusy();
 
@@ -387,5 +353,5 @@ cardEepromSectorErase(uint32 address)
             CARD_EEPDATA = 0;
             EepromWaitBusy();
         } while (CARD_EEPDATA & 0x01);  // WIP (Write In Progress) ?
-        CARD_CR1 = /*MODE*/0x40;
+        CARD_CR1 = Spihold;
 }

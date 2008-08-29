@@ -1,4 +1,17 @@
-ktzero=0x02000130;
+ktzero=0;		// kernel text segment load address
+ktzero9=0x02000130;	// arm9 ktzero
+ktzero7=0x03800000;	// arm7 ktzero
 
-map({"text", ktzero, map()[0][2]+ktzero - 0x1020, 0x20});
+defn dsmap9()
+{
+	ktzero=ktzero9;
+	map({"text", ktzero, map()[0][2]+ktzero - 0x1020, 0x20});
+}
+
+defn dsmap7()
+{
+	ktzero=ktzero7;
+	map({"text", ktzero, map()[0][2]+ktzero - 0x0, 0x20});
+}
+
 print("$ROOT/os/ds/acidmap");

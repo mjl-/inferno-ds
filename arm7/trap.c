@@ -7,6 +7,7 @@
 typedef struct IrqEntry IrqEntry;
 struct IrqEntry{
 	void (*r)(void*);
+	void *a;
 	int v;
 };
 
@@ -29,7 +30,7 @@ intrs(void)
 			cur = &Irq[i];
 			if (cur->r != nil){
 				INTREG->ime= 0;
-				cur->r((void*)cur->v);
+				cur->r(cur->a);
 				INTREG->ime = 1;
 				
 				ibits &= ~(1<<i);
@@ -66,6 +67,7 @@ trapinit(void)
 
 	for(i = 0; i < nelem(Irq); i++){
 		Irq[i].r = nil;
+		Irq[i].a = nil;
 		Irq[i].v = i;
 	}
 	
@@ -84,13 +86,14 @@ intrclear(int v, int tbdf)
 }
 
 void
-intrenable(int v, void (*r)(void*), int tbdf)
+intrenable(int v, void (*r)(void*), void *a, int tbdf)
 {
 	USED(tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		return;
 
 	Irq[v].r	= r;
+	Irq[v].a	= a;
 	Irq[v].v	= v;
 		
 	INTREG->ier |= (1 << v);

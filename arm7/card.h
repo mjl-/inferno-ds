@@ -13,9 +13,6 @@
 #define CARD_1B8	(*(vuint16*)0x040001B8)
 #define CARD_1BA	(*(vuint16*)0x040001BA)
 
-#define CARD_CR1_ENABLE  0x80 /* in byte 1, i.e. 0x8000 */
-#define CARD_CR1_IRQ     0x40 /* in byte 1, i.e. 0x4000 */
-
 /*
  * CARD_CR2 register
  */

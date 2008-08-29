@@ -22,7 +22,7 @@
 /*
  * Time
  */
-#define	HZ		(100)			/* clock frequency */
+#define	HZ		100			/* clock frequency */
 #define	MS2HZ		(1000/HZ)		/* millisec per clock tick */
 #define	TK2SEC(t)	((t)/HZ)		/* ticks to seconds */
 #define	MS2TK(t)	((t)/MS2HZ)		/* milliseconds to ticks */
@@ -63,17 +63,17 @@
 #define	DWRAMTOP9	0x0b003FFC
 #define	IWRAMZERO9	0x03000000
 #define	IWRAMTOP9	0x03007FFF
-#define	LCD		0x04000000	/* LCD controller */
-#define	SPI		0x040001C0	/* SPI controller */
-#define	VRAM		0x04000240	/* Vram bank controller */
-#define	POWER		0x04000304	/* Power controller */
-#define	SUBLCD		0x04001000	/* sub LCD controller */
+#define	LCD		0x04000000
+#define	SPI		0x040001C0	/* arm7 SPI */
+#define	AUXSPI		0x040001A0	/* aux SPI */
+#define	VRAM		0x04000240	/* Vram bank */
+#define	POWER		0x04000304
+#define	SUBLCD		0x04001000
 #define	WIFI		0x04800000
 #define	PALMEM		0x05000000
+#define	SUBPALMEM	0x05000400
 #define	VRAMZERO	0x06000000
 #define	VRAMTOP		0x06800000
-#define	VRAMLO		0x06000000
-#define	VRAMHI		0x0600A000
 #define	EXCHAND9	0x027FFD9C	/* exc handler */
 #define	INTHAND9	0x00803FFC	/* irq handler set with writedtmcctl */
 #define	IRQCHECK9	0x00803FF8	/* notify NDS BIOS of end of int */

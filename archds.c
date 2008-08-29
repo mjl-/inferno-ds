@@ -54,13 +54,18 @@ archconsole(void)
 void
 archpowerdown(void)
 {
+	dcflushall();
 	fifoput(F9TSystem|F9Syspoweroff, 1);
 }
 
 void
 archreboot(void)
 {
+	dcflushall();
+	wcpctl(rcpctl() | CpCaltivec);		/* restore bootstrap's vectors */
 	fifoput(F9TSystem|F9Sysreboot, 1);
+	for(;;)
+		spllo();
 }
 
 /* no need for this? */
@@ -77,22 +82,27 @@ enum
 	Operastart = 0x09000000,		/* start and len of psram (bytes) */
 	Operalen = 8*1024*1024,			/* 8 Mb available */
 
-	Canary = 0x11223344,
+	Canary = 0x1122,
 };
 
 static int
-ramcheck(ulong *s, ulong n)
+ramchk(void *s, ulong n)
 {
-	ulong *p, *e;
+	ushort *p, *e;
 
 	p = s;
-	e = s + n;
+	e = p + n;
 	while(p < e){
 		*p = Canary;
 		if (*p != Canary)
-			return 0;
-		//print("ok %x %x\n", p, *p);
-		p += 256;
+			break;
+		p += 2;
+	}
+
+	DPRINT("ramchk: p %lux e %lux\n", p, e);
+	if (p != e){
+		DPRINT("ramchk: *%ux = %ux\n", (ushort)p, *p);
+		return 0;
 	}
 	return 1;
 }
@@ -114,14 +124,14 @@ archconfinit(void)
 	if (*operactl){
 		*operactl = 1;
 
-		if (0 && ramcheck((ulong*)Operastart, Operalen/4)){
+		if (0 && ramchk((ulong*)Operastart, Operalen/2)){
 			conf.base1 = PGROUND(Operastart);
-			conf.npage1 = (Operalen)/BY2PG;
+			conf.npage1 = (Operalen/2)/BY2PG;
 		}
-		else if	(ramcheck((ulong*)ROMZERO, Operalen)){
+		else if	(0 && ramchk((ulong*)ROMZERO, Operalen/2)){
 			/* another desmume trick */
 			conf.base1 = PGROUND(ROMZERO);
-			conf.npage1 = (Operalen)/BY2PG;
+			conf.npage1 = (Operalen/2)/BY2PG;
 		}
 		else{
 			conf.base1 = 0;
@@ -135,6 +145,7 @@ archconfinit(void)
 	conf.bsram = SRAMTOP;
 	conf.brom = ROMTOP;
 	conf.bmap = 0;
+	conf.screens = 1;
 }
 
 void
@@ -146,22 +157,47 @@ kbdinit(void)
 
 static LCDmode lcd256x192x16tft =
 {
-//	.x = 240, .y = 160, .depth = 16, .hz = 60,
+//	.x = 255, .y = 192, .depth = 16, .hz = 60,
+//	.pbs = 2, .dual = 0, .mono = 0, .active = 1,
 //	.hsync_wid = 4-2, .sol_wait = 12-1, .eol_wait = 17-1,
 //	.vsync_hgt = 3-1, .soft_wait = 10, .eof_wait = 1,
 //	.lines_per_int = 0,  .acbias_lines = 0,
+//	.obits = 16,
 //	.vsynclow = 1, .hsynclow = 1,
 	256, 192, 16, 60,
+	2, 0, 0, 1,
 	4-2, 12-1, 17-1,
 	3-1, 10, 1,
-	0, 0,
+	0, 0, 0,
+	16,
+	1, 1,
+};
+
+static LCDmode lcd256x384x16tft =
+{
+//	.x = 255, .y = 384, .depth = 16, .hz = 60,
+//	.pbs = 2, .dual = 0, .mono = 0, .active = 1,
+//	.hsync_wid = 4-2, .sol_wait = 12-1, .eol_wait = 17-1,
+//	.vsync_hgt = 3-1, .soft_wait = 10, .eof_wait = 1,
+//	.lines_per_int = 0,  .acbias_lines = 0,
+//	.obits = 16,
+//	.vsynclow = 1, .hsynclow = 1,
+	256, 384, 16, 60,
+	2, 0, 0, 1,
+	4-2, 12-1, 17-1,
+	3-1, 10, 1,
+	0, 0, 0,
+	16,
 	1, 1,
 };
 
 int
 archlcdmode(LCDmode *m)
 {
-	*m =  lcd256x192x16tft;
+	if (conf.screens == 2)
+		*m = lcd256x384x16tft;
+	else
+		*m = lcd256x192x16tft;
 	return 0;
 }
 
@@ -185,22 +221,21 @@ archether(int ctlno, Ether *ether)
 	ether->mbps = 2;
 	ether->maxmtu = 1492;
 
-	/* IPCSYNC irq from arm7 when there's wifi activity (tx/rx) */
 	IPCREG->ctl |= Ipcirqena;
 	
 	memset(ether->ea, 0xff, Eaddrlen);
 	nbfifoput(F9TWifi|F9WFrmac, (ulong)ether->ea);	/* mac from arm7 */
-	
 	if(1){	/* workaround for desmume */
-		uchar i, maczero[Eaddrlen];
+		ushort i;
+		uchar maczero[Eaddrlen];
 		
-		for(i=0; i < 1<<(8*sizeof(uchar))-1; i++);
+		for(i=0; i < 1<<(8*sizeof(ushort))-1; i++);
 		memset(maczero, 0x00, Eaddrlen);
 		if(memcmp(ether->ea, maczero, Eaddrlen) == 0)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 
-	strcpy(opt, "mode=managed channel=1 crypt=off essid=THOMSON station=ds");
+	strcpy(opt, "power=on mode=managed crypt=off essid=THOMSON station=ds");
 	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;

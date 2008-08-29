@@ -2,7 +2,6 @@
  *   Driver for DS Linux
  *
  *       Copyright 2006 Bret Thaeler - bthaeler@aol.com
- *
  */
 
 // Wifi regs

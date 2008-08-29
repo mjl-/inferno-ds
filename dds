@@ -1,3 +1,4 @@
+# dds: disk with all files in sd/tf card
 dev
 	root
 	cons archds lcd
@@ -16,6 +17,8 @@ dev
 	nds
 	dldi
 	audio
+#	boot
+#	kprof
 #	tinyfs
 
 ip
@@ -82,17 +85,18 @@ link
 #	pppmedium ppp compress
 
 #	ttio
+#	gmtf
 	mpcf
 	r4tf card
 
 misc
-	logo
-	math
+#	logo
+#	math
 
 code
-	int main_pool_pcnt = 50;
+	int main_pool_pcnt = 60;
 	int heap_pool_pcnt = 30;
-	int image_pool_pcnt = 20;
+	int image_pool_pcnt = 10;
 	int cflag = 0;
 
 	int consoleprint = 1;
@@ -123,11 +127,11 @@ root
 # intialisation
 # dos file system
 	/dis/dossrv.dis
-	/dis/disk/format.dis
+#	/dis/disk/format.dis
 
 # kfs file system
 	/dis/disk/kfs.dis
-	/dis/disk/kfscmd.dis
+#	/dis/disk/kfscmd.dis
 
 # used by file systems and commands
 	/dis/lib/arg.dis
@@ -136,36 +140,27 @@ root
 	/dis/lib/daytime.dis
 
 # For development work:
-	/dis/sh.dis
-	/dis/sh/std.dis
-	/dis/sh/expr.dis
-	/dis/ls.dis
-	/dis/cat.dis
-	/dis/bind.dis
-	/dis/mount.dis
-	/dis/pwd.dis
-	/dis/echo.dis
-	/dis/cd.dis
-	/dis/xd.dis
-	/dis/cp.dis
-	/dis/mkdir.dis
-	/dis/rm.dis
-	/dis/p.dis
-	/dis/ps.dis
-	/dis/date.dis
-	/dis/time.dis
-	/dis/ftest.dis
-	/dis/mdb.dis
-	/dis/read.dis
-	/dis/calc.dis
+#	/dis/sh.dis	/dis/tiny/sh.dis
+#	/dis/ls.dis
+#	/dis/cat.dis
+#	/dis/bind.dis
+#	/dis/mount.dis
+#	/dis/pwd.dis
+#	/dis/echo.dis
+#	/dis/cd.dis
+#	/dis/xd.dis
+#	/dis/cp.dis
+#	/dis/mkdir.dis
+#	/dis/rm.dis	/dis/tiny/rm.dis
+#	/dis/p.dis
+#	/dis/ps.dis
+
 	/dis/lib/readdir.dis
 	/dis/lib/workdir.dis
-	/dis/lib/daytime.dis
-	/dis/lib/auth.dis
 	/dis/lib/env.dis
-	/dis/lib/ssl.dis
 	/dis/lib/bufio.dis
-	/dis/lib/dis.dis
+#	/dis/lib/auth.dis
+#	/dis/lib/ssl.dis
 
 # dhcp
 	/dis/lib/dhcpclient.dis

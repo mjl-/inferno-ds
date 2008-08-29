@@ -3,8 +3,8 @@
 #Configurable parameters
 
 CONF=sds				#default configuration
-CONFLIST=ds sds
-CLEANCONFLIST=ds sds
+CONFLIST=ds sds dds
+CLEANCONFLIST=ds sds dds
 
 SYSTARG=$OSTARG
 OBJTYPE=arm #thumb

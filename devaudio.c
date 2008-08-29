@@ -85,7 +85,9 @@ static	struct
 static	char	Emode[]		= "illegal open mode";
 static	char	Evolume[]	= "illegal volume specifier";
 
-static TxSound snddat;
+/* TODO: use the 16 sound channels available */
+static int chan = 0;	/* sound channel index */
+static TxSound snd[17];	/* play and record */
 
 static void
 mxvolume(void)
@@ -95,27 +97,28 @@ mxvolume(void)
 	rov = audio.rovol[Vaudio];
 	lov = audio.lovol[Vaudio];
 	
-	snddat.chans = (audio.flags & Fmono? 1: 2);
-	snddat.rate = audio.lovol[Vspeed];
-	snddat.vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
-	snddat.pan = (Maxvol - Minvol) * rov / (2*lov+1);
-	snddat.fmt = audio.flags & F16bits;
+	snd[chan].chan = (audio.flags & Fmono? 1: 2);
+	snd[chan].rate = audio.lovol[Vspeed];
+	snd[chan].vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
+	snd[chan].pan = (Maxvol - Minvol) * rov / (2*lov+1);
+	snd[chan].fmt = audio.flags & F16bits;
 }
 
 static void
-playaudio(const void* data, ulong length)
+playaudio(void* d, ulong len)
 {
-	snddat.data = data;
-	snddat.len = length;
-	fifoput(F9TAudio|F9Auplay, (ulong)&snddat);
+	snd[chan].d = d;
+	snd[chan].n = len;
+	fifoput(F9TAudio|F9Auplay, (ulong)&snd[chan]);
 }
 
 static void
-recaudio(const void* data, ulong length)
+recaudio(void* d, ulong len)
 {
-	snddat.data = data;
-	snddat.len = length;
-	fifoput(F9TAudio|F9Aurec, (ulong)&snddat);
+	memmove(&snd[1], &snd[chan], sizeof(TxSound));
+	snd[1].d = d;
+	snd[1].n = len;
+	fifoput(F9TAudio|F9Aurec, (ulong)&snd[1]);
 }
 
 static void
@@ -137,6 +140,7 @@ audioinit(void)
 	audio.amode = Aclosed;
 	resetlevel();
 	fifoput(F9TAudio|F9Aupower, 1);
+	delay(15);	/* must wait 15 ms before using audio */
 }
 
 static Chan*
@@ -188,7 +192,7 @@ audioread(Chan *c, void *v, long n, vlong offset)
 	case Qaudioctl:
 		buf[0] = 0;
 		s = buf;
-		e = buf + 300;
+		e = buf + sizeof(buf);
 		for(m=0; volumes[m].name; m++){
 			liv = audio.livol[m];
 			riv = audio.rivol[m];

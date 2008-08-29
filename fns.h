@@ -20,8 +20,6 @@ void	clockinit(void);
 void	clockpoll(void);
 #define	coherence()		/* nothing to do for cache coherence for uniprocessor */
 uint	cpsrr(void);
-void	cursorhide(void);
-void	cursorunhide(void);
 void	dcflush(void*, ulong);
 void	dcflushall(void);
 void	dmasetup(int channel, int device, int direction, int endianess);
@@ -137,9 +135,9 @@ vlong	vldiv(vlong num, vlong denom);
 ulong	lsqrt(ulong p);
 ulong	vlsqrt(uvlong p);
 
-int	nbfifoput(ulong cmd, ulong param);
-void	fifoput(ulong cmd, ulong param);
-ulong	fifoget(ulong *param);
+int	nbfifoput(ulong, ulong);
+void	fifoput(ulong, ulong);
+ulong	fifoget(ulong *);
 void	fiforecvintr(Ureg*, void*);
 void	fifosendintr(Ureg*, void*);
 

@@ -24,12 +24,12 @@ pm_setamp(uchar control)
 }
 
 static uchar 
-mic_auxread(void) {
+mic_auxread(ushort sfmt) {
 	ushort res[2];
 
 	busywait();
 	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz | Spicont;
-	SPIREG->data = Tscgetmic;	// Touchscreen cmd format for AUX
+	SPIREG->data = sfmt;	
 	busywait();
 	SPIREG->data = 0x00;
 	busywait();
@@ -42,74 +42,65 @@ mic_auxread(void) {
 	return (((res[1] & 0x7F) << 1) | ((res[0] >> 7) & 0x01));
 }
 
-static struct {
-	uchar *d;
-	int rn;	// samples to record
-	int n;	// recorded samples
-} micdata;
+static int nrs = 0;
 
 static void
-recintr(void*)
+recintr(void *a)
 {	
-	uchar s;
+	TxSound *snd = a;
 
-	if(micdata.d && micdata.rn > 0) {
-		s = mic_auxread() ^ 0x80;
-		micdata.d[micdata.n++] =  s;
-//		print("%x ", *s);
-		--micdata.rn;
-	}
+	if(snd->d && nrs++ < snd->n){
+		snd->d[nrs] = (char) mic_auxread(Tscgetmic8) ^ 0x80;
+		if (0 && nrs % 1024 == 0) print("%x[%d]\n", snd->d, nrs);
+	}else
+		stoprec(snd);
+
 	intrclear(TIMERAUDIObit, 0);
 }
 
 void 
 startrec(TxSound *snd) 
 {
-	TimerReg *t = TIMERREG + AUDIOtimer;
-
-	micdata.d = (uchar*)snd->data;
-	micdata.rn = snd->len;
-	micdata.n = 0;
+	TimerReg *t = TMRREG + AUDIOtimer;
 
 	pm_setamp(PM_AMP_ON);
 	
+	nrs = 0;
 	t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
 	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
-	intrenable(TIMERAUDIObit, recintr, 0);
+	intrenable(TIMERAUDIObit, recintr, snd, 0);
 }
 
 int 
 stoprec(TxSound *snd) 
 {
-	TimerReg *t = TIMERREG + AUDIOtimer;
+	TimerReg *t = TMRREG + AUDIOtimer;
 
 	USED(snd);
 	t->ctl &= ~Tmrena;
 	intrmask(TIMERAUDIObit, 0);
 
 	pm_setamp(PM_AMP_OFF);
-	micdata.d = 0;
-	return micdata.n;
+
+	snd->d = nil;
+	return nrs;
 }
 
 void 
 playsound(TxSound *snd)
 {
-	int ch;
 	SChanReg *schan;
 
 	SNDREG->cr.ctl = Sndena | Maxvol;
 	SNDREG->bias = 0x200;
 
-	for (ch=0; ch < snd->chans; ch++){
-		schan = SCHANREG + ch;
+	schan = SCHANREG + snd->chan;
 
-		schan->rpt = 0;
-		schan->tmr = SCHAN_BASE / (int)snd->rate;
-		schan->src = (ulong) snd->data;
-		schan->wlen = snd->fmt? snd->len>>2: snd->len>>1;
-		schan->cr.vol = snd->vol;
-		schan->cr.pan = snd->pan;
-		schan->cr.ctl |= SCena | SCrep1shot | (snd->fmt? SCpcm16bit: SCpcm8bit);
-	}
+	schan->rpt = 0;
+	schan->tmr = SCHAN_BASE / (int)snd->rate;
+	schan->src = (ulong) snd->d;
+	schan->wlen = snd->fmt? snd->n>>2: snd->n>>1;
+	schan->cr.vol = snd->vol;
+	schan->cr.pan = snd->pan;
+	schan->cr.ctl |= SCena | SCrep1shot | (snd->fmt? SCpcm16bit: SCpcm8bit);
 }

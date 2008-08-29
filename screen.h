@@ -23,6 +23,7 @@ struct Vmode {
 
 struct Vdisplay {
 	ushort*	fb;		/* frame buffer */
+	ushort* sfb;		/* soft frame buffer */
 	ulong	colormap[256][3];
 	int	bwid;
 	Lock;

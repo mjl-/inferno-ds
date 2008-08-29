@@ -270,7 +270,7 @@ TEXT mpuinit(SB), $-4
 	MOVW	R1, (R0)
 	
 	/* enable arm9 iwram */
-	MOVW	$0x04000247, R0
+	MOVW	$(VRAM + 7), R0
 	MOVW	$0, R1
 	MOVW	R1, (R0)
 
@@ -339,12 +339,15 @@ TEXT mpuinit(SB), $-4
 	MOVW	$0x33333333, R0
 	MCR		CpMPU, 0, R0, C(CpAccess), C0, 2
 
-
-	/* Enable icache, dcache and mpu */
+	/* enable icache, dcache and mpu */
 	MRC		CpMPU, 0, R0, C(CpControl), C0, 0
 	ORR		$(CpCrrob|CpCicache|CpCdcache),	R0
 	BIC		$(CpCaltivec), R0
 	MCR		CpMPU, 0, R0, C(CpControl), C0, 0
+
+	/* enable dcache for GBA ROM */
+	MOVW		$0x82, R0
+	MCR		CpMPU, 0, R0, C(CpCachebit), C0, 0
 
 	RET
 

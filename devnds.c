@@ -47,6 +47,7 @@ fiforecv(ulong vv)
 {
 	ulong v;
 	static uchar mousemod = 0;
+	static uchar lcdyoff = 0;
 	int i;
 
 	v = vv>>Fcmdlen;
@@ -61,6 +62,9 @@ fiforecv(ulong vv)
 			mousemod &= 1<<1;
 		if(v&(1<<Lbtn))
 			mousemod &= 1<<2;
+
+		if(v&1<<Selbtn && v&1<<Startbtn)
+			lcdyoff = lcdyoff > 0? 0: Scrheight;
 
 		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
 			if (i==Rbtn||i==Lbtn){
@@ -82,8 +86,8 @@ fiforecv(ulong vv)
 			blankscreen(1);
 		break;
 	case F7mousedown:
-		// print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
-		mousetrack(mousemod, v&0xff, (v>>8)&0xff, 0);
+		//print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
+		mousetrack(mousemod, v&0xff, lcdyoff+((v>>8)&0xff), 0);
 		break;
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);
@@ -336,15 +340,17 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		nf = getfields(cmd, fields, nelem(fields), 1, " \n");
 		if(nf != 2)
 			error(Ebadarg);
-		if(strcmp(fields[0], "brightness") == 0)
+		if(strcmp(fields[0], "brightness") == 0) {
 			fifoput(F9TSystem|F9Sysbright, atoi(fields[1]));
-		else if(strcmp(fields[0], "lcd") == 0) {
+		} else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
 				blankscreen(1);
 			else if(strcmp(fields[1], "off") == 0)
 				blankscreen(0);
 			else
 				error(Ebadarg);
+		} else if(strcmp(fields[0], "screens") == 0) {
+			conf.screens = atoi(fields[1]);	
 		} else
 			error(Ebadarg);
  		break;

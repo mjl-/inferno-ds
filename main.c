@@ -13,9 +13,7 @@ Conf conf;
 Vectorpage	*page0 = (Vectorpage*)0;	/* doubly-mapped to AIVECADDR */
 
 /* So we can initialize our own data section and bss */
-extern char bdata[];
-extern char edata[];
-extern char end[];
+extern char edata[], end[];
 
 extern ulong kerndate;
 extern int cflag;
@@ -93,7 +91,6 @@ machinit(void)
 void
 main(void)
 {
-
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 	
 	doc("mpuinit...\n");

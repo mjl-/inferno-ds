@@ -5,7 +5,8 @@
 #include	"arm7/card.h"
 
 /*
- * r4tf flashcard, based on libfat's disc_io code
+ * storage support for the r4ds card
+ * Copyright (c) 2006 Michael "Chishm" Chisholm
  */
 
 #define DPRINT if(1)

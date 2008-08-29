@@ -1,4 +1,0 @@
-ktzero=0x03800000;
-
-map({"text", ktzero, map()[0][2]+ktzero - 0x0, 0x20});
-print("$ROOT/os/ds/arm7/acidmap");

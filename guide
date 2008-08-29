@@ -8,7 +8,7 @@ git archive --prefix=gds/ HEAD > gds.tar
 git checkout
 
 u mount /mnt/usb
-cp isds.nds /mnt/usb; sync
+cp i*ds.nds /mnt/usb; sync
 u umount /mnt/usb
 
 i inm isds.p9
@@ -22,10 +22,10 @@ desmume --disable-3d isds.nds
 wine $home/nogba-2.6a/'NO$GBA.EXE' isds.nds
 wine $home/nogba-2.6b/'NO$GBA.EXE' isds.nds
 
-echo 'asm(main)' | i acid -l acidmap isds.p9
-echo 'dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9
-echo 'asm(main)' | i acid -l arm7/acidmap arm7/isds.p9
-echo 'dump(ktzero, etext-ktzero, "i")' | i acid -l arm7/acidmap arm7/isds.p9
+echo 'dsmap9(); asm(main)' | i acid -l acidmap isds.p9
+echo 'dsmap9(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9
+echo 'dsmap7(); asm(main)' | i acid -l acidmap arm7/isds.p9
+echo 'dsmap7(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap arm7/isds.p9
 
 i emu disdep /os/init/dsinit.dis | sort |t+
 

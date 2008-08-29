@@ -27,6 +27,31 @@ struct Stats
 	ulong	txerrors;
 };
 
+typedef struct WFrame	WFrame;
+struct WFrame
+{
+	ushort	sts;
+	ushort	rsvd0;
+	ushort	rsvd1;
+	ushort	qinfo;
+	ushort	rsvd2;
+	ushort	rsvd3;
+	ushort	txctl;
+	ushort	framectl;
+	ushort	id;
+	uchar	addr1[Eaddrlen];
+	uchar	addr2[Eaddrlen];
+	uchar	addr3[Eaddrlen];
+	ushort	seqctl;
+	uchar	addr4[Eaddrlen];
+	ushort	dlen;
+	uchar	dstaddr[Eaddrlen];
+	uchar	srcaddr[Eaddrlen];
+	ushort	len;
+	ushort	dat[3];
+	ushort	type;
+};
+
 typedef struct Ctlr Ctlr;
 struct Ctlr {
 	Lock;
@@ -43,6 +68,7 @@ struct Ctlr {
 	int	ptype;
 	int	chan;
 	int	crypt;			// encryption off/on
+	int	power;
 	char	netname[WNameLen];
 	char	wantname[WNameLen];
 	char	nodename[WNameLen];
@@ -85,29 +111,46 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	fifoput(F9TWifi|F9WFstats, 0);
 	fifoput(F9TWifi|F9WFscan, 0);
 	
-	p = seprint(p, e, "TxPackets: %lud (%lud bytes)\n",
+	p = seprint(p, e, "txpkts: %lud (%lud bytes)\n",
 		(ulong) ctlr->stats7[WF_STAT_TXPKTS], (ulong) ctlr->stats7[WF_STAT_TXDATABYTES]);
-	p = seprint(p, e, "RxPackets: %lud (%lud bytes)\n",
+	p = seprint(p, e, "rxpkts: %lud (%lud bytes)\n",
 		(ulong) ctlr->stats7[WF_STAT_RXPKTS], (ulong) ctlr->stats7[WF_STAT_RXDATABYTES]);
-	p = seprint(p, e, "Dropped: %lud\n", ctlr->stats7[WF_STAT_TXQREJECT]);
+	p = seprint(p, e, "txdropped: %lud\n", ctlr->stats7[WF_STAT_TXQREJECT]);
 
 	// raw stats	
-	p = seprint(p, e, "TxPackets (raw): %lud (%lud bytes)\n",
-		(ulong) ctlr->stats7[WF_STAT_RXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_TXBYTES]);
-	p = seprint(p, e, "RxPackets (raw): %lud (%lud bytes)\n",
+	p = seprint(p, e, "raw txpkts: %lud (%lud bytes)\n",
+		(ulong) ctlr->stats7[WF_STAT_TXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_TXBYTES]);
+	p = seprint(p, e, "raw rxpkts: %lud (%lud bytes)\n",
 		(ulong) ctlr->stats7[WF_STAT_RXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_RXBYTES]);
+	p = seprint(p, e, "rxoverruns: %lud\n",
+		(ulong) ctlr->stats7[WF_STAT_RXOVERRUN]);
 	
-	p = seprint(p, e, "WIFI_IE: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG1]);
-	p = seprint(p, e, "WIFI_IF: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG2]);
-	p = seprint(p, e, "wifi state: 0x%ux\n", (ushort) ctlr->stats7[WF_STAT_DBG5]);
-	p = seprint(p, e, "Interrupts: 0x%lux\n", (ulong) ctlr->stats7[WF_STAT_DBG6]);
-	
+	p = seprint(p, e, "ie: 0x%ux if: 0x%ux ints: %lud\n",
+		(ushort) ctlr->stats7[WF_STAT_DBG1],
+		(ushort) ctlr->stats7[WF_STAT_DBG2],
+		(ulong) ctlr->stats7[WF_STAT_DBG6]);
+
+	p = seprint(p, e, "state (0x%ux): assoc %s%s%s auth %s pend %s%s%s\n",
+		(ushort) ctlr->stats7[WF_STAT_DBG5],
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_ASSOCIATED? "ok" : "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_ASSOCIATING? "ing" : "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_CANNOTASSOCIATE? "ko" : "",
+
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_AUTHENTICATED? "ok" : "ko",
+
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_SAW_TX_ERR? "txerr": "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_CHANNEL_SCANNING? "scan": "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_TXPENDING? "tx": "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_RXPENDING? "rx": "",
+		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_APQUERYPEND? "apqry": ""
+		);
+
 	// order by signal quality 
 	app = (Wifi_AccessPoint*) ctlr->aplist7;
 	for(i=0; i < WIFI_MAX_AP && *(ulong*)app; app++)
 		if (app->flags & WFLAG_APDATA_ACTIVE)
 		p = seprint(p, e, "ssid:%s ch:%d f:%x %s%s %s\n",
-			app->ssid, app->rssi, app->flags,
+			app->ssid, app->channel, app->flags,
 			(app->flags & WFLAG_APDATA_WEP? "wep": ""),
 			(app->flags & WFLAG_APDATA_WPA? "wpa": ""),
 			(app->flags & WFLAG_APDATA_ADHOC? "hoc": "man")
@@ -195,6 +238,20 @@ w_option(Ctlr* ctlr, char* buf, long n)
 			nbfifoput(F9TWifi|F9WFwwepmode, ctlr->crypt);
 		}
 	}
+	else if(cistrcmp(cb->f[0], "power") == 0){
+		if(cistrcmp(cb->f[1], "off") == 0)
+			ctlr->power = 0;
+		else if(cistrcmp(cb->f[1], "on") == 0)
+			ctlr->power = 1;
+		else if((i = atoi(cb->f[1])) >= 0 && i < 3)
+			ctlr->power = i;
+		else
+			r = -1;
+
+		if (r != -1){
+			nbfifoput(F9TWifi|F9WFwstate, ctlr->power);
+		}
+	}
 /*	else if(strncmp(cb->f[0], "key", 3) == 0){
 		if((i = atoi(cb->f[0]+3)) >= 1 && i <= WNKeys){
 			ctlr->txkey = i-1;
@@ -264,8 +321,6 @@ attach(Ether *ether)
 
 	ctlr = (Ctlr*) ether->ctlr;
 	if (ctlr->attached == 0){
-		/* enable arm7 wifi */
-		fifoput(F9TWifi|F9WFwstate, 1);
 		ctlr->attached = 1;
 	}
 }
@@ -319,8 +374,8 @@ txloadpacket(Ether *ether)
 	ctlr->txpkt.data = (void *)ctlr->txpktbuf;
 	freeb(b);
 
-	if(1)print("dump pkt[%ld] @ %lux:\n%s",
-		ctlr->txpkt.len, ctlr->txpkt.data,
+	if(1)print("dump txpkt[%lud] @ %lux:\n%s",
+		(ulong)ctlr->txpkt.len, ctlr->txpkt.data,
 		dump_pkt((uchar*)ctlr->txpkt.data, ctlr->txpkt.len));
 
 	// write data to memory before ARM7 gets hands on
@@ -345,6 +400,83 @@ txstart(Ether *ether)
 	}
 }
 
+#define IEEE80211_FCTL_FROMDS	
+enum {
+	WF_Data		= 0x0008,
+	WF_Fromds	= 0x0200,
+};
+
+static void
+rxstart(Ether *ether)
+{
+	static uchar bcastaddr[Eaddrlen] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+	Wifi_RxHeader *rx_hdr;
+	WFrame *f;
+	Ctlr *ctlr;
+	Block* bp;
+	Etherpkt* ep;
+
+	if (ether->ctlr == nil)
+		return;
+
+	ctlr = ether->ctlr;
+	/* invalidate cache before we read data written by ARM7 */
+	dcflush(&ctlr->rxpkt, sizeof(ctlr->rxpkt));
+
+	if(1)print("dump rxpkt[%lud] @ %lux:\n%s",
+		(ulong)ctlr->rxpkt.len, ctlr->rxpkt.data,
+		dump_pkt((uchar*)ctlr->rxpkt.data, ctlr->rxpkt.len));
+
+	rx_hdr = (Wifi_RxHeader*)(uchar*)&ctlr->rxpkt + 2;
+	f = (WFrame *)(uchar*)&ctlr->rxpkt + 2;
+
+	if ((f->framectl & 0x01CF) == WF_Data) {
+		if (memcmp(ether->ea, f->addr1, Eaddrlen) == 0
+			|| memcmp(ether->ea, bcastaddr, Eaddrlen) == 0){
+
+			/* hdrlen == 802.11 header length  bytes */
+			int base2, hdrlen;
+			base2 = 22;
+			hdrlen = 24;
+			// looks like WEP IV and IVC are removed from RX packets
+
+			// check for LLC/SLIP header...
+			if (((ushort *) rx_hdr)[base2 - 4 + 0] == 0xAAAA
+			    && ((ushort *) rx_hdr)[base2 - 4 + 1] == 0x0003
+			    && ((ushort *) rx_hdr)[base2 - 4 + 2] == 0) {
+				// mb = sgIP_memblock_allocHW(14,len-8-hdrlen);
+				// Wifi_RxRawReadPacket(base2,(len-8-hdrlen)&(~1),((u16 *)mb->datastart)+7);
+				/*
+				 * 14 (ether header) 
+				 * + byte_length
+				 *  - (ieee hdr 24 bytes) 
+				 *  - 8 bytes LLC
+				 */
+				int len = rx_hdr->byteLength;
+				bp = iallocb(ETHERHDRSIZE + len - 8 + hdrlen + 2);
+				if (!bp)
+					return;
+					/* priv->stats.rx_dropped++; */
+
+				ep = (Etherpkt*) bp->wp;
+				memmove(ep->d, f->addr1, Eaddrlen);
+				if (f->framectl & WF_Fromds)
+					memmove(ep->s, f->addr3, Eaddrlen);
+				else
+					memmove(ep->s, f->addr2, Eaddrlen);
+		
+				memmove(ep->type,&f->type,2);
+				bp->wp = bp->rp+(ETHERHDRSIZE+f->dlen);
+
+				etheriq(ether, bp, 1);
+			}
+		}
+
+	}
+	
+	fifoput(F9TWifi|F9WFrxdone, 0);
+}
+
 static void
 transmit(Ether *ether)
 {
@@ -360,8 +492,28 @@ transmit(Ether *ether)
 static void
 interrupt(Ureg*, void *arg)
 {
-	USED(arg);
+	Ether *ether;
+	Ctlr *ctlr;
+	ulong type;
+	
 	DPRINT("interrupt\n");
+	ether = arg;
+	ctlr = ether->ctlr;
+	if (ctlr == nil)
+		return;
+	
+	/* IPCSYNC irq:
+	 * used by arm7 to notify the arm9 
+	 * that there's wifi activity (tx/rx)
+	 */ 
+	type = IPCREG->ctl & Ipcdatain;
+	ilock(ctlr);
+	if (type == I7WFrxdone)
+		rxstart(ether);
+	else if (type == I7WFtxdone)
+		;
+	intrclear(ether->irq, 0);
+	iunlock(ctlr);
 }
 
 /* set scanning interval */

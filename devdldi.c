@@ -5,8 +5,8 @@
  * use: a dldi patcher completes I/O fns, so we we can r/w,
  * tries to be simplest/sanest way of doing it i could come with.
  *
- * TODO: the io functions (arm-elf) provided by the dldi patcher,
- * use the R11 (SB) without restoring it which panics the kernel.
+ * TODO: the dldi io functions (arm-elf code) patched by the nds loader
+ * use the R11 (SB) without restoring it, which panics the kernel.
  *
  * At this moment the DLDIhdr is only used to detect the card type.
  */
@@ -133,7 +133,7 @@ mbrtest(void)
 	/* TODO: parse mbr table, find fat/kfs */
 }
 
-enum { MaxIoifc = 2 };
+enum { MaxIoifc = 3 };
 
 static Ioifc* ioifc[MaxIoifc+1];
 
@@ -155,54 +155,54 @@ dldiinit(void)
 	if ((ulong)&hdr != hdr.sdata)
 		DPRINT("bad DLDIhdr start %lux %lux\n", &hdr, &hdr.sdata);
 
-	if (hdr.io.caps){
-		/*
-		print("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
-			hdr.sdata, hdr.etext, sizeof(hdr),
-			(hdr.sect2fix & Fixall)? "all": "",
-			(hdr.sect2fix & Fixglue)? "glue": "",
-			(hdr.sect2fix & Fixgot)? "got": "",
-			(hdr.sect2fix & Fixbss)? "bss": "");
+	/*
+	print("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
+		hdr.sdata, hdr.etext, sizeof(hdr),
+		(hdr.sect2fix & Fixall)? "all": "",
+		(hdr.sect2fix & Fixglue)? "glue": "",
+		(hdr.sect2fix & Fixgot)? "got": "",
+		(hdr.sect2fix & Fixbss)? "bss": "");
 
-		if (hdr.sect2fix & Fixall) print("hdr data %lux %lux\n", hdr.sdata, hdr.etext);
-		if (hdr.sect2fix & Fixglue) print("hdr glue %lux %lux\n", hdr.sglue, hdr.eglue);
-		if (hdr.sect2fix & Fixgot) print("hdr got %lux %lux\n", hdr.sgot, hdr.egot);
-		if (hdr.sect2fix & Fixbss) print("hdr bss %lux %lux\n", hdr.sbss, hdr.ebss);
-		*/
+	if (hdr.sect2fix & Fixall) print("hdr data %lux %lux\n", hdr.sdata, hdr.etext);
+	if (hdr.sect2fix & Fixglue) print("hdr glue %lux %lux\n", hdr.sglue, hdr.eglue);
+	if (hdr.sect2fix & Fixgot) print("hdr got %lux %lux\n", hdr.sgot, hdr.egot);
+	if (hdr.sect2fix & Fixbss) print("hdr bss %lux %lux\n", hdr.sbss, hdr.ebss);
+	*/
 
-		// detect card type using dldi's info
-		for(n = 0; ioifc[n]; n++){
-			if(memcmp(ioifc[n]->type, hdr.io.type, 4))
-				continue;
-			if(ioifc[n]->caps != hdr.io.caps)
-				continue;
+	if (!hdr.io.caps)
+		return;
+	
+	// detect card type using dldi's info
+	for(n = 0; ioifc[n]; n++){
+		if(memcmp(ioifc[n]->type, hdr.io.type, 4))
+			continue;
+		if(ioifc[n]->caps != hdr.io.caps)
+			continue;
 
-			ioifc[n]->isin();
-			ioifc[n]->clrstat();
-			if(ioifc[n]->init())
-				break;
-		}
-
-		if(!ioifc[n]){
-			/* restore hdr.io in case of dldi-autopatching */
-			memmove(&hdr.io, &io_none, sizeof(Ioifc));
-			return;
-		}
-
-		DPRINT("dldi: %s\n", hdr.textid);
-		print("ioifc: %.4s %s%s %s%s (%lux)\n",
-			hdr.io.type, 
-			(hdr.io.caps & Cslotgba)? "gba" : "",
-			(hdr.io.caps & Cslotnds)? "nds" : "",
-			(hdr.io.caps & Cread)? "r" : "",
-			(hdr.io.caps & Cwrite)? "w" : "",
-			hdr.io.caps);
-		
-		// set the default io interface
-		memmove(&hdr.io, ioifc[n], sizeof(Ioifc));
-		mbrtest();
+		ioifc[n]->isin();
+		ioifc[n]->clrstat();
+		if(ioifc[n]->init())
+			break;
 	}
 
+	if(!ioifc[n]){
+		/* restore hdr.io in case of dldi-autopatching */
+		memmove(&hdr.io, &io_none, sizeof(Ioifc));
+		return;
+	}
+
+	DPRINT("dldi: %s\n", hdr.textid);
+	DPRINT("ioifc: %.4s %s%s %s%s (%lux)\n",
+		hdr.io.type, 
+		(hdr.io.caps & Cslotgba)? "gba" : "",
+		(hdr.io.caps & Cslotnds)? "nds" : "",
+		(hdr.io.caps & Cread)? "r" : "",
+		(hdr.io.caps & Cwrite)? "w" : "",
+		hdr.io.caps);
+		
+	// set the default io interface
+	memmove(&hdr.io, ioifc[n], sizeof(Ioifc));
+	mbrtest();
 }
 
 static Chan*
@@ -234,38 +234,19 @@ dldiclose(Chan *)
 {
 }
 
+static char Ebadsize[] = "not a multiple of 512";
+
 static long
 dldiread(Chan* c, void* a, long n, vlong offset)
 {
-	int nosect, rosect;
-	int nnsect, rnsect;
-	uchar sect[SECTSZ], *p;
-
-	p = a;
 	switch ((ulong)c->qid.path) {
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
 		DPRINT("dldiread a %lx n %ld o %lld\n", a, n, offset);
-		rosect = offset % SECTSZ;
-		nosect = offset / SECTSZ;
-		if(rosect>0){
-			hdr.io.read(nosect, 1, sect);
-			memmove(p, sect, rosect);
-			p += rosect;
-			nosect++;
-		}
-
-		rnsect = n % SECTSZ;
-		nnsect = n / SECTSZ;
-		if(rnsect>0){
-			hdr.io.read(nnsect, 1, sect);
-			memmove(p, sect, rnsect);
-			p += rnsect;
-			nnsect++;
-		}
-
-		hdr.io.read(nosect, nnsect, p);
+		if(offset % SECTSZ || n % SECTSZ)
+			error(Ebadsize);
+		hdr.io.read(offset / SECTSZ, n / SECTSZ, a);
 		break;
 	default:
 		n = 0;
@@ -277,13 +258,14 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 static long
 dldiwrite(Chan* c, void* a, long n, vlong offset)
 {
-	DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n, offset);
-
 	switch ((ulong)c->qid.path) {
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-//		hdr.io.write(offset / SECTSZ, n / SECTSZ, a);
+		DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n, offset);
+		if(offset % SECTSZ || n % SECTSZ)
+			error(Ebadsize);
+		hdr.io.write(offset / SECTSZ, n / SECTSZ, a);
 		break;
 	default:
 		n = 0;

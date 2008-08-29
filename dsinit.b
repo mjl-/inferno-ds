@@ -1,5 +1,3 @@
-# TO DO: rtc, fat fs
-
 implement Init;
 
 include "sys.m";

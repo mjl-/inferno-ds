@@ -77,18 +77,18 @@ enum
 	Fcmdsmask =	(1<<Fcmdslen) - 1,		/* cmd subtype */
 	Fcmdmask =	Fcmdtmask | Fcmdsmask,		/* cmd type | subtype */
 
-	Fdatalen =	32 - Fcmdlen, 			/* >= 26 bits >= sizeof(EWRAM addr) */
+	Fdatalen =	32 - Fcmdlen, 		/* log2(data) <= sizeof(EWRAM addr) <= Fdatalen bits */
 	Fdatamask =	((1<<Fdatalen) - 1)<<Fcmdlen,	/* Fdatamask allows tx/rx of pointers */
-
-	/* message types */
-	F9TSystem =	0<<Fcmdslen,
-	F9TAudio =	1<<Fcmdslen,
-	F9TWifi =	2<<Fcmdslen,
 };
 
 /* F9 msgs: from arm9 to arm7 */	
 enum
 {
+	/* message types */
+	F9TSystem =	0<<Fcmdslen,
+	F9TAudio =	1<<Fcmdslen,
+	F9TWifi =	2<<Fcmdslen,
+
 	/* System */
 	F9Sysbright = 0,
 	F9Syspoweroff,
@@ -103,9 +103,12 @@ enum
 	F9WFapquery,
 	F9WFrxpkt,
 	F9WFtxpkt,
+
+	/* TODO: merge into one msg */
 	F9WFwstate,
 	F9WFscan,
 	F9WFstats,
+	F9WFrxdone,
 	
  	F9WFwssid,
  	F9WFrap,
@@ -120,7 +123,6 @@ enum
 	F9Aurec,
 	F9Aupower,
 };
- 	
 
 /* F7 msgs: from arm7 to arm9 */
 enum
@@ -174,18 +176,18 @@ enum
 /* 
  * Timers control
  */
-#define TIMERREG	((TimerReg*)(SFRZERO + 0x100))
+#define TMRREG	((TimerReg*)(SFRZERO + 0x100))
 typedef struct TimerReg TimerReg;
 struct TimerReg {
 	ushort data;	/* match */
 	ushort ctl;
 };
 
-/* usage: TIMERREG->data = TIMER_BASE(div) / Hz, where div is TmrdivN */ 
+/* usage: TMRREG->data = TIMER_BASE(div) / Hz, where div is TmrdivN */ 
 #define TIMER_BASE(d)    (-(0x02000000 >> ((6+2*(d-1)) * (d>0))))
 
 /*
- * TIMERREG ctl bits
+ * TMRREG ctl bits
  */
 enum
 {
@@ -269,6 +271,7 @@ enum
 	/* lcd sz */
 	Scrwidth	=	256,
 	Scrheight	=	192,
+	Scrsize		= Scrwidth * Scrheight,
 
 	/* lccr */
 	Disp3dmode	=	1<<3,	/* 2d/3d mode */
@@ -310,25 +313,25 @@ enum
 	DispIrqVcount	= 5,		/* Irq on Vcount*/
 
 	/* blend */
-	Blendnone		= (0<<6),
-	Blendalpha		= (1<<6),
-	Blendfadewhite		= (2<<6),
-	Blendfadeblack		= (3<<6),
+	Blendnone		= 0<<6,
+	Blendalpha		= 1<<6,
+	Blendfadewhite		= 2<<6,
+	Blendfadeblack		= 3<<6,
 
-	Blendsrcbg0		= (1<<0),
-	Blendsrcbg1		= (1<<1),
-	Blendsrcbg2		= (1<<2),
-	Blendsrcbg3		= (1<<3),
-	Blendsrcsprite		= (1<<4),
-	Blendsrcbackdrop	= (1<<5),
+	Blendsrcbg0		= 1<<0,
+	Blendsrcbg1		= 1<<1,
+	Blendsrcbg2		= 1<<2,
+	Blendsrcbg3		= 1<<3,
+	Blendsrcsprite		= 1<<4,
+	Blendsrcbackdrop	= 1<<5,
 
-	Blenddstbg0		= (1<<8),
-	Blenddstbg1		= (1<<9),
-	Blenddstbg2		= (1<<10),
-	Blenddstbg3		= (1<<11),
+	Blenddstbg0		= 1<<8,
+	Blenddstbg1		= 1<<9,
+	Blenddstbg2		= 1<<10,
+	Blenddstbg3		= 1<<11,
 	
-	Blenddstsprite		= (1<<12),
-	Blenddstbackdrop	= (1<<13),
+	Blenddstsprite		= 1<<12,
+	Blenddstbackdrop	= 1<<13,
 	
 	/* bgctl */
 	Bgctlpriomsk		= (1<<2)  - 1,
@@ -415,6 +418,7 @@ enum
  * SPI controller
  */
 #define SPIREG ((SpiReg*)SPI)
+#define ASPIREG ((SpiReg*)AUXSPI)
 typedef struct SpiReg SpiReg;
 struct SpiReg {
 	ushort ctl;
@@ -429,6 +433,7 @@ enum
 	Spi1mhz = 		2<<0,
 	Spi512khz =		3<<0,
 
+  	Spihold	=		1<<6,
 	Spibusy =		1<<7,
 
 	// SPI device
@@ -445,12 +450,10 @@ enum
 	// i.e. when we're part of a continuous transfer
 	Spicont = 		1<<11,
 
+	Spiselect = 		1<<13,	/* set serial slot mode (AUXSPI) */
 	Spiirqena =		1<<14,
 	Spiena =		1<<15,
 };
-
-#define VIDMEMHI	((ushort*)VRAMTOP)
-#define VIDMEMLO	((ushort*)VRAMZERO)
 
 /* NDS file header info */
 #define NDSHeader ((NDShdr*)0x027FFE00)
@@ -630,6 +633,10 @@ enum
 	Ipcdataout	= 0xF00,
 	Ipcgenirq	= 1<<13,
 	Ipcirqena	= 1<<14,
+
+	/* intr fom arm7 wifi */
+	I7WFrxdone = 1<<8,
+	I7WFtxdone,
 };
 
 /*

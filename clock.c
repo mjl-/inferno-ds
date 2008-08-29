@@ -18,6 +18,8 @@ typedef struct Clock0link {
 static Clock0link *clock0link;
 static Lock clock0lock;
 static void (*prof_fcn)(Ureg *, int);
+static int	kproftickena;
+void	(*kproftick)(ulong);	/* set by devkprof.c when active */
 
 Timer*
 addclock0link(void (*clock)(void), int)
@@ -41,14 +43,13 @@ static void
 profintr(Ureg *ur, void*)
 {
 #ifdef PROF
-	OstmrReg *ost = OSTMRREG;
+	TmrReg *ost = TMRREG;
 	int t;
 
 	if ((ost->osmr[3] - ost->oscr) < 2*TIMER_HZ)
 	{
 		/* less than 2 seconds before reset, say something */
 		setpanic();
-		clockpoll();
 		dumpregs(ur);
 		panic("Watchdog timer will expire");
 	}
@@ -78,6 +79,9 @@ clockintr(Ureg *ur, void *a)
 	
 	checkalarms();
 
+	if(kproftickena)
+		(*kproftick)(ur->pc);
+
 	if(canlock(&clock0lock)){
 		for(lp = clock0link; lp; lp = lp->link){
 			if(0)print("clki %lud clkf %lux\n", m->ticks, lp->clock);
@@ -100,7 +104,7 @@ timerdisable( int timer )
 void
 timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 {
-	TimerReg *t = TIMERREG + timer;
+	TimerReg *t = TMRREG + timer;
 	if ((timer < 0) || (timer > 3))
 		return;
 	timerdisable(timer);
@@ -113,13 +117,13 @@ timerenable( int timer, int Hz, void (*f)(Ureg *, void*), void* a)
 void
 installprof(void (*pf)(Ureg *, int))
 {
-#ifdef PROF
+	int s;
+
+	s = splfhi();
 	prof_fcn = pf;
 	timerenable( 2, HZ+1, profintr, 0);
 	timer_incr[2] = timer_incr[0]+63;	/* fine tuning */
-#else
-	USED(pf);
-#endif
+	splx(s);
 }
 
 void
@@ -162,13 +166,13 @@ ulong _mularsv(ulong m0, ulong m1, ulong a, ulong s);
 ushort
 timer_start(void)
 {
-	return TIMERREG->data;
+	return TMRREG->data;
 }
 
 ushort
 timer_ticks(ulong t0)
 {
-	return TIMERREG->data - t0;
+	return TMRREG->data - t0;
 }
 
 int
@@ -197,7 +201,6 @@ timer_delay(int t)
 	while(timer_ticks(t0) < t)
 		;
 }
-
 
 ulong
 us2tmr(int us)
@@ -239,19 +242,37 @@ delay(int ms)
 	ulong t0 = timer_start();
 	ulong t = ms2tmr(ms);
 	while(timer_ticks(t0) <= t)
-		clockpoll();
+		;
 }
 
-int
-srand()
+/*
+ * for devbench.c
+ */
+vlong
+archrdtsc(void)
 {
-	return 0;
+	return TMRREG->data;
 }
 
-int
-time()
+ulong
+archrdtsc32(void)
 {
-	return 0;
+	return TMRREG->data;
+}
+
+/*
+ * for devkprof.c
+ */
+long
+archkprofmicrosecondspertick(void)
+{
+	return MS2HZ*1000;
+}
+
+void
+archkprofenable(int on)
+{
+	kproftickena = on;
 }
 
 uvlong

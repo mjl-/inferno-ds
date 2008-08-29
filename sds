@@ -1,3 +1,4 @@
+# sds: standalone with all files in root(3)
 dev
 	root
 	cons archds lcd
@@ -82,12 +83,13 @@ link
 #	pppmedium ppp compress
 
 #	ttio
+#	gmtf
 	mpcf
 	r4tf card
 
 misc
-	logo
-	math
+#	logo
+#	math
 
 code
 	int main_pool_pcnt = 50;

@@ -7,9 +7,9 @@ that means that limbo programs (dis code) runs on Inferno's Dis VM [2].
 
 Some of the hardware bits [3] that are working are:
 	- both lcd screens (including the touch).
-	- access to spi devices (arm7): rtc, firmware, power, ...
+	- access to spi devices (arm7): touch, rtc, firmware, power, mic, ...
 	- mpu and caches are working.
-	- fifos for processor communication (arm7 <-> arm9).
+	- fifos for processor communication between arm7 and arm9.
 	- audio support (play and record).
 
 Still the port is far from finished, so the port is a WIP

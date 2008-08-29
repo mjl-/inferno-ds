@@ -32,9 +32,8 @@ struct Conf
 	int		brom;			/* start of ROM data memory */
 
 	int		bmap;			/* buttons map selection */
+	int		screens;		/* number of screens */
 	int		useminicache;		/* screen.c/lcd.c */
-	int		cansetbacklight;	/* screen.c/lcd.c */
-	int		cansetcontrast;		/* screen.c/lcd.c */
 	int		remaplo;		/* use alt ivec */
 	int		textwrite;		/* writeable text segment, for debug */
 };

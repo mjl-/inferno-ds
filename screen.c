@@ -5,6 +5,7 @@
 #include "fns.h"
 #include "../port/error.h"
 #include "io.h"
+#include "ureg.h"
 
 #include <draw.h>
 #include <memdraw.h>
@@ -44,9 +45,11 @@ SWcursor *swc = nil;
 
 static char printbuf[1024];
 static int printbufpos = 0;
-static void	lcdscreenputs(char*, int);
+static void lcdscreenputs(char*, int);
 static void screenpbuf(char*, int);
 void (*screenputs)(char*, int) = screenpbuf;
+
+static	void	(*flushpixels)(Rectangle, uchar*, int, uchar*, int);
 
 static Cursor arrow = {
 	{ -1, -1 },
@@ -62,11 +65,11 @@ static Cursor arrow = {
 	},
 };
 
-static	void	(*flushpixels)(Rectangle, uchar*, int, uchar*, int);
-
-//static	void	flush2fb(Rectangle, uchar*, int, uchar*, int);
-
-
+static Drawcursor carrow = {
+	.hotx = CURSWID, .hoty = CURSHGT,
+	.minx = 0, .miny = 0,
+	.maxx = CURSWID, .maxy = CURSHGT,
+};
 
 int
 setcolor(ulong p, ulong r, ulong g, ulong b)
@@ -151,7 +154,7 @@ static uchar lum[256]={
 
 void flushmemscreen(Rectangle r);
 
-void
+static void
 screenclear(void)
 {
 	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
@@ -159,28 +162,69 @@ screenclear(void)
 	flushmemscreen(gscreen->r);
 }
 
+// video memmove: must set bit 15 of each ushort.
+static void
+vmemmove(void *d, void *s, ulong n){
+	ulong i, *ud, *us;
+
+	ud = (ulong*)d;
+	us = (ulong*)s;
+	for(i = 0; i < n/sizeof(ulong); i++)
+		ud[i] = (1<<31)|(1<<15)|us[i];
+}
+
+static void
+flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
+{
+	int i, h, w, n;
+
+	// sync with vblank period: 192 < vcount < 261
+	if(LCDREG->vcount < 90)
+		return;
+
+	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n",
+		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
+
+	n = Scrsize * vd->depth / BI2BY;
+	if (conf.screens == 1 || rectclip(&r, Rect(0, 0, Scrwidth, Scrheight)))
+		vmemmove(d, s, n);
+	if (conf.screens == 2 && rectclip(&r, Rect(0, Scrheight, Scrwidth, 2*Scrheight)))
+		vmemmove(d+0x00200000, s + n, n);
+}
+
+enum {
+	/* bit 15 of v written to fb must be set: v |= 1<<15 */
+	ABGR15 = CHAN4(CAlpha, 1, CBlue, 5, CGreen, 5, CRed, 5),
+	XBGR15 = CHAN4(CIgnore, 1, CBlue, 5, CGreen, 5, CRed, 5),
+	BGR8 = CHAN3(CBlue, 3, CGreen, 3, CRed, 2),
+};
+
 static void
 setscreen(LCDmode *mode)
 {
 	int h;
 
+	if(swc != nil)
+		swcurs_destroy(swc);
+
 	vd = lcd_init(mode);
 	if(vd == nil)
 		panic("can't initialise LCD");
-
+	
 	gscreen = &xgscreen;
 	xgdata.ref = 1;
 
 	gscreen->r = Rect(0, 0, vd->x, vd->y);
 	gscreen->clipr = gscreen->r;
 	gscreen->depth = vd->depth;
-	gscreen->width = vd->x >>1;
+	gscreen->width = vd->x>>1;
 	
-	xgdata.bdata = (uchar*)vd->fb; 
+	xgdata.bdata = (uchar*)vd->sfb; 
+	flushpixels = flush2fb;
 	
 	memimageinit();
 	memdefont = getmemdefont();
-	memsetchan(gscreen, CHAN4(CIgnore, 1, CBlue, 5, CGreen, 5, CRed, 5));	/* xxx we need a BGR15 in /include/draw.h */
+	memsetchan(gscreen, XBGR15);
 	back = memwhite;
 	conscol = memblack;
 	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
@@ -194,7 +238,8 @@ setscreen(LCDmode *mode)
 	screenclear(); 
 
 	swc = swcurs_create((ulong*)gscreen->data->bdata, gscreen->width, gscreen->depth, gscreen->r, 1);
-	drawcursor(nil);
+	carrow.data = (uchar*)&arrow.clr;
+	drawcursor(&carrow);
 }
 
 void
@@ -237,6 +282,8 @@ flushmemscreen(Rectangle r)
 		return; 
 	if(r.min.x >= r.max.x || r.min.y >= r.max.y)
 		return; 
+	if(flushpixels != nil)
+		flushpixels(r, (uchar*)gscreen->data->bdata, gscreen->width, (uchar*)vd->fb, vd->bwid >> 2);
 	lcd_flush();
 }
 

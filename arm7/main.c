@@ -52,7 +52,7 @@ fiforecvintr(void*)
 		v = vv>>Fcmdlen;
 		switch(vv&Fcmdtmask) {
 		case F9TSystem:
-			if(0)print("F9S %lux\n", v & Fcmdsmask);
+			if(0)print("F9S %lux\n", vv & Fcmdsmask);
 			switch(vv&Fcmdsmask){
 			case F9Sysbright:
 				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
@@ -79,7 +79,7 @@ fiforecvintr(void*)
 			break;
 		
 		case F9TWifi:
-			if(0)print("F9W %lux\n", v & Fcmdsmask);
+			if(0)print("F9W %lux\n", vv & Fcmdmask);
 			switch(vv&Fcmdsmask){
 			case F9WFrmac:
 				memmove((void*)v, wifi_data.MacAddr, 6);
@@ -98,18 +98,6 @@ fiforecvintr(void*)
 				wifi_send_ether_packet(tx_packet->len, tx_packet->data);
 				tx_packet = nil;
 				break;
-			case F9WFwstate:
-				if(v)
-					wifi_open();
-				else
-					wifi_close();
-				break;
-			case F9WFscan:
-				wifi_start_scan();
-				break;
-			case F9WFstats:
-				wifi_stats_query();
-				break;
 			case F9WFwap:
 				Wifi_SetAPMode(v);
 				break;
@@ -125,11 +113,27 @@ fiforecvintr(void*)
 			case F9WFwwepmode:
 				Wifi_SetWepMode(v);
 				break;
+
+			case F9WFwstate:
+				if(v)
+					wifi_open();
+				else
+					wifi_close();
+				break;
+			case F9WFscan:
+				wifi_start_scan();
+				break;
+			case F9WFstats:
+				wifi_stats_query();
+				break;
+			case F9WFrxdone:
+				wifi_rx_q_complete();
+				break;
 			}
 			break;
 
 		case F9TAudio:
-			if(0)print("F9A %lux\n", v & Fcmdsmask);
+			if(0)print("F9A %lux\n", vv & Fcmdsmask);
 			switch(vv&Fcmdsmask){
 				case F9Auplay:
 					snd = (TxSound*)v;
@@ -208,19 +212,11 @@ vblankintr(void*)
 		nbfifoput(F7keydown, bdown);
 	
 	// Read the temperature
-	IPC->aux = touchRead(Tscgetaux);
 	IPC->batt = touchRead(Tscgetbattery);
 	IPC->temp = touchReadTemperature(&IPC->td1, &IPC->td2);
 	//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
 
 	intrclear(VBLANKbit, 0);
-}
-
-void
-ipcsyncintr(void*)
-{
-	print("ipcsyncintr\n");
-	intrclear(IPCSYNCbit, 0);	
 }
 
 enum {
@@ -249,14 +245,12 @@ main(void)
 	trapinit();
 
 	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
-	intrenable(FRECVbit, fiforecvintr, 0);
+	intrenable(FRECVbit, fiforecvintr, nil, 0);
 
-	intrenable(VBLANKbit, vblankintr, 0);
+	intrenable(VBLANKbit, vblankintr, nil, 0);
 
-	intrenable(TIMERWIFIbit, wifi_timer_handler, 0);
-	intrenable(WIFIbit, wifi_interrupt, 0);
-	IPCREG->ctl |= Ipcirqena;
-	intrenable(IPCSYNCbit, ipcsyncintr, 0);
+	intrenable(TIMERWIFIbit, wifi_timer_handler, nil, 0);
+	intrenable(WIFIbit, wifi_interrupt, nil, 0);
 
 	// keep the ARM7 out of main RAM
 	while (1)
