@@ -7,9 +7,90 @@
 #include	"io.h"
 #include	<memdraw.h>
 #include	"screen.h"
-#include	"lcdreg.h"
 
 #define	DPRINT	if(0)iprint
+
+// macro creates a 15 bit color from 3x5 bit components
+#define BGR15(r,g,b)	(((b)<<10)|((g)<<5)|(r))
+#define BGR8(r,g,b)	((((b)>>3)<<10)|(((g)>>3)<<5)|((r)>>3))
+
+#define VRAM_OFFSET(n)	((n)<<3)
+#define VRAM_START(n)	((n)*0x20000)
+
+enum
+{
+	/* VRAM modes */
+	VRAM_LCD	= 0,
+	VRAM_MAIN_BG	= 1,
+	VRAM_SPRITE	= 2,
+	VRAM_TEXTURE	= 3,
+	VRAM_SUB_BG	= 4,
+
+	/* VRAM A */
+	VRAM_A_LCD	=	VRAM_LCD,
+	VRAM_A_MAIN_BG  = VRAM_MAIN_BG,
+	VRAM_A_MAIN_SPRITE = VRAM_SPRITE,
+	VRAM_A_TEXTURE = VRAM_TEXTURE,
+
+	/* VRAM B */
+	VRAM_B_LCD = 0,
+	VRAM_B_MAIN_BG	= VRAM_MAIN_BG | VRAM_OFFSET(1),
+	VRAM_B_MAIN_SPRITE	= VRAM_SPRITE | VRAM_OFFSET(1),
+	VRAM_B_TEXTURE	= VRAM_TEXTURE | VRAM_OFFSET(1),
+
+	/* VRAM C */
+	VRAM_C_LCD = 0,
+	VRAM_C_MAIN_BG  = VRAM_MAIN_BG | VRAM_OFFSET(2),
+	VRAM_C_ARM7	= 2,
+	VRAM_C_ARM7_0x06000000 = 2,
+	VRAM_C_ARM7_0x06020000 = 2 | VRAM_OFFSET(1),
+	VRAM_C_SUB_BG	= VRAM_SUB_BG,
+	VRAM_C_TEXTURE	= VRAM_TEXTURE | VRAM_OFFSET(2),
+
+	/* VRAM D */
+	VRAM_D_LCD = 0,
+	VRAM_D_MAIN_BG  = VRAM_MAIN_BG | VRAM_OFFSET(3),
+	VRAM_D_ARM7 = 2 | VRAM_OFFSET(1),
+	VRAM_D_ARM7_0x06000000 = 2,
+	VRAM_D_ARM7_0x06020000 = 2 | VRAM_OFFSET(1),
+	VRAM_D_SUB_SPRITE  = 4,
+	VRAM_D_TEXTURE = VRAM_TEXTURE | VRAM_OFFSET(3),
+
+	/* VRAM E */
+	VRAM_E_LCD             = VRAM_LCD,
+	VRAM_E_MAIN_BG         = VRAM_MAIN_BG,
+	VRAM_E_MAIN_SPRITE     = VRAM_SPRITE,
+	VRAM_E_TEX_PALETTE     = VRAM_TEXTURE,
+	VRAM_E_BG_EXT_PALETTE  = 4,
+	VRAM_E_OBJ_EXT_PALETTE = 5,
+
+	/* VRAM F */
+	VRAM_F_LCD             = VRAM_LCD,
+	VRAM_F_MAIN_BG         = VRAM_MAIN_BG,
+	VRAM_F_MAIN_SPRITE     = VRAM_SPRITE,
+	VRAM_F_TEX_PALETTE     = VRAM_TEXTURE,
+	VRAM_F_BG_EXT_PALETTE  = 4,
+	VRAM_F_OBJ_EXT_PALETTE = 5,
+
+	/* VRAM G */
+	VRAM_G_LCD             = VRAM_LCD,
+	VRAM_G_MAIN_BG         = VRAM_MAIN_BG,
+	VRAM_G_MAIN_SPRITE     = VRAM_SPRITE,
+	VRAM_G_TEX_PALETTE     = VRAM_TEXTURE,
+	VRAM_G_BG_EXT_PALETTE  = 4,
+	VRAM_G_OBJ_EXT_PALETTE = 5,
+
+	/* VRAM H */
+	VRAM_H_LCD                = 0,
+	VRAM_H_SUB_BG             = 1,
+	VRAM_H_SUB_BG_EXT_PALETTE = 2,
+
+	/* VRAM H */
+	VRAM_I_LCD                    = 0,
+	VRAM_I_SUB_BG                 = 1,
+	VRAM_I_SUB_SPRITE             = 2,
+	VRAM_I_SUB_SPRITE_EXT_PALETTE = 3,
+};
 
 typedef struct {
 	Vdisplay;
@@ -20,10 +101,10 @@ typedef struct {
 	ushort*	lower;
 } LCDdisplay;
 
-static LCDdisplay	*ld;	// current active display (lower)
-static LCDdisplay main_display;	/* TODO: limits us to a single display */
+static LCDdisplay	*ld;	// current active display
+static LCDdisplay main_display;
 
-/* TODO: use a 265 colors palette */
+/* TODO: use 256 color palette */
 void
 lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 {
@@ -87,11 +168,11 @@ lcd_init(LCDmode *p)
 	DPRINT("%dx%dx%d: hz=%d\n", ld->x, ld->y, ld->depth, ld->hz);
 
 	// lcd fb @ 0x06000000, soft fb @ 0x0x06300000
-      	VRAMREG->acr = Vramena|VRAM_A_MAIN_BG_0x06000000;	// [0x00000,0x20000]
-      	VRAMREG->bcr = Vramena|VRAM_B_MAIN_BG_0x06020000;	// [0x20000,0x40000]
-	VRAMREG->dcr = Vramena|VRAM_D_MAIN_BG_0x06040000;	// [0x40000,0x60000]
+      	VRAMREG->acr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(0);	// [0x00000,0x20000]
+      	VRAMREG->bcr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(1);	// [0x20000,0x40000]
+	VRAMREG->dcr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(2);	// [0x40000,0x60000]
 	// sublcd fb @ 0x06200000, 
-	VRAMREG->ccr = Vramena|VRAM_C_SUB_BG_0x06200000;
+	VRAMREG->ccr = Vramena|VRAM_SUB_BG|VRAM_OFFSET(0);
 
 	ld->bwid = (ld->x << ld->pbs) >> 1;
 	ld->pal = (ushort*)PALMEM;

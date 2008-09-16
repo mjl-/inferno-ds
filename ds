@@ -77,14 +77,14 @@ port
 
 link	
 	fifo
+#	math
+#	logo
 	ethernds
 	ethermedium
 #	ethermii
 #	pppmedium ppp compress
 
 misc
-	logo
-	math
 
 code
 	int main_pool_pcnt = 50;
@@ -299,76 +299,76 @@ root
 	/dis/xargs.dis
 	/dis/xd.dis
 	/dis/zeros.dis
-	/module
-	/module/arg.m
-	/module/bufio.m
-	/module/cfg.m
-	/module/cfgfile.m
-	/module/complete.m
-	/module/convcs.m
-	/module/crc.m
-	/module/daytime.m
-	/module/devpointer.m
-	/module/dialog.m
-	/module/dict.m
-	/module/dis.m
-	/module/dividers.m
-	/module/draw.m
-	/module/emio.m
-	/module/encoding.m
-	/module/env.m
-	/module/filepat.m
-	/module/filter.m
-	/module/keyboard.m
-	/module/keyring.m
-	/module/keyset.m
-	/module/libc.m
-	/module/libc0.m
-	/module/lists.m
-	/module/loader.m
-	/module/lock.m
-	/module/man.m
-	/module/math.m
-	/module/memfs.m
-	/module/multistyx.m
-	/module/names.m
-	/module/newns.m
-	/module/palm.m
-	/module/palmfile.m
-	/module/print.m
-	/module/profile.m
-	/module/pslib.m
-	/module/quicktime.m
-	/module/rand.m
-	/module/readdir.m
-	/module/regex.m
-	/module/regexutils.m
-	/module/registries.m
-	/module/sh.m
-	/module/sort.m
-	/module/srv.m
-	/module/srvrunt.b
-	/module/string.m
-	/module/strinttab.m
-	/module/strokes.m
-	/module/styx.m
-	/module/styxconv.m
-	/module/styxlib.m
-	/module/styxpersist.m
-	/module/styxservers.m
-	/module/sys.m
-	/module/tables.m
-	/module/tabs.m
-	/module/tcllib.m
-	/module/tftp.m
-	/module/timers.m
-	/module/titlebar.m
-	/module/tk.m
-	/module/tkclient.m
-	/module/winplace.m
-	/module/wmclient.m
-	/module/wmlib.m
-	/module/wmsrv.m
+#	/module
+#	/module/arg.m
+#	/module/bufio.m
+#	/module/cfg.m
+#	/module/cfgfile.m
+#	/module/complete.m
+#	/module/convcs.m
+#	/module/crc.m
+#	/module/daytime.m
+#	/module/devpointer.m
+#	/module/dialog.m
+#	/module/dict.m
+#	/module/dis.m
+#	/module/dividers.m
+#	/module/draw.m
+#	/module/emio.m
+#	/module/encoding.m
+#	/module/env.m
+#	/module/filepat.m
+#	/module/filter.m
+#	/module/keyboard.m
+#	/module/keyring.m
+#	/module/keyset.m
+#	/module/libc.m
+#	/module/libc0.m
+#	/module/lists.m
+#	/module/loader.m
+#	/module/lock.m
+#	/module/man.m
+#	/module/math.m
+#	/module/memfs.m
+#	/module/multistyx.m
+#	/module/names.m
+#	/module/newns.m
+#	/module/palm.m
+#	/module/palmfile.m
+#	/module/print.m
+#	/module/profile.m
+#	/module/pslib.m
+#	/module/quicktime.m
+#	/module/rand.m
+#	/module/readdir.m
+#	/module/regex.m
+#	/module/regexutils.m
+#	/module/registries.m
+#	/module/sh.m
+#	/module/sort.m
+#	/module/srv.m
+#	/module/srvrunt.b
+#	/module/string.m
+#	/module/strinttab.m
+#	/module/strokes.m
+#	/module/styx.m
+#	/module/styxconv.m
+#	/module/styxlib.m
+#	/module/styxpersist.m
+#	/module/styxservers.m
+#	/module/sys.m
+#	/module/tables.m
+#	/module/tabs.m
+#	/module/tcllib.m
+#	/module/tftp.m
+#	/module/timers.m
+#	/module/titlebar.m
+#	/module/tk.m
+#	/module/tkclient.m
+#	/module/winplace.m
+#	/module/wmclient.m
+#	/module/wmlib.m
+#	/module/wmsrv.m
 	/lib/wmsetup
 	/icons/tk/vitasmall.bit
 	/icons/tk/task.bit

@@ -145,7 +145,9 @@ archconfinit(void)
 	conf.bsram = SRAMTOP;
 	conf.brom = ROMTOP;
 	conf.bmap = 0;
+
 	conf.screens = 1;
+	conf.portrait = 0;
 }
 
 void

@@ -32,15 +32,10 @@ Dirtab ndstab[]={
 	"ndsmem",	{Qmem},		0,		0600,
 };
 
-static	Rune	rockermap[3][Numbtns] ={
-	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// right handed
-	{'\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No},	// left handed
+static	Rune	rockermap[2][Numbtns] ={	/* right and left handed */
+	{ '\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No },
+	{ Left, Down, '\t', Esc, Pgdown, '\n', Pgup, '\b', RCtrl, RShift, Up, Right, No },
 };
-
-/*
- * TODO
- * - screen orientation switch between landscape/portrait
- */
 
 void
 fiforecv(ulong vv)

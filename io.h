@@ -104,7 +104,6 @@ enum
 	F9WFrxpkt,
 	F9WFtxpkt,
 
-	/* TODO: merge into one msg */
 	F9WFwstate,
 	F9WFscan,
 	F9WFstats,

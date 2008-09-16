@@ -173,7 +173,7 @@ flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
 
 	/* sync with vblank period: 192 < vcount < 261 */
-	if (abs(LCDREG->vcount - 192) > 4){
+	if (LCDREG->vcount - 192 > 1){
 		while(LCDREG->vcount>192);
 		while(LCDREG->vcount<192);
 	}
@@ -220,13 +220,20 @@ setscreen(LCDmode *mode)
 	gscreen = &xgscreen;
 	xgdata.ref = 1;
 
-	gscreen->r = Rect(0, 0, vd->x, vd->y);
+	if(conf.portrait == 0)
+		gscreen->r = Rect(0, 0, vd->x, vd->y);
+	else
+		gscreen->r = Rect(0, 0, vd->y, vd->x);
+
 	gscreen->clipr = gscreen->r;
 	gscreen->depth = vd->depth;
-	gscreen->width = vd->x>>1;
+	gscreen->width = wordsperline(gscreen->r, gscreen->depth);
 	
 	xgdata.bdata = (uchar*)vd->sfb; 
-	flushpixels = flush2fb;
+	if(conf.portrait == 0)
+		flushpixels = flush2fb;
+	else
+		flushpixels = flush2fb;
 	
 	memimageinit();
 	memdefont = getmemdefont();

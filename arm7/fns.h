@@ -4,10 +4,8 @@ void	intrclear(int v, int tbdf);
 void	intrenable(int v, void (*r)(void*), void *a, int tbdf);
 void 	trapinit(void);
 
-void	nds_fifo_send(ulong v);
 int	nbfifoput(ulong cmd, ulong v);
 void	fifoput(ulong cmd, ulong v);
-
 
 void swiSoftReset(void);
 void swiWaitForVBlank(void);

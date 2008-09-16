@@ -32,14 +32,6 @@ fifoput(ulong cmd, ulong data)
 }
 
 void
-nds_fifo_send(ulong data)
-{
-	if(FIFOREG->ctl & FifoTfull)
-		return;
-	FIFOREG->send = data;
-}
-
-void
 fiforecvintr(void*)
 {
 	ulong v, vv;
@@ -175,47 +167,47 @@ vblankintr(void*)
 
 	hbt++;
 
-	/* check buttons state */
-	bst = KEYREG->in & Btn9msk;
-	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
-
-	/* skip bogus keypresses at start */
-	if (hbt == 1)
+	if (hbt % 2 == 0){
+		/* check buttons state */
+		bst = KEYREG->in & Btn9msk;
+		bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
+	
+		/* skip bogus keypresses at start */
+		if (hbt == 2)
+			obst = bst;
+	
+		if(~bst & 1<<Pdown) {
+			touchReadXY(&tp);
+			if (opx != tp.px || opy != tp.py)
+				nbfifoput(F7mousedown, tp.px|tp.py<<8|(tp.z1+tp.z2)<<16);
+			opx = tp.px;
+			opy = tp.py;
+		} else if(~obst & 1<<Pdown) {
+			nbfifoput(F7mouseup, 0);
+		}
+	
+		cbst = bst^obst;
+		bdown = bup = 0;
+		for(i = 0; cbst && i < Maxbtns; i++) {
+			if(cbst & (1<<i)) {
+				if(bst & (1<<i))
+					bup |= (1<<i);
+				else
+					bdown |= (1<<i);
+				cbst &= ~(1<<i);
+			}
+		}
 		obst = bst;
 	
-	if(~bst & 1<<Pdown) {
-		touchReadXY(&tp);
-		if (opx != tp.px || opy != tp.py)
-			nbfifoput(F7mousedown, tp.px|tp.py<<8|(tp.z1+tp.z2)<<16);
-		opx = tp.px;
-		opy = tp.py;
-	} else if(~obst & 1<<Pdown) {
-		nbfifoput(F7mouseup, 0);
+		if(bup)
+			nbfifoput(F7keyup, bup);
+		if(bdown)
+			nbfifoput(F7keydown, bdown);
 	}
-
-	cbst = bst^obst;
-	bdown = bup = 0;
-	for(i = 0; cbst && i < Maxbtns; i++) {
-		if(cbst & (1<<i)) {
-			if(bst & (1<<i))
-				bup |= (1<<i);
-			else
-				bdown |= (1<<i);
-			cbst &= ~(1<<i);
-		}
-	}
-	obst = bst;
-
-	if(bup)
-		nbfifoput(F7keyup, bup);
-	if(bdown)
-		nbfifoput(F7keydown, bdown);
-	
-	// Read the temperature
-	IPC->batt = touchRead(Tscgetbattery);
-	IPC->temp = touchReadTemperature(&IPC->td1, &IPC->td2);
+	//IPC->batt = touchRead(Tscgetbattery);
+	//IPC->temp = touchReadTemperature(&IPC->td1, &IPC->td2);
 	//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
-
+	
 	intrclear(VBLANKbit, 0);
 }
 

@@ -23,9 +23,9 @@ wine $home/nogba-2.6a/'NO$GBA.EXE' isds.nds
 wine $home/nogba-2.6b/'NO$GBA.EXE' isds.nds
 
 echo 'dsmap9(); asm(main)' | i acid -l acidmap isds.p9
-echo 'dsmap9(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9
+echo 'dsmap9(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9 > isds.dump
 echo 'dsmap7(); asm(main)' | i acid -l acidmap arm7/isds.p9
-echo 'dsmap7(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap arm7/isds.p9
+echo 'dsmap7(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap arm7/isds.p9 > arm7/isds.dump
 
 i emu disdep /os/init/dsinit.dis | sort |t+
 

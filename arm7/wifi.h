@@ -142,7 +142,6 @@ struct WIFI_ACCESSPOINT {
 
 typedef struct Wifi_Data_Struct Wifi_Data;
 struct Wifi_Data_Struct {
-
 	ushort curChannel, reqChannel;
 	ushort curMode, reqMode;
 	ushort authlevel, authctr;
@@ -166,7 +165,6 @@ struct Wifi_Data_Struct {
 	/* pointers to buffers we get handed from ARM9 */
 	volatile ulong *stats;
 	Wifi_AccessPoint *aplist;
-
 };
 
 enum WIFI_STATS

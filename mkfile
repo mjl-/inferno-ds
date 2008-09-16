@@ -48,7 +48,6 @@ HFILES=\
 	io.h\
 	fpi.h\
 	screen.h\
-	lcdreg.h\
 
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}

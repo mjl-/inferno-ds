@@ -77,6 +77,8 @@ port
 
 link
 	fifo
+#	math
+#	logo
 	ethernds
 	ethermedium
 #	ethermii
@@ -88,8 +90,6 @@ link
 	ior4tf iocard
 
 misc
-#	logo
-#	math
 
 code
 	int main_pool_pcnt = 50;

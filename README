@@ -11,10 +11,10 @@ Some of the hardware bits [3] that are working are:
 	- mpu and caches are working.
 	- fifos for processor communication between arm7 and arm9.
 	- audio support (play and record).
+	- sd card storage works with: ior4tf, iompcf.
 
 Still the port is far from finished, so the port is a WIP
 (work in progress) thing some of the bits missing are:
-	- sd card storage 
 	- wifi networking
 
 USAGE

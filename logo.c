@@ -614,3 +614,8 @@ putlogo(uchar *mem)
 			*dst++ = v;
 	}
 }
+
+void
+logolink(void){
+	putlogo((uchar*)0x06200000);
+}

@@ -33,9 +33,7 @@ struct Conf
 
 	int		bmap;			/* buttons map selection */
 	int		screens;		/* number of screens */
-	int		useminicache;		/* screen.c/lcd.c */
-	int		remaplo;		/* use alt ivec */
-	int		textwrite;		/* writeable text segment, for debug */
+	int		portrait;		/* display orientation */
 };
 
 #define NISAOPT 8
