@@ -224,7 +224,7 @@ static Ioifc io_mpcf = {
 };
 
 void
-mpcflink(void)
+iompcflink(void)
 {
 	addioifc(&io_mpcf);
 }

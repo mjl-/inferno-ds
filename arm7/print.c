@@ -79,7 +79,6 @@ vsprint(char *s, char *fmt, va_list ap)
 			break;
 		}
 
-
 	}
 	
 	return (s - bs);
@@ -99,27 +98,20 @@ sprint(char *s, char *fmt, ...)
 }
 
 /* TODO: SData seems overwritten */
-enum { PRINTSIZE = 256 };
-#define SData ((volatile Sdata*)((char*)IPC + sizeof(IPC)))
-typedef struct Sdata Sdata;
-struct Sdata{
-	ulong n;
-	char  s[PRINTSIZE];
-};
+#define SData ((char*)IPC + sizeof(IPC))
 
 int
 print(char *fmt, ...)
 {
+	int n;
 	va_list ap;
-	Sdata *sd  = SData;
+	char *s = SData;
 
-	sd->n = 0;
-	memset((void*)sd->s, '\0', PRINTSIZE);
-
+	memset((void*)s, '\0', 64);
 	va_start(ap, fmt);
-	sd->n = vsprint(sd->s, fmt, ap);
+	n = vsprint(s, fmt, ap);
 	va_end(ap);
 
-	while(!nbfifoput(F7print, (ulong)sd->s));
-	return sd->n;
+	while(!nbfifoput(F7print, (ulong)s));
+	return n;
 }

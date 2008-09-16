@@ -162,34 +162,40 @@ screenclear(void)
 	flushmemscreen(gscreen->r);
 }
 
-// video memmove: must set bit 15 of each ushort.
-static void
-vmemmove(void *d, void *s, ulong n){
-	ulong i, *ud, *us;
-
-	ud = (ulong*)d;
-	us = (ulong*)s;
-	for(i = 0; i < n/sizeof(ulong); i++)
-		ud[i] = (1<<31)|(1<<15)|us[i];
-}
-
+// video mem update: must set bit 15 of each ushort.
 static void
 flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 {
-	int i, h, w, n;
-
-	// sync with vblank period: 192 < vcount < 261
-	if(LCDREG->vcount < 90)
-		return;
+	ushort *ud, *us;
+	int h, w;
 
 	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n",
 		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
 
-	n = Scrsize * vd->depth / BI2BY;
-	if (conf.screens == 1 || rectclip(&r, Rect(0, 0, Scrwidth, Scrheight)))
-		vmemmove(d, s, n);
-	if (conf.screens == 2 && rectclip(&r, Rect(0, Scrheight, Scrwidth, 2*Scrheight)))
-		vmemmove(d+0x00200000, s + n, n);
+	/* sync with vblank period: 192 < vcount < 261 */
+	if (abs(LCDREG->vcount - 192) > 4){
+		while(LCDREG->vcount>192);
+		while(LCDREG->vcount<192);
+	}
+
+	if (conf.screens >= 1){
+		ud = (ushort*)d;
+		us = (ushort*)s;
+
+		for(h = r.min.y; h < r.max.y; h++)
+			for(w = r.min.x; w < r.max.x; w++)
+				ud[h * Scrwidth + w] = (1<<15)|us[h * Scrwidth + w];
+	}
+	if (conf.screens == 2){
+		ud = (ushort*)(d + 0x00200000);
+		us = (ushort*)(s + Scrsize * vd->depth / BI2BY);
+
+		r.min.y -= Scrheight;
+		r.max.y -= Scrheight;
+		for(h = r.min.y; h < r.max.y; h++)
+			for(w = r.min.x; w < r.max.x; w++)
+				ud[h * Scrwidth + w] = (1<<15)|us[h * Scrwidth + w];
+	}
 }
 
 enum {
@@ -266,6 +272,17 @@ attachscreen(Rectangle *r, ulong *chan, int* d, int *width, int *softscreen)
 	*width = gscreen->width;
 	*softscreen = (gscreen->data->bdata != (uchar*)vd->fb);
 
+while(0){	/* just to get some video memory timings */
+	int tstart, vstart;
+
+	tstart = m->ticks;
+	vstart = LCDREG->vcount;
+	while(LCDREG->vcount>192);
+	while(LCDREG->vcount<192);
+
+	print("t %d v %d-%d\n", m->ticks-tstart, vstart, LCDREG->vcount);
+}	
+	
 	return (uchar*)gscreen->data->bdata;
 }
 

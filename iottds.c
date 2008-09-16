@@ -306,7 +306,7 @@ Disassembly of section .data:
  490:	e12fff1e 	bx	lr
 */
 static void
-ttio_subread(ulong start, ulong d, ulong n){
+ttds_subread(ulong start, ulong d, ulong n){
 	USED(start, d, n);
 }
 
@@ -378,7 +378,7 @@ ttio_subread(ulong start, ulong d, ulong n){
  594:	eaffff82 	b	0x3a4
 */
 static void
-ttio_subwrite(ulong start, ulong d, ulong n){
+ttds_subwrite(ulong start, ulong d, ulong n){
 	USED(start, d, n);
 }
 
@@ -387,7 +387,7 @@ ttio_subwrite(ulong start, ulong d, ulong n){
  59c:	e12fff1e 	bx	lr
 */
 static int
-ttio_init(void){
+ttds_init(void){
 	return 1;
 }
 
@@ -396,7 +396,7 @@ ttio_init(void){
  5a4:	e12fff1e 	bx	lr
 */
 static int
-ttio_isin(void){
+ttds_isin(void){
 	return 1;
 }
 
@@ -424,7 +424,7 @@ ttio_isin(void){
  5f8:	e12fff1e 	bx	lr
 */
 static int
-ttio_read(ulong start, ulong n, void *d){
+ttds_read(ulong start, ulong n, void *d){
 	uchar *sb = (uchar*)(0x4000000 + 417);
 	uchar *lb = (uchar*)(0x2800000 -1 - 987);
 
@@ -434,7 +434,7 @@ ttio_read(ulong start, ulong n, void *d){
 	if (*lb == 0)
 		start <<= 9;
 	
-	ttio_subread(start, (ulong)d, n);
+	ttds_subread(start, (ulong)d, n);
 	return 0;
 }
 
@@ -462,9 +462,9 @@ ttio_read(ulong start, ulong n, void *d){
  64c:	e12fff1e 	bx	lr
 */
 static int
-ttio_write(ulong start, ulong n, const void *d){
+ttds_write(ulong start, ulong n, const void *d){
 	/* almost the same code that ttio_read */
-	ttio_subwrite(start, (ulong)d, n);
+	ttds_subwrite(start, (ulong)d, n);
 	return 0;
 }
 
@@ -473,7 +473,7 @@ ttio_write(ulong start, ulong n, const void *d){
  654:	e12fff1e 	bx	lr
 */
 static int
-ttio_clrstat(void){
+ttds_clrstat(void){
 	return 1;
 }
 
@@ -482,7 +482,7 @@ ttio_clrstat(void){
  65c:	e12fff1e 	bx	lr
 */
 static int
-ttio_deinit(void){
+ttds_deinit(void){
 	return 1;
 }
 
@@ -497,19 +497,19 @@ ttio_deinit(void){
  67c:	bf800098 	swilt	0x00800098
 */
 
-static Ioifc io_ttio = {
+static Ioifc io_ttds = {
 	"TTIO",
 	Cread|Cwrite|Cslotnds,
 
-	ttio_init,
-	ttio_isin,
-	(void*)ttio_read,
-	(void*)ttio_write,
-	ttio_clrstat,
-	ttio_deinit
+	ttds_init,
+	ttds_isin,
+	(void*)ttds_read,
+	(void*)ttds_write,
+	ttds_clrstat,
+	ttds_deinit
 };
 
 void
-ttiolink(void){
-	addioifc(&io_ttio);
+iottdslink(void){
+	addioifc(&io_ttds);
 }

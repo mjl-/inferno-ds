@@ -107,9 +107,10 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	}
 	e = tmp+READSTR;
 
+	fifoput(F9TWifi|F9WFscan, 0);
+	microdelay(13 * WIFI_CHANNEL_SCAN_DWEL);
 	dcflush(ctlr->stats7, sizeof(ctlr->stats7));
 	fifoput(F9TWifi|F9WFstats, 0);
-	fifoput(F9TWifi|F9WFscan, 0);
 	
 	p = seprint(p, e, "txpkts: %lud (%lud bytes)\n",
 		(ulong) ctlr->stats7[WF_STAT_TXPKTS], (ulong) ctlr->stats7[WF_STAT_TXDATABYTES]);
@@ -149,11 +150,15 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	app = (Wifi_AccessPoint*) ctlr->aplist7;
 	for(i=0; i < WIFI_MAX_AP && *(ulong*)app; app++)
 		if (app->flags & WFLAG_APDATA_ACTIVE)
-		p = seprint(p, e, "ssid:%s ch:%d f:%x %s%s %s\n",
+		p = seprint(p, e, "%s ch=%d (0x%ux) sec=%s%s m=%s c=%s%s q=%d\n",
 			app->ssid, app->channel, app->flags,
 			(app->flags & WFLAG_APDATA_WEP? "wep": ""),
 			(app->flags & WFLAG_APDATA_WPA? "wpa": ""),
-			(app->flags & WFLAG_APDATA_ADHOC? "hoc": "man")
+
+			(app->flags & WFLAG_APDATA_ADHOC? "hoc": "man"),
+			(app->flags & WFLAG_APDATA_COMPATIBLE? "c": ""),
+			(app->flags & WFLAG_APDATA_EXTCOMPATIBLE? "e": ""),
+			app->rssi
 			);
 
 	n = readstr(offset, a, n, tmp);

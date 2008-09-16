@@ -131,6 +131,7 @@ blankscreen(int blank)
 		power->pcr &= ~POWER_LCD;
 }
 
+/* TODO no$gba debug print */
 void
 uartputs(char* s, int n) {
 	USED(s,n);

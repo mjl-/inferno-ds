@@ -179,7 +179,7 @@ static Ioifc io_r4tf = {
 };
 
 void
-r4tflink(void)
+ior4tflink(void)
 {
 	addioifc(&io_r4tf);
 }

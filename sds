@@ -82,10 +82,10 @@ link
 #	ethermii
 #	pppmedium ppp compress
 
-#	ttio
-#	gmtf
-	mpcf
-	r4tf card
+#	iottds
+#	iogmtf
+	iompcf
+	ior4tf iocard
 
 misc
 #	logo

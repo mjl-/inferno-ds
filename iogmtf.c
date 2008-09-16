@@ -251,7 +251,7 @@ static Ioifc io_gmtf = {
 };
 
 void
-gmtflink(void)
+iogmtflink(void)
 {
 	addioifc(&io_gmtf);
 }
