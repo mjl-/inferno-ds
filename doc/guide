@@ -1,0 +1,4 @@
+mk
+mk clean
+page infds.pdf
+tar czvf ../infds.tgz ../infds

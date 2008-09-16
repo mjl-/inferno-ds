@@ -1,0 +1,9 @@
+TARG=\
+	infds.pdf
+
+all:V: $TARG
+%.pdf: %.tex
+	pdflatex $stem
+	pdflatex $stem
+clean:
+	rm -f $TARG *.log *.aux *.dvi *.out
