@@ -1,9 +1,27 @@
 
 (
-echo 00000000 .arm; 
-inm -n $* | sed 's|.*: ||' | awk \
+echo ';no$gba symbolic information file'
+echo 
+echo '00000000  0'
+echo '00000000  .arm'
+
+inm -n $* | sed 's|.*: ||' | sort -f -k 2 | awk \
 '
-	BEGIN { s="00000000" }
-	{ print substr(s, 0, 8 - length($1)) $1, $3 }
+	{
+		addr=strtonum("0x" $1)
+		sym=$3
+
+		if (match($2, "[tTlL]"))
+			sect=".text"
+		else if (match($2, "[dD]"))
+			sect=".data?"
+		else if (match($2, "[bB]"))
+			sect=".bss"
+
+		if (sect != osect)
+			printf ("\n%08X  %s\n", addr, sect)
+		osect=sect
+		printf ("%08X  %s\n", addr, sym)
+	}
 '
 )

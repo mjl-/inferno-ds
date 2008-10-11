@@ -77,7 +77,7 @@ port
 
 link
 	fifo
-#	math
+	math
 #	logo
 	ethernds
 	ethermedium

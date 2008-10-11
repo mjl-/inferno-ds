@@ -15,7 +15,6 @@ OFILES=\
 	trap.$O\
 	spi.$O\
 	rtc.$O\
-	touch.$O\
 	audio.$O\
 #	dma.$O\
 	wifi.$O\
@@ -27,7 +26,6 @@ HFILES=\
 	fns.h\
 	spi.h\
 	rtc.h\
-	touch.h\
 	audio.h\
 	wifi.h\
 	

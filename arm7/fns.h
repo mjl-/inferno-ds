@@ -7,6 +7,6 @@ void 	trapinit(void);
 int	nbfifoput(ulong cmd, ulong v);
 void	fifoput(ulong cmd, ulong v);
 
-void swiSoftReset(void);
-void swiWaitForVBlank(void);
-void swiDelay(ulong);
+void	swiSoftReset(void);
+void	swiWaitForVBlank(void);
+void	swiDelay(ulong);

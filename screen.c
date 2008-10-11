@@ -166,29 +166,34 @@ screenclear(void)
 static void
 flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 {
-	ushort *ud, *us;
 	int h, w;
 
 	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n",
 		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
 
-	/* sync with vblank period: 192 < vcount < 261 */
-	if (LCDREG->vcount - 192 > 1){
+	/* TODO: sync with vblank period: 192 < vcount < 261 */
+	if (0 && LCDREG->vcount - 192 > 1){
 		while(LCDREG->vcount>192);
 		while(LCDREG->vcount<192);
 	}
 
 	if (conf.screens >= 1){
-		ud = (ushort*)d;
-		us = (ushort*)s;
+		ulong *ud = (ulong*)d;
+		ulong *us = (ulong*)s;
+		ulong i;
+
+		r.min.x &= ~15;
+		r.max.x = (r.max.x + 15) & ~15;
 
 		for(h = r.min.y; h < r.max.y; h++)
-			for(w = r.min.x; w < r.max.x; w++)
-				ud[h * Scrwidth + w] = (1<<15)|us[h * Scrwidth + w];
+			for(w = r.min.x; w < r.max.x; w++){
+				i = (h * Scrwidth + w)/2;
+				ud[i] = (1<<31)|(1<<15)|us[i];
+			}
 	}
 	if (conf.screens == 2){
-		ud = (ushort*)(d + 0x00200000);
-		us = (ushort*)(s + Scrsize * vd->depth / BI2BY);
+		ushort *ud = (ushort*)(d + 0x00200000);
+		ushort *us = (ushort*)(s + Scrsize * vd->depth / BI2BY);
 
 		r.min.y -= Scrheight;
 		r.max.y -= Scrheight;

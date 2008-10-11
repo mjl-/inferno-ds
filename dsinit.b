@@ -143,7 +143,7 @@ lightup()
 {
 	fd := sys->open("#T/ndsctl", Sys->OWRITE);
 	if(fd != nil)
-		sys->fprint(fd, "brightness 1");
+		sys->fprint(fd, "blight 1");
 }
 
 #

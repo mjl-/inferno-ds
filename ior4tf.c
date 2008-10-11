@@ -66,9 +66,7 @@ LogicCardRead(ulong address, ulong *dst, ulong len)
 	if ((ulong)dst & 0x03)
 		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
 	else
-		bytecardPolledTransfer(0xa1586000, dst, len, cmd);
-	//	TODO find out why the line below fails
-	//	cardPolledTransfer(0xa1586000, dst, len, cmd);
+		cardPolledTransfer(0xa1586000, dst, len, cmd);
 }
 
 static ulong

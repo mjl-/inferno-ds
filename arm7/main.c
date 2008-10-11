@@ -7,7 +7,6 @@
 #include "spi.h"
 #include "rtc.h"
 #include "audio.h"
-#include "touch.h"
 
 #include "wifi.h"
 
@@ -31,7 +30,7 @@ fifoput(ulong cmd, ulong data)
 	FIFOREG->send = (data<<Fcmdlen|cmd);
 }
 
-void
+static void
 fiforecvintr(void*)
 {
 	ulong v, vv;
@@ -49,7 +48,7 @@ fiforecvintr(void*)
 			case F9Sysbright:
 				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
 				if(ndstype[0] == Dslite || ndstype[0] == Ds)
-					power_write(POWER_BACKLIGHT, v&Brightmask);
+					power_write(POWER_BACKLIGHT, v);
 				break;
 			
 			case F9Syspoweroff:
@@ -156,14 +155,72 @@ fiforecvintr(void*)
 	intrclear(FRECVbit, 0);
 }
 
-void
+enum {
+	MaxRetry = 5,
+	MaxRange = 30,
+};
+
+static int tscinit = 0;
+static int xscale, yscale;
+static int xoffset, yoffset;
+
+#define inball(ov, v, d) ((ov - d < v) && (v < ov + d))
+
+static void 
+updatetouch(ulong bst)
+{
+	short x, y, z, px, py;
+	static uchar opx = 0, opy = 0;
+	UserInfo *pu=UINFOREG;
+
+	if (!tscinit){
+		xscale = ((pu->adc.xpx2 - pu->adc.xpx1) << 19) / (pu->adc.x2 - pu->adc.x1);
+		yscale = ((pu->adc.ypx2 - pu->adc.ypx1) << 19) / (pu->adc.y2 - pu->adc.y1);
+		xoffset = ((pu->adc.x1 + pu->adc.x2) * xscale  - ((pu->adc.xpx1 + pu->adc.xpx2) << 19))/2;
+		yoffset = ((pu->adc.y1 + pu->adc.y2) * yscale  - ((pu->adc.ypx1 + pu->adc.ypx2) << 19))/2;
+		tscinit=1;
+	}
+
+	if(~bst & 1<<Pdown){
+		x = touch_read_value(TscgetX, MaxRetry, MaxRange);
+		y = touch_read_value(TscgetY, MaxRetry, MaxRange);
+		z = touch_read_value(TscgetZ1, MaxRetry, MaxRange);
+
+		px = (x * xscale - xoffset + xscale/2 ) >>19;
+		py = (y * yscale - yoffset + yscale/2 ) >>19;
+
+		if(px < 0) px=0;
+		if(py < 0) py=0;
+		if(px > Scrwidth-1) px=Scrwidth-1;
+		if(py > Scrheight-1) py=Scrheight-1;
+
+		if (inball(opx, px, 6) && inball(opy, py, 6))
+			nbfifoput(F7mousedown, px|py<<8|z<<16);
+		opx = px;
+		opy = py;
+	} else {
+		if (opy != 255)
+			nbfifoput(F7mouseup, 0);
+		opx = 255;
+		opy = 255;
+	}
+}
+
+static ulong
+touch_read_temp(int *t1, int *t2)
+{
+	*t1 = touch_read_value(Tscgettemp1, MaxRetry, MaxRange);
+	*t2 = touch_read_value(Tscgettemp2, MaxRetry, MaxRange);
+	return 8490 * (*t2 - *t1) - 273*4096;
+}
+
+static void
 vblankintr(void*)
 {
 	int i;
 	static int hbt = 0;
-	TouchPos tp = {0,0,0,0,0,0};
 	ulong bst, cbst, bup, bdown;
-	static ulong obst, opx, opy;
+	static ulong obst;
 
 	hbt++;
 
@@ -176,70 +233,43 @@ vblankintr(void*)
 		if (hbt == 2)
 			obst = bst;
 	
-		if(~bst & 1<<Pdown) {
-			touchReadXY(&tp);
-			if (opx != tp.px || opy != tp.py)
-				nbfifoput(F7mousedown, tp.px|tp.py<<8|(tp.z1+tp.z2)<<16);
-			opx = tp.px;
-			opy = tp.py;
-		} else if(~obst & 1<<Pdown) {
-			nbfifoput(F7mouseup, 0);
-		}
-	
+		updatetouch(bst);
+		
 		cbst = bst^obst;
-		bdown = bup = 0;
-		for(i = 0; cbst && i < Maxbtns; i++) {
-			if(cbst & (1<<i)) {
-				if(bst & (1<<i))
-					bup |= (1<<i);
-				else
-					bdown |= (1<<i);
-				cbst &= ~(1<<i);
-			}
-		}
 		obst = bst;
-	
+		bup = cbst & bst;
+		bdown = cbst & ~bst;
+
 		if(bup)
 			nbfifoput(F7keyup, bup);
 		if(bdown)
 			nbfifoput(F7keydown, bdown);
+	
+		IPC->batt = touch_read_value(Tscgetbattery, MaxRetry, MaxRange);
+		IPC->temp = touch_read_temp(&IPC->td1, &IPC->td2);
+		//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
 	}
-	//IPC->batt = touchRead(Tscgetbattery);
-	//IPC->temp = touchReadTemperature(&IPC->td1, &IPC->td2);
-	//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
 	
 	intrclear(VBLANKbit, 0);
 }
 
-enum {
-	MaxRetry = 5,
-	MaxRange = 30,
-};
-
 int 
 main(void)
 {
-	short dmax;
-	uchar err;
-	
 	INTREG->ime = 0;
-
 	memset(edata, 0, end-edata); 		/* clear the BSS */
-
 	read_firmware(0x03FE00, (ulong*)UINFOMEM, sizeof(UserInfo));
-
+	
 	/* dummy read to enable the touchpad PENIRQ */
-	dmax = MaxRetry; err = MaxRange;
-	readtsc(TscgetX, &dmax, &err);
+	touch_read_value(TscgetX, MaxRetry, MaxRange);
 
 	wifi_init();
-	
 	trapinit();
+
+	intrenable(VBLANKbit, vblankintr, nil, 0);
 
 	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
 	intrenable(FRECVbit, fiforecvintr, nil, 0);
-
-	intrenable(VBLANKbit, vblankintr, nil, 0);
 
 	intrenable(TIMERWIFIbit, wifi_timer_handler, nil, 0);
 	intrenable(WIFIbit, wifi_interrupt, nil, 0);

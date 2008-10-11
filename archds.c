@@ -120,7 +120,11 @@ archconfinit(void)
 	conf.npage0 = (EWRAMTOP - conf.base0)/BY2PG;
 	conf.topofmem = EWRAMTOP;
 	
-	/* extra memory bank: slot2 expansion */
+	/* TODO:
+	 * extra memory bank: slot2 expansion.
+	 * needs compiler support as slot2 bus width is 16bits only,
+	 * 8 bit writes result in garbage being written to memory.
+	 */
 	if (*operactl){
 		*operactl = 1;
 

@@ -509,39 +509,40 @@ struct UserInfo{
 	uchar color;
 
 	uchar theme;		// user's theme color (0-15).
-	uchar birthMonth;	// user's birth month (1-12).
-	uchar birthDay;		// user's birth day (1-31).
+	uchar birthmonth;	// user's birth month (1-12).
+	uchar birthday;		// user's birth day (1-31).
 
-	uchar RESERVED1[1];	// ???
+	uchar pad1;		// ???
 
 	Rune name[10];		// user's name in UTF-16 format.
-	ushort nameLen;		// length of the user's name in characters.
+	ushort namelen;		// length of the user's name in characters.
 
-	Rune message[26];	// user's message.
-	ushort messageLen;	// length of the user's message in characters.
+	Rune msg[26];		// user's message.
+	ushort msglen;		// length of the user's message in characters.
 
-	uchar alarmHour;	// alarm clock hour (0-23).
-	uchar alarmMinute;	// alarm clock minute (0-59).
-				// 0x027FFCD3  alarm minute
+	uchar alarmhour;	// alarm clock hour (0-23).
+	uchar alarmmin;		// alarm clock minute (0-59).
+	ushort pad2;
+	ushort alarmon;
 
-	uchar RESERVED2[2];	// ???
-	ushort alarmOn;
-				/* Touchscreen calibration */
-	ushort calX1;		// 1st X touch
-	ushort calY1;		// 1st Y touch
-	uchar calX1px;		// 1st X touch pixel
-	uchar calY1px;		// 1st X touch pixel
+	/* ADC Touchscreen: 1st & 2nd calibration touches */
+	struct{			
+		ushort x1;
+		ushort y1;
+		uchar xpx1;
+		uchar ypx1;
 
-	ushort calX2;		// 2nd X touch
-	ushort calY2;		// 2nd Y touch
-	uchar calX2px;		// 2nd X touch pixel
-	uchar calY2px;		// 2nd Y touch pixel
+		ushort x2;
+		ushort y2;
+		uchar xpx2;
+		uchar ypx2;
+	} adc;
 
 	ushort flags;
 
-	ushort	RESERVED3;
-	ulong	rtcOffset;
-	ulong	RESERVED4;
+	ushort	pad3;
+	ulong	rtcoffset;
+	ulong	pad4;
 };
 
 /* UserInfo.flags */
@@ -557,11 +558,17 @@ enum {
 	LSpanish,
 	LChinese,
 	LOther,
-	Langmask	= 7,
+	Langmask	= 0x7,
 
 	Gbalowerscreen	= 1<<3,
-	Backlightshift	= 4,
-	Backlightmask	= 3,
+
+	Blightshift	= 4,
+	Blightlow	= 0,
+	Blightmedium,
+	Blightigh,
+	Blightmax,
+	Blightmask	= 0x3,
+
 	Autostart	= 1<<6,
 	Nosettings	= 1<<9,
 };
@@ -607,6 +614,7 @@ enum
 	Pdown	=	16,
 	Lclose	= 	17,
 	Maxbtns,
+	Btnmsk	=	((1<<Maxbtns) - 1),
 
 	// relative to XKEYS (arm7 only)
 	Xbtn7	= 	0,

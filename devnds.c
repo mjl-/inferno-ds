@@ -132,7 +132,7 @@ ndsinit(void)
 		if (p < (ulong*)(ROMTOP - sizeof("ROMZERO9") - 1))
 			conf.brom = (ulong)p + sizeof("ROMZERO9") - 1;
 	}
-		
+	
 	DPRINT("ndsinit: hdr %08lx sram %08x rom %08x\n",
 		dsh, conf.bsram, conf.brom);
 }
@@ -215,6 +215,17 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	ushort s;
 	ulong l;
 
+	char *langlst[Langmask+1] = {
+		[LJapanese] "Japanese",
+		[LEnglish] "English",
+		[LFrench] "French",
+		[LGerman] "German",
+		[LItalian] "Italian",
+		[LSpanish] "Spanish",
+		[LChinese] "Chinese",
+		[LOther] "Other",
+	};
+
 	switch((ulong)c->qid.path){
 	case Qdir:
 		return devdirread(c, a, n, ndstab, nelem(ndstab), devgen);
@@ -249,21 +260,20 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		}
 		e = tmp+READSTR;
 
-		p = seprint(p, e, "version %d color %d birthmonth %d birthday %d\n", pu->version, pu->theme, pu->birthMonth, pu->birthDay);
-		p = seprint(p, e, "nick %.*S\n", pu->nameLen, pu->name);
-		p = seprint(p, e, "msg %.*S\n", pu->messageLen, pu->message);
-		p = seprint(p, e, "alarm hour %d min %d on %d\n", pu->alarmHour, pu->alarmMinute, pu->alarmOn);
-		p = seprint(p, e, "adc1 x %d y %d, adc2 x %d y %d\n", pu->calX1, pu->calY1, pu->calX2, pu->calY2);
-		p = seprint(p, e, "scr1 x %d y %d, scr2 x %d y %d\n", pu->calX1px, pu->calY1px, pu->calX2px, pu->calY2px);
-		p = seprint(p, e, "flags 0x%02ux lang %d backlight %d", pu->flags,
-			pu->flags&Langmask, (pu->flags>>Backlightshift)&Backlightmask);
-		if(pu->flags & Gbalowerscreen)
-			seprint(p, e, " gbalowerscreen");
-		if(pu->flags & Autostart)
-			seprint(p, e, " autostart");
-		if(pu->flags & Nosettings)
-			seprint(p, e, " nosettings");
-		seprint(p, e, "\n");
+		p = seprint(p, e, "version %d theme %d birth %02d/%02d\n", pu->version, pu->theme, pu->birthday, pu->birthmonth);
+		p = seprint(p, e, "nick %.*S\n", pu->namelen, pu->name);
+		p = seprint(p, e, "msg %.*S\n", pu->msglen, pu->msg);
+		p = seprint(p, e, "alarm %s [%.2d:%.2d]\n", pu->alarmon? "on": "off", pu->alarmhour, pu->alarmmin);
+		p = seprint(p, e, "adc t1 (%d,%d) t2 (%d,%d)\n", pu->adc.x1, pu->adc.y1, pu->adc.x2, pu->adc.y2);
+		p = seprint(p, e, "scr t1 (%d,%d) t2 (%d,%d)\n", pu->adc.xpx1, pu->adc.ypx1, pu->adc.xpx2, pu->adc.ypx2);
+		p = seprint(p, e, "flags 0x%02ux: sz %d lang %s blight %d %s %s %s\n", 
+			pu->flags,
+			sizeof(UserInfo),
+			langlst[pu->flags&Langmask],
+			(pu->flags>>Blightshift)&Blightmask,
+			(pu->flags & Gbalowerscreen)? "gbalowerscreen": "",
+			(pu->flags & Autostart)? "autostart": "",
+			(pu->flags & Nosettings)? "nosettings": "");
 
 		n = readstr(offset, a, n, tmp);
 		poperror();
@@ -335,8 +345,8 @@ ndswrite(Chan* c, void* a, long n, vlong offset)
 		nf = getfields(cmd, fields, nelem(fields), 1, " \n");
 		if(nf != 2)
 			error(Ebadarg);
-		if(strcmp(fields[0], "brightness") == 0) {
-			fifoput(F9TSystem|F9Sysbright, atoi(fields[1]));
+		if(strcmp(fields[0], "blight") == 0) {
+			fifoput(F9TSystem|F9Sysbright, atoi(fields[1]) & Blightmask);
 		} else if(strcmp(fields[0], "lcd") == 0) {
 			if(strcmp(fields[1], "on") == 0)
 				blankscreen(1);

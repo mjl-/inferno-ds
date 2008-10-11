@@ -1,3 +1,15 @@
+/* spi commands */
+#define Tscgettemp1	0x84
+#define TscgetY		0x90
+#define Tscgetbattery	0xA4
+#define TscgetZ1	0xB4
+#define TscgetZ2	0xC4
+#define TscgetX		0xD0
+#define Tscgetmic12	0xE4	// mic samplelen: 8, 12 bits
+#define Tscgetmic8	0xEC
+#define Tscgettemp2	0xF4
+
+int touch_read_value(int cmd, int retry , int range);
 
 // Fixme: Does the hardware still support 16 bit comms mode?
 // BIOS makes use of 32 bit mode, so some regs still exist
@@ -41,14 +53,6 @@ enum
 #define PM_LED_ON     (0<<4)   /* Steady on */
 #define PM_LED_SLEEP  (2<<4)   /* Blinking, mostly off */
 #define PM_LED_BLINK  (3<<4)   /* Blinking, mostly on */
-
-enum {
-	Brightlow,
-	Brightmedium,
-	Brighthigh,
-	Brightmax,
-	Brightmask =	0x3,
-};
 
 #define PM_AMP_OFFSET  2
 #define PM_AMP_ON      1

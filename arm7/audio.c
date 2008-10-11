@@ -10,7 +10,6 @@
 #include "fns.h"
 #include "audio.h"
 #include "spi.h"
-#include "touch.h"
 
 static void 
 pm_setamp(uchar control) 

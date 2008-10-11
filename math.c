@@ -1,5 +1,3 @@
-/* hardware accelerated division and square root */
-
 #include "u.h" 
 #include "../port/lib.h" 
 #include "mem.h"
@@ -7,7 +5,11 @@
 #include "dat.h"
 #include "fns.h"
 
-/* TODO: these versions could replace _div/_mod */
+/* hardware accelerated division and square root.
+ *
+ * TODO: could be used to replace _div, _mod, ...
+ * needs assembler preamble and epilog to resemble div-arm.s
+ */
 
 enum {
 	Divbase =	0x4000280,
@@ -17,8 +19,10 @@ enum {
 	Busy =		1<<15,	/* for both ctl registers */
 
 	Divbyzero =	1<<14,
-	Div32 =		0,
-	Div64 =		1<<1,
+
+	Div32x32 =	0,
+	Div64x32 =	1<<0,
+	Div64x64 =	1<<1,
 
 	Sqrt32 =	0,
 	Sqrt64 =	1<<0,
@@ -61,7 +65,7 @@ static void
 _div(int *res, long num, long den)
 {	
 	wait(&DIVREG->ctl);
-	DIVREG->ctl = Div32;
+	DIVREG->ctl = Div32x32;
 	DIVREG->numlo = num;
 	DIVREG->denlo = den;
 	DIVREG->denhi = 0;	/* ensure Divbyzero will be set correctly */
@@ -75,7 +79,7 @@ static void
 _mod(int *res, long num, long den)
 {	
 	wait(&DIVREG->ctl);
-	DIVREG->ctl = Div32;
+	DIVREG->ctl = Div32x32;
 	DIVREG->numlo = num;
 	DIVREG->denlo = den;
 	DIVREG->denhi = 0;	/* ensure Divbyzero will be set correctly */
@@ -103,7 +107,7 @@ _divv(vlong *res, vlong num, vlong den)
 	uvlong r;
 
 	wait(&DIVREG->ctl);
-	DIVREG->ctl = Div64;
+	DIVREG->ctl = Div64x64;
 	DIVREG->numlo = num;
 	DIVREG->numhi = num>>32;
 	DIVREG->denlo = den;
@@ -120,7 +124,7 @@ _modv(vlong *res, vlong num, vlong den)
 	uvlong r;
 
 	wait(&DIVREG->ctl);
-	DIVREG->ctl = Div64;
+	DIVREG->ctl = Div64x64;
 	DIVREG->numlo = num;
 	DIVREG->numhi = num>>32;
 	DIVREG->denlo = den;
@@ -155,17 +159,17 @@ vlsqrt(uvlong p)
 	return SQRTREG->sqrt;
 }
 
-/* TODO: not ready yet */
 void
 mathlink(void){
-/*
 	int a, b, r;
 	int tk1, tk2;
 
+/*
 	a = 500;
 	b = 100;
 	r = a / b;
-
+	r++;
+	
 	a = 500;
 	b = 100;
 	r =  a % b;
