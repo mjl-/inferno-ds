@@ -667,6 +667,10 @@ enum
 	Arm7hasram	= 1<<15,	/* (0=ARM9 Priority, 1=ARM7 Priority) */
 };
 
+/* quote: "should prevent the cache from eating us alive..." - sgstair */
+#define iscached(addr)	(EWRAMZERO <= (addr) && (addr) < EWRAMTOP)
+#define uncached(addr)	((ulong*)((ulong)(addr) + (EWRAMTOP - EWRAMZERO + 1)))
+
 /*
  * discio interface
  */

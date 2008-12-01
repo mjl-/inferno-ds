@@ -1,5 +1,5 @@
 # workaround to not maintain mkfiles in sync
-# NOTE: maybe it's not a very good idea, but works for now
+# NOTE: maybe not the best, but works for now
 
 $AWK -v 'conf='$CONF '
 	BEGIN{
@@ -12,9 +12,10 @@ $AWK -v 'conf='$CONF '
 			exit
 	}
 
-	/^[O|H]FILES=/ {collect=1; next}
+	/^[O|H]FILES=/	{collect=1; next}
 
-	/^[ 	]*$|^#/ {collect=0}
+	/^[ 	]*$/	{collect=0}
+	/^[	 ]*#/	{next}
 	
 	collect {
 		if(match($1, ".+.\\$O")){

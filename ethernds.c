@@ -10,11 +10,14 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
-#define DPRINT if(1)iprint
+#define DPRINT if(debug)iprint
+static int debug = 0;
 
 enum
 {
 	WNameLen = 34,
+	WNKeys		= 4,
+	WKeyLen		= 14,
 };
 
 typedef struct Stats Stats;
@@ -25,6 +28,13 @@ struct Stats
 	ulong	tooshorts;
 	ulong	aligns;
 	ulong	txerrors;
+};
+
+typedef struct WKey WKey;
+struct WKey
+{
+	ushort	len;
+	char	dat[WKeyLen];
 };
 
 typedef struct WFrame	WFrame;
@@ -65,13 +75,17 @@ struct Ctlr {
 	Block*	waiting;	/* waiting for space in FIFO */
 
 	int 	attached;
-	int	ptype;
 	int	chan;
-	int	crypt;			// encryption off/on
-	int	power;
 	char	netname[WNameLen];
 	char	wantname[WNameLen];
 	char	nodename[WNameLen];
+	
+	int	power;			// hardware power up/down
+	int	ptype;			// AP mode/type
+	int	crypt;			// encryption off/on
+	int	txkey;			// transmit key
+	WKey	keys[WNKeys];		// default keys
+	int	scan;
 
 	Stats;
 
@@ -86,7 +100,7 @@ struct Ctlr {
 static long
 ifstat(Ether* ether, void* a, long n, ulong offset)
 {
-	Wifi_AccessPoint *app;
+	Wifi_AccessPoint *ap;
 	char *p, *e, *tmp;
 	Ctlr *ctlr;
 	int i;
@@ -107,29 +121,26 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	}
 	e = tmp+READSTR;
 
-	fifoput(F9TWifi|F9WFscan, 0);
-	microdelay(13 * WIFI_CHANNEL_SCAN_DWEL);
 	dcflush(ctlr->stats7, sizeof(ctlr->stats7));
 	fifoput(F9TWifi|F9WFstats, 0);
 	
-	p = seprint(p, e, "txpkts: %lud (%lud bytes)\n",
-		(ulong) ctlr->stats7[WF_STAT_TXPKTS], (ulong) ctlr->stats7[WF_STAT_TXDATABYTES]);
-	p = seprint(p, e, "rxpkts: %lud (%lud bytes)\n",
-		(ulong) ctlr->stats7[WF_STAT_RXPKTS], (ulong) ctlr->stats7[WF_STAT_RXDATABYTES]);
-	p = seprint(p, e, "txdropped: %lud\n", ctlr->stats7[WF_STAT_TXQREJECT]);
-
-	// raw stats	
-	p = seprint(p, e, "raw txpkts: %lud (%lud bytes)\n",
+	p = seprint(p, e, "tx: %lud (%lud bytes) raw: %lud (%lud bytes)\n",
+		(ulong) ctlr->stats7[WF_STAT_TXPKTS], (ulong) ctlr->stats7[WF_STAT_TXDATABYTES],
 		(ulong) ctlr->stats7[WF_STAT_TXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_TXBYTES]);
-	p = seprint(p, e, "raw rxpkts: %lud (%lud bytes)\n",
+	p = seprint(p, e, "rx: %lud (%lud bytes) raw %lud (%lud bytes)\n",
+		(ulong) ctlr->stats7[WF_STAT_RXPKTS], (ulong) ctlr->stats7[WF_STAT_RXDATABYTES],
 		(ulong) ctlr->stats7[WF_STAT_RXRAWPKTS], (ulong) ctlr->stats7[WF_STAT_RXBYTES]);
-	p = seprint(p, e, "rxoverruns: %lud\n",
-		(ulong) ctlr->stats7[WF_STAT_RXOVERRUN]);
-	
-	p = seprint(p, e, "ie: 0x%ux if: 0x%ux ints: %lud\n",
+	p = seprint(p, e, "txdropped: %lud rxovruns: %lud\n",
+		ctlr->stats7[WF_STAT_TXQREJECT], (ulong) ctlr->stats7[WF_STAT_RXOVERRUN]);
+
+	p = seprint(p, e, "ie: 0x%ux if: 0x%ux ints: %lud tx: %lux/%lux\n",
 		(ushort) ctlr->stats7[WF_STAT_DBG1],
 		(ushort) ctlr->stats7[WF_STAT_DBG2],
-		(ulong) ctlr->stats7[WF_STAT_DBG6]);
+		(ulong) ctlr->stats7[WF_STAT_DBG6],
+		
+		(ulong) ctlr->stats7[WF_STAT_DBG3],
+		(ulong) ctlr->stats7[WF_STAT_DBG4]
+		);
 
 	p = seprint(p, e, "state (0x%ux): assoc %s%s%s auth %s pend %s%s%s\n",
 		(ushort) ctlr->stats7[WF_STAT_DBG5],
@@ -144,22 +155,33 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_TXPENDING? "tx": "",
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_RXPENDING? "rx": "",
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_APQUERYPEND? "apqry": ""
-		);
+		);	
 
+	ap = (Wifi_AccessPoint*) ctlr->aplist7;
 	// order by signal quality 
-	app = (Wifi_AccessPoint*) ctlr->aplist7;
-	for(i=0; i < WIFI_MAX_AP && *(ulong*)app; app++)
-		if (app->flags & WFLAG_APDATA_ACTIVE)
-		p = seprint(p, e, "%s ch=%d (0x%ux) sec=%s%s m=%s c=%s%s q=%d\n",
-			app->ssid, app->channel, app->flags,
-			(app->flags & WFLAG_APDATA_WEP? "wep": ""),
-			(app->flags & WFLAG_APDATA_WPA? "wpa": ""),
+	if (ctlr->scan)
+	for(i=0; i < WIFI_MAX_AP && *(ulong*)ap; ap++){
+		if (ap->flags & WFLAG_APDATA_ACTIVE){
+		p = seprint(p, e, "%s ch=%d (0x%ux) sec=%s%s%s m=%s c=%s%s",
+			ap->ssid, ap->channel, ap->flags,
+			(ap->flags & WFLAG_APDATA_WEP? "wep": ""),
+			(ap->flags & WFLAG_APDATA_WPA? "wpa": ""),
+			(ap->flags & (WFLAG_APDATA_WEP|WFLAG_APDATA_WPA)? "": "none"),
 
-			(app->flags & WFLAG_APDATA_ADHOC? "hoc": "man"),
-			(app->flags & WFLAG_APDATA_COMPATIBLE? "c": ""),
-			(app->flags & WFLAG_APDATA_EXTCOMPATIBLE? "e": ""),
-			app->rssi
+			(ap->flags & WFLAG_APDATA_ADHOC? "hoc": "man"),
+			(ap->flags & WFLAG_APDATA_COMPATIBLE? "c": ""),
+			(ap->flags & WFLAG_APDATA_EXTCOMPATIBLE? "e": "")
 			);
+
+		if(0)
+		p = seprint(p, e, " b=%x%x%x%x%x%x",
+			ap->bssid[0], ap->bssid[1], ap->bssid[2], ap->bssid[3], ap->bssid[4], ap->bssid[5]);
+		if(0)
+		p = seprint(p, e, " m=%x%x%x%x%x%x",
+			ap->macaddr[0], ap->macaddr[1], ap->macaddr[2], ap->macaddr[3], ap->macaddr[4], ap->macaddr[5]);
+		p = seprint(p, e, "\n");
+		}
+	}
 
 	n = readstr(offset, a, n, tmp);
 	poperror();
@@ -173,12 +195,10 @@ w_option(Ctlr* ctlr, char* buf, long n)
 {
 	char *p;
 	int i, r;
+	WKey *key;
 	Cmdbuf *cb;
 
-	USED(ctlr);
-	/* TODO: complete parsing of ctl vars */
 	r = 0;
-
 	cb = parsecmd(buf, n);
 	if(cb->nf < 2)
 		r = -1;
@@ -257,26 +277,48 @@ w_option(Ctlr* ctlr, char* buf, long n)
 			nbfifoput(F9TWifi|F9WFwstate, ctlr->power);
 		}
 	}
-/*	else if(strncmp(cb->f[0], "key", 3) == 0){
+	else if(strncmp(cb->f[0], "key", 3) == 0){
 		if((i = atoi(cb->f[0]+3)) >= 1 && i <= WNKeys){
 			ctlr->txkey = i-1;
-			key = &ctlr->keys.keys[ctlr->txkey];
+			key = &ctlr->keys[ctlr->txkey];
 			key->len = strlen(cb->f[1]);
 			if (key->len > WKeyLen)
 				key->len = WKeyLen;
 			memset(key->dat, 0, sizeof(key->dat));
 			memmove(key->dat, cb->f[1], key->len);
+
+			//dcflush(key, key->len);
+			nbfifoput(F9TWifi|F9WFwwepkey, (ulong)key);
 		}
 		else
 			r = -1;
 	}
 	else if(cistrcmp(cb->f[0], "txkey") == 0){
-		if((i = atoi(cb->f[1])) >= 1 && i <= WNKeys)
+		if((i = atoi(cb->f[1])) >= 1 && i <= WNKeys){
 			ctlr->txkey = i-1;
-		else
+			nbfifoput(F9TWifi|F9WFwwepkeyid, (ulong)ctlr->txkey+1);
+		}else
 			r = -1;
 	}
-*/	else
+	else if(cistrcmp(cb->f[0], "scan") == 0){
+		if(cistrcmp(cb->f[1], "off") == 0)
+			ctlr->scan = 0;
+		else if(cistrcmp(cb->f[1], "on") == 0)
+			ctlr->scan = 1;
+		else if((i = atoi(cb->f[1])) == 0 || i == 1)
+			ctlr->scan = i;
+		else
+			r = -1;
+
+		if (ctlr->scan){
+			nbfifoput(F9TWifi|F9WFscan, 0);
+			microdelay(13 * WIFI_CHANNEL_SCAN_DWEL);
+		}
+	}
+	else if(cistrcmp(cb->f[0], "debug") == 0){
+		debug = atoi(cb->f[1]);
+	}
+	else
 		r = -2;
 	free(cb);
 	return r;
@@ -286,6 +328,7 @@ static long
 ctl(Ether* ether, void* buf, long n)
 {
 	Ctlr *ctlr;
+	char *p;
 
 	DPRINT("ctl\n");
 	
@@ -297,6 +340,8 @@ ctl(Ether* ether, void* buf, long n)
 		error(Eshutdown);
 
 	ilock(ctlr);
+	if(p = strchr(buf, '='))
+		*p = ' ';
 	if(w_option(ctlr, buf, n)){
 		iunlock(ctlr);
 		error(Ebadctl);
@@ -405,7 +450,6 @@ txstart(Ether *ether)
 	}
 }
 
-#define IEEE80211_FCTL_FROMDS	
 enum {
 	WF_Data		= 0x0008,
 	WF_Fromds	= 0x0200,
@@ -516,7 +560,7 @@ interrupt(Ureg*, void *arg)
 	if (type == I7WFrxdone)
 		rxstart(ether);
 	else if (type == I7WFtxdone)
-		;
+		print("txdone\n");
 	intrclear(ether->irq, 0);
 	iunlock(ctlr);
 }
@@ -544,17 +588,14 @@ etherndsreset(Ether* ether)
 	ilock(ctlr);
 	
 	/* Initialise stats buffer and send address to ARM7 */
-	memset(ctlr->stats7, 0, sizeof(ctlr->stats7));
-	dcflush(ctlr->stats7, sizeof(ctlr->stats7));
+	memset(uncached(ctlr->stats7), 0, sizeof(ctlr->stats7));
 	nbfifoput(F9TWifi|F9WFwstats, (ulong)ctlr->stats7);
 	
 	/* Initialise AP list buffer and send address to ARM7 */
-	memset(ctlr->aplist7, 0, sizeof(ctlr->aplist7));
-	dcflush(ctlr->aplist7, sizeof(ctlr->aplist7));
+	memset(uncached(ctlr->aplist7), 0, sizeof(ctlr->aplist7));
 	nbfifoput(F9TWifi|F9WFapquery, (ulong)ctlr->aplist7);
 	
-	memset(&ctlr->rxpkt, 0, sizeof(ctlr->rxpkt));
-	dcflush(&ctlr->rxpkt, sizeof(ctlr->rxpkt));
+	memset(uncached(&ctlr->rxpkt), 0, sizeof(ctlr->rxpkt));
 	nbfifoput(F9TWifi|F9WFrxpkt, (ulong)&ctlr->rxpkt);
 	
 	memset(ea, 0, sizeof(ea));
@@ -562,10 +603,10 @@ etherndsreset(Ether* ether)
 		panic("ethernet address not set");
 
 	for(i = 0; i < ether->nopt; i++){
-		//
-		// The max. length of an 'opt' is ISAOPTLEN in dat.h.
-		// It should be > 16 to give reasonable name lengths.
-		//
+		/*
+		 * The max. length of an 'opt' is ISAOPTLEN in dat.h.
+		 * It should be > 16 to give reasonable name lengths.
+		 */
 		if(p = strchr(ether->opt[i], '='))
 			*p = ' ';
 		w_option(ctlr, ether->opt[i], strlen(ether->opt[i]));

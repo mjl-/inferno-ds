@@ -63,6 +63,11 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
 	cd arm7; mk CONF'='$CONF
 
+trap.t: trap.5
+	cp trap.5 trap.t
+trap.5: trap.c
+	5c $CFLAGS trap.c
+
 i$CONF.kfs: root/lib/proto/$CONF'proto'
 	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
 

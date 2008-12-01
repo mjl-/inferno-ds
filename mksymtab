@@ -7,8 +7,13 @@ echo '00000000  .arm'
 
 inm -n $* | sed 's|.*: ||' | sort -f -k 2 | awk \
 '
+	function zeropad(a, z) { 
+		for (i = z - length(a); i > 0; i--)
+			a = "0" a
+		return a
+	}
 	{
-		addr=strtonum("0x" $1)
+		addr=zeropad($1,8)
 		sym=$3
 
 		if (match($2, "[tTlL]"))
@@ -19,9 +24,9 @@ inm -n $* | sed 's|.*: ||' | sort -f -k 2 | awk \
 			sect=".bss"
 
 		if (sect != osect)
-			printf ("\n%08X  %s\n", addr, sect)
+			printf ("\n%s  %s\n", addr, sect)
 		osect=sect
-		printf ("%08X  %s\n", addr, sym)
+		printf ("%s  %s\n", addr, sym)
 	}
 '
 )

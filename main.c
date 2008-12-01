@@ -245,25 +245,6 @@ idlehands(void){
 }
 
 /* stubs */
-void
-setfsr(ulong x) {
-USED(x);
-}
-
-ulong
-getfsr(){
-return 0;
-}
-
-void
-setfcr(ulong x) {
-USED(x);
-}
-
-ulong
-getfcr(){
-return 0;
-}
 
 void
 fpinit(void)

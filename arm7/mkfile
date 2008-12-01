@@ -16,8 +16,8 @@ OFILES=\
 	spi.$O\
 	rtc.$O\
 	audio.$O\
-#	dma.$O\
 	wifi.$O\
+#	dma.$O\
 
 HFILES=\
 	../io.h\

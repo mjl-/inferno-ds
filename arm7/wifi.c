@@ -22,6 +22,8 @@ Copyright (c) 2005 Stephen Stair
 #include "spi.h"
 #include "wifi.h"
 
+#define	DPRINT	if(0)print
+
 Wifi_Data wifi_data;
 
 nds_rx_packet *rx_packet = nil;
@@ -1043,6 +1045,8 @@ static int Wifi_ProcessReassocResponse(int macbase, int framelen)
 	ushort status;
 	uchar tag_length;
 
+	DPRINT("wprr\n");
+	
 	USED(framelen);
 	
 	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
@@ -1115,6 +1119,8 @@ static int Wifi_ProcessAuthenticationFrame(int macbase, int framelen)
 	ushort auth_sequence;
 	ushort status;
 
+	DPRINT("wpaf\n");
+	
 	USED(framelen);
 	
 	Wifi_MACCopy((ushort *) & packetheader, macbase, 0, 12);
@@ -1654,6 +1660,8 @@ static void Wifi_SendAuthPacket(int wepmode)
 	int i;
 	ushort *fixed_params;
 
+	DPRINT("wsaup\n");
+	
 	i = Wifi_GenMgtHeader(data, 0x00B0);	// Auth
 
 	fixed_params = (ushort *) (data + i);
@@ -1707,6 +1715,8 @@ static void Wifi_SendAssocPacket(void)
 	// max size is 12+24+4+34+4 = 66
 	uchar data[96];
 	int i, j, numrates;
+
+	DPRINT("wsasp\n");
 
 	i = Wifi_GenMgtHeader(data, 0x0000);
 

@@ -1,4 +1,6 @@
 #!/dis/sh script
+load std
+load expr
 
 wmrun bind -a '#A' /dev # audio
 wmrun bind -b /icons/tinytk /icons/tk
@@ -8,29 +10,21 @@ menu Kbd			{ wm/keyboard }
 menu Pen			{ wm/pen }
 menu Halt		{ wmrun shutdown -h }
 
-#wmrun auth/factotum
-#wmrun wm/date
+wmrun wm/sh -w 250 -h 130 -ic '
+	fn rrtc { cat ''#r/rtc''; echo }
+	fn rnes { cat /net/ether0/ifstats }
+	fn wnec { echo -n $* > /net/ether0/0/ctl }
 
-wmrun wm/keyboard -t
-wmrun wm/about
-wmrun wm/sh -w 240 -h 130 -ic '
-	echo welcome `{cat /dev/user}!;
-	
-	cat /dev/ndsfw
+	cat /net/ether0/clone > /dev/null
+	wnec scan on
+#	rnes
 
-#	echo /dev/ndsrom works! > /dev/ndsrom
-#	cat /dev/ndsrom  | read -o 0 19
+	wnec channel 11
+	wnec essid cain
+	rnes
 
-#	echo /dev/ndssram works! > /dev/ndssram
-#	cat /dev/ndssram  | read -o 0 20
-
-	echo show ints
-	echo '' 0x04000208/X
-		0x04000210/X
-		0x04000214/X'' | mdb /dev/ndsmem
-
-	cat /net/ether0/ifstats
-	auplay /usr/inferno/lib/invhit.iaf
+	echo
 	date
+	auplay /usr/inferno/lib/invhit.iaf
 	'
 

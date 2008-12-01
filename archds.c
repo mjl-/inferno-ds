@@ -230,18 +230,16 @@ archether(int ctlno, Ether *ether)
 	IPCREG->ctl |= Ipcirqena;
 	
 	memset(ether->ea, 0xff, Eaddrlen);
-	nbfifoput(F9TWifi|F9WFrmac, (ulong)ether->ea);	/* mac from arm7 */
+ 	nbfifoput(F9TWifi|F9WFrmac, (ulong)uncached(ether->ea));	/* mac from arm7 */
 	if(1){	/* workaround for desmume */
-		ushort i;
-		uchar maczero[Eaddrlen];
-		
-		for(i=0; i < 1<<(8*sizeof(ushort))-1; i++);
-		memset(maczero, 0x00, Eaddrlen);
-		if(memcmp(ether->ea, maczero, Eaddrlen) == 0)
+ 		uchar i, maczero[Eaddrlen] = {0,0,0,0,0,0};
+ 		
+ 		for(i=0; i < 1<<(8*sizeof(uchar))-1; i++);
+ 		if(memcmp(uncached(ether->ea), maczero, Eaddrlen) == 0)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 
-	strcpy(opt, "power=on mode=managed crypt=off essid=THOMSON station=ds");
+	strcpy(opt, "power=on mode=managed crypt=off channel=11 essid=default station=ds");
 	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;
