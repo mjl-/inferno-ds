@@ -30,6 +30,35 @@
 #define WIFI_RFSIODATA1 (*(volatile ushort*)0x0480017E)
 #define WIFI_RFSIOBUSY  (*(volatile ushort*)0x04800180)
 
+enum
+{
+	// ctl	
+	W_TXREQ_RESET	= 0xAC,
+	W_TXREQ_SET	= 0xAE,
+	W_TXREQ_READ	= 0xB0,
+	W_TXBUSY	= 0xB6,
+	W_TXSTAT	= 0xB8,
+	W_TXSTATCNT	= 0x08,
+	W_TX_SEQNO	= 0x210,
+
+	W_TXBUF_WR_ADDR	= 0x68,
+	W_TXBUF_WR_DATA	= 0x70,
+	W_TXBUF_GAP	= 0x74,
+	W_TXBUF_GAPDISP	= 0x76,
+	
+	W_TXBUF_BEACON	= 0x80, 
+	W_TXBUF_EXTRA	= 0x90,
+	W_TXBUF_LOC1	= 0xA0,
+	W_TXBUF_LOC2	= 0xA4,
+	W_TXBUF_LOC3	= 0xA8,
+
+	W_TXBUF_RESET	= 0xB4,
+	W_TXBUF_TIM	= 0x84,
+	W_TXBUF_COUNT	= 0x6C,
+	W_TX_RETRYLIMIT	= 0x2C,
+	W_TX_ERR_COUNT	= 0x1C0,
+};
+
 enum WEPMODES {
 	WEPMODE_NONE = 0,
 	WEPMODE_40BIT = 1,
@@ -145,9 +174,8 @@ struct Wifi_Data_Struct {
 	ushort curChannel, reqChannel;
 	ushort curMode, reqMode;
 	ushort authlevel, authctr;
-	uchar curWepmode, reqWepMode;
+	ulong counter;
 	char ssid[34];
-	uchar baserates[16];
 
 	ushort scanChannel;
 
@@ -156,12 +184,13 @@ struct Wifi_Data_Struct {
 	uchar MacAddr[6];
 	uchar bssid[6];
 	uchar apmac[6];
-	uchar wepkey[4][MAX_KEY_SIZE + 1];
 	ushort maxrate;
-	ushort wepkeyid;
-
-	uchar FlashData[512];
-
+	short wepkeyid;
+	char wepmode;
+	uchar wepkey[20];
+	uchar baserates[16];
+	ulong random;
+	
 	/* pointers to buffers we get handed from ARM9 */
 	volatile ulong *stats;
 	Wifi_AccessPoint *aplist;
@@ -236,12 +265,11 @@ void wifi_init(void);
 void wifi_open(void);
 void wifi_close(void);
 void wifi_mac_query(void);
-void wifi_interrupt(void*);
 void wifi_send_ether_packet(ushort length, uchar * data);
 void wifi_stats_query(void);
 
 void Wifi_RequestChannel(int channel);
-void Wifi_SetWepKey(int key, int off, uchar b1, uchar b2);
+void Wifi_SetWepKey(void *wepkey);
 void Wifi_SetWepKeyID(int key);
 void Wifi_SetWepMode(int wepmode);
 void Wifi_SetSSID(int off, char b1, char b2);
@@ -250,5 +278,5 @@ void Wifi_GetAPMode(void);
 
 void wifi_ap_query(ushort start_stop);
 void wifi_start_scan(void);
-void wifi_timer_handler(void*);
 void wifi_rx_q_complete(void);
+void ReadFlashData(void);

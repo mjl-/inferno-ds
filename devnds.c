@@ -266,9 +266,8 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		p = seprint(p, e, "alarm %s [%.2d:%.2d]\n", pu->alarmon? "on": "off", pu->alarmhour, pu->alarmmin);
 		p = seprint(p, e, "adc t1 (%d,%d) t2 (%d,%d)\n", pu->adc.x1, pu->adc.y1, pu->adc.x2, pu->adc.y2);
 		p = seprint(p, e, "scr t1 (%d,%d) t2 (%d,%d)\n", pu->adc.xpx1, pu->adc.ypx1, pu->adc.xpx2, pu->adc.ypx2);
-		p = seprint(p, e, "flags 0x%02ux: sz %d lang %s blight %d %s %s %s\n", 
+		p = seprint(p, e, "flags 0x%02ux: lang %s blight %d %s %s %s\n", 
 			pu->flags,
-			sizeof(UserInfo),
 			langlst[pu->flags&Langmask],
 			(pu->flags>>Blightshift)&Blightmask,
 			(pu->flags & Gbalowerscreen)? "gbalowerscreen": "",

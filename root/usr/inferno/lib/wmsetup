@@ -10,20 +10,20 @@ menu Kbd			{ wm/keyboard }
 menu Pen			{ wm/pen }
 menu Halt		{ wmrun shutdown -h }
 
-wmrun wm/sh -w 250 -h 130 -ic '
+wmrun wm/sh -w 250 -h 90 -ic '
 	fn rrtc { cat ''#r/rtc''; echo }
 	fn rnes { cat /net/ether0/ifstats }
 	fn wnec { echo -n $* > /net/ether0/0/ctl }
 
 	cat /net/ether0/clone > /dev/null
 	wnec scan on
-#	rnes
+	rnes
+	wnec scan off
 
 	wnec channel 11
 	wnec essid cain
 	rnes
 
-	echo
 	date
 	auplay /usr/inferno/lib/invhit.iaf
 	'

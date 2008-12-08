@@ -239,7 +239,7 @@ archether(int ctlno, Ether *ether)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 
-	strcpy(opt, "power=on mode=managed crypt=off channel=11 essid=default station=ds");
+	strcpy(opt, "power=on mode=managed channel=11 essid=default station=ds");
 	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;

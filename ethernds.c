@@ -142,7 +142,7 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 		(ulong) ctlr->stats7[WF_STAT_DBG4]
 		);
 
-	p = seprint(p, e, "state (0x%ux): assoc %s%s%s auth %s pend %s%s%s\n",
+	p = seprint(p, e, "state (0x%ux): assoc %s%s%s auth %s pend %s%s%s%s%s\n",
 		(ushort) ctlr->stats7[WF_STAT_DBG5],
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_ASSOCIATED? "ok" : "",
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_ASSOCIATING? "ing" : "",
@@ -157,17 +157,27 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 		ctlr->stats7[WF_STAT_DBG5] & WIFI_STATE_APQUERYPEND? "apqry": ""
 		);	
 
+	if(1){
+		p = seprint(p, e, "hwcnt: ");
+		for(i=WF_STAT_DBG6+1; i<WF_STAT_MAX; i++)
+			p = seprint(p, e, "%lux, ", ctlr->stats7[i]);
+		p = seprint(p, e, "\n");
+	}
+
 	ap = (Wifi_AccessPoint*) ctlr->aplist7;
 	// order by signal quality 
 	if (ctlr->scan)
-	for(i=0; i < WIFI_MAX_AP && *(ulong*)ap; ap++){
-		if (ap->flags & WFLAG_APDATA_ACTIVE){
-		p = seprint(p, e, "%s ch=%d (0x%ux) sec=%s%s%s m=%s c=%s%s",
-			ap->ssid, ap->channel, ap->flags,
+	for(i=0; i < WIFI_MAX_AP && *(ulong*)ap; i++, ap++){
+		if (!(ap->flags & WFLAG_APDATA_ACTIVE))
+			continue;
+
+		p = seprint(p, e, "%d: %s ch=%d (0x%ux)", i, ap->ssid, ap->channel, ap->flags);
+
+		if(0)
+		p = seprint(p, e, "sec=%s%s%s m=%s c=%s%s",
 			(ap->flags & WFLAG_APDATA_WEP? "wep": ""),
 			(ap->flags & WFLAG_APDATA_WPA? "wpa": ""),
 			(ap->flags & (WFLAG_APDATA_WEP|WFLAG_APDATA_WPA)? "": "none"),
-
 			(ap->flags & WFLAG_APDATA_ADHOC? "hoc": "man"),
 			(ap->flags & WFLAG_APDATA_COMPATIBLE? "c": ""),
 			(ap->flags & WFLAG_APDATA_EXTCOMPATIBLE? "e": "")
@@ -180,7 +190,6 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 		p = seprint(p, e, " m=%x%x%x%x%x%x",
 			ap->macaddr[0], ap->macaddr[1], ap->macaddr[2], ap->macaddr[3], ap->macaddr[4], ap->macaddr[5]);
 		p = seprint(p, e, "\n");
-		}
 	}
 
 	n = readstr(offset, a, n, tmp);
@@ -587,11 +596,9 @@ etherndsreset(Ether* ether)
 
 	ilock(ctlr);
 	
-	/* Initialise stats buffer and send address to ARM7 */
 	memset(uncached(ctlr->stats7), 0, sizeof(ctlr->stats7));
 	nbfifoput(F9TWifi|F9WFwstats, (ulong)ctlr->stats7);
 	
-	/* Initialise AP list buffer and send address to ARM7 */
 	memset(uncached(ctlr->aplist7), 0, sizeof(ctlr->aplist7));
 	nbfifoput(F9TWifi|F9WFapquery, (ulong)ctlr->aplist7);
 	

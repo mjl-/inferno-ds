@@ -73,7 +73,7 @@ fiforecvintr(void*)
 			if(0)print("F9W %lux\n", vv & Fcmdmask);
 			switch(vv&Fcmdsmask){
 			case F9WFrmac:
-				memmove((void*)v, wifi_data.MacAddr, 6);
+				memmove((void*)v, wifi_data.MacAddr, sizeof(wifi_data.MacAddr));
 				break;
 			case F9WFwstats:
 				wifi_data.stats = (volatile ulong *)v;
@@ -248,6 +248,10 @@ vblankintr(void*)
 		IPC->batt = touch_read_value(Tscgetbattery, MaxRetry, MaxRange);
 		IPC->temp = touch_read_temp(&IPC->td1, &IPC->td2);
 		//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
+
+		/* clear FIFO errors */
+		if (FIFOREG->ctl & Fifoerror)
+			FIFOREG->ctl |= Fifoenable|Fifoerror;
 	}
 	
 	intrclear(VBLANKbit, 0);
@@ -259,20 +263,15 @@ main(void)
 	INTREG->ime = 0;
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 	read_firmware(0x03FE00, (ulong*)UINFOMEM, sizeof(UserInfo));
+	ReadFlashData();
 	
 	/* dummy read to enable the touchpad PENIRQ */
 	touch_read_value(TscgetX, MaxRetry, MaxRange);
 
-	wifi_init();
 	trapinit();
-
 	intrenable(VBLANKbit, vblankintr, nil, 0);
-
-	FIFOREG->ctl = (FifoRirq|Fifoenable|FifoTflush);
+	FIFOREG->ctl = FifoRirq|Fifoerror|Fifoenable|FifoTflush;
 	intrenable(FRECVbit, fiforecvintr, nil, 0);
-
-	intrenable(TIMERWIFIbit, wifi_timer_handler, nil, 0);
-	intrenable(WIFIbit, wifi_interrupt, nil, 0);
 
 	// keep the ARM7 out of main RAM
 	while (1)
