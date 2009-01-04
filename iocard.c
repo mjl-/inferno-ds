@@ -21,21 +21,16 @@ cardWriteCommand(const uchar * cmd){
 
 void
 cardPolledTransfer(ulong flags, ulong * dst, ulong len, const uchar * cmd){
-	ulong data;
-	ulong * target;
+	ulong i;
 
 	cardWriteCommand(cmd);
 	CARD_CR2 = flags;
-	target = dst + len;
-	do {
-		// Read data if available
-		if (CARD_CR2 & CARD_DATA_READY) {
-			data=CARD_DATA_RD;
-			if (dst < target)
-				*dst = data;
-			dst++;
-		}
-	} while (CARD_CR2 & CARD_BUSY);
+	for (i=0; i < len; i++){
+		if (!(CARD_CR2 & CARD_BUSY))
+			break;
+		while (!(CARD_CR2 & CARD_DATA_READY));
+		dst[i] = CARD_DATA_RD;
+	}
 }
 
 void
@@ -53,7 +48,6 @@ cardStartTransfer(const uchar * cmd, ulong * dst, int ch, ulong flags){
 	CARD_CR2 = flags;
 }
 
-
 ulong
 cardWriteAndRead(const uchar * cmd, ulong flags){
 	cardWriteCommand(cmd);
@@ -61,7 +55,6 @@ cardWriteAndRead(const uchar * cmd, ulong flags){
 	while (!(CARD_CR2 & CARD_DATA_READY)) ;
 	return CARD_DATA_RD;
 }
-
 
 void
 cardRead00(ulong addr, ulong * dst, ulong len, ulong flags){
@@ -78,13 +71,11 @@ cardRead00(ulong addr, ulong * dst, ulong len, ulong flags){
 	cardPolledTransfer(flags, dst, len, cmd);
 }
 
-
 void
 cardReadHeader(uchar * header)
 {
 	cardRead00(0, (ulong *)header, 512, 0xA93F1FFF);
 }
-
 
 int
 cardReadID(ulong flags)
@@ -92,7 +83,6 @@ cardReadID(ulong flags)
 	uchar cmd[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90};
 	return cardWriteAndRead(cmd, flags);
 }
-
 
 static
 void EepromWaitBusy(void)
@@ -208,7 +198,6 @@ cardEepromGetSize(void)
 
 	return 0;
 }
-
 
 void
 cardReadEeprom(ulong address, uchar *data, ulong length, ulong addrtype)

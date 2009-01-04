@@ -12,6 +12,7 @@ static ulong timer_incr[4] = { 0, 0, 0, 0};
 typedef struct Clock0link Clock0link;
 typedef struct Clock0link {
 	void		(*clock)(void);
+	ulong		t;
 	Clock0link*	link;
 } Clock0link;
 
@@ -22,16 +23,20 @@ static int	kproftickena;
 void	(*kproftick)(ulong);	/* set by devkprof.c when active */
 
 Timer*
-addclock0link(void (*clock)(void), int)
+addclock0link(void (*clock)(void), int ticks)
 {
 	Clock0link *lp;
 
 	if((lp = malloc(sizeof(Clock0link))) == 0){
 		print("addclock0link: too many links\n");
 		return nil;
-	}	
-//	print("clocklink key: 0x%lux", clock0lock.key);	
+	}
+
+	if(clock == nil || ticks <=0)
+		return nil;
+
 	ilock(&clock0lock);
+	lp->t = ticks;
 	lp->clock = clock;
 	lp->link = clock0link;
 	clock0link = lp;
@@ -70,10 +75,9 @@ profintr(Ureg *ur, void*)
 }
 
 static void
-clockintr(Ureg *ur, void *a)
+clockintr(Ureg *ur, void *)
 {
 	Clock0link *lp;
-	USED(ur, a);
 
 	m->ticks++;
 	
@@ -84,8 +88,8 @@ clockintr(Ureg *ur, void *a)
 
 	if(canlock(&clock0lock)){
 		for(lp = clock0link; lp; lp = lp->link){
-			if(0)print("clki %lud clkf %lux\n", m->ticks, lp->clock);
-			if (lp->clock)
+			if(0)print("clkf %lux clkt %lud %d\n", lp->clock, m->ticks); // (m->ticks & lp->t) == lp->t
+			if((m->ticks & lp->t) == lp->t) //(lp->clock)
 				lp->clock();
 		}
 		unlock(&clock0lock);
@@ -118,6 +122,7 @@ void
 installprof(void (*pf)(Ureg *, int))
 {
 	int s;
+	int splfhi(void);
 
 	s = splfhi();
 	prof_fcn = pf;

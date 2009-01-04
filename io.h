@@ -92,6 +92,7 @@ enum
 	/* System */
 	F9Sysbright = 0,
 	F9Syspoweroff,
+	F9Syssleep,
 	F9Sysreboot,
 	F9Sysleds,
 	F9Sysrrtc,
@@ -592,7 +593,7 @@ struct KeyReg {
  */
 enum
 {
-	Numbtns	= 13,
+	Numbtns	= 12,
 	Btn9msk = (1<<10) - 1,
 	Btn7msk = (1<<8)  - 1,
 

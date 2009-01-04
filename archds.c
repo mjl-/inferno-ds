@@ -41,9 +41,38 @@ enum {
 	sethaltcr = 0x1F,
 };
 
+/* Reset the DS registers to sensible defaults */
 void
 archreset(void)
 {
+	int i;
+	DmaReg *dmareg;
+	TimerReg *tmrreg;
+
+	//stop timers and dma
+	for (i=0; i<4; i++) 
+	{
+		dmareg = (DMAREG+i);
+		dmareg->ctl = 0;
+		dmareg->src = 0;
+		dmareg->dst = 0;
+
+		tmrreg = (TMRREG+i);
+		tmrreg->ctl = 0;
+		tmrreg->data = 0;
+	}
+
+	//clear video display registers
+	memset((void*)LCD, 0, 0x56);
+	memset((void*)SUBLCD, 0, 0x56);
+
+	SUBLCDREG->lccr = 0;
+	VRAMREG->acr = 0;
+	VRAMREG->ecr = 0;
+	VRAMREG->fcr = 0;
+	VRAMREG->gcr = 0;
+	VRAMREG->hcr = 0;
+	VRAMREG->icr = 0;
 }
 
 void
@@ -152,12 +181,14 @@ archconfinit(void)
 
 	conf.screens = 1;
 	conf.portrait = 0;
+	conf.swcursor = 0; //(conf.screens == 1)? 0: 1;
 }
 
 void
 kbdinit(void)
 {
 	kbdq = qopen(4*1024, 0, nil, nil);
+	qnoblock(kbdq, 1);
 	addclock0link(kbdclock, MS2HZ);
 }
 
@@ -225,7 +256,7 @@ archether(int ctlno, Ether *ether)
 	ether->irq = IPCSYNCbit;
 	ether->itype = 0;
 	ether->mbps = 2;
-	ether->maxmtu = 1492;
+	ether->maxmtu = 2300;
 
 	IPCREG->ctl |= Ipcirqena;
 	

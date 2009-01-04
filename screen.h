@@ -85,4 +85,5 @@ void swcurs_disable(SWcursor*);
 void swcurs_hide(SWcursor*);
 void swcurs_unhide(SWcursor*);
 void swcurs_load(SWcursor*, Cursor*);
-void swcurs_update(int, int, int, int);
+void swcursupdate(int, int, int, int);
+void cursorupdate(Rectangle);

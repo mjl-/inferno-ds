@@ -63,6 +63,7 @@ i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
 	cd arm7; mk CONF'='$CONF
 
+# must be ARM code, even when OBJTYPE=thumb
 trap.t: trap.5
 	cp trap.5 trap.t
 trap.5: trap.c

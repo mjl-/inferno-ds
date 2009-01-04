@@ -4,7 +4,14 @@
 #include <kern.h>
 #include "dat.h"
 #include "fns.h"
-#include "rtc.h"
+
+// RTC registers
+#define WRITE_STATUS_REG1	0x60
+#define READ_STATUS_REG1	0x61
+
+// full 7 bytes for time and date
+#define WRITE_DATA_REG1	0x64
+#define READ_DATA_REG1	0x65
 
 #define RTC_DELAY 48
 #define CS_0    (1<<6)

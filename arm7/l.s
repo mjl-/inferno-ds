@@ -42,6 +42,10 @@ TEXT swiHalt(SB), $-4
 	SWI	0x060000
 	RET
 
+TEXT swiSleep(SB), $-4
+	SWI	0x070000
+	RET
+
 TEXT swiSetHaltCR(SB), $-4
 	MOVW	R0, R2
 	SWI	0x1F0000

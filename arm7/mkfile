@@ -25,7 +25,6 @@ HFILES=\
 	dat.h\
 	fns.h\
 	spi.h\
-	rtc.h\
 	audio.h\
 	wifi.h\
 	
@@ -41,6 +40,11 @@ i$CONF: $OFILES
 
 i$CONF.p9: $OFILES
 	$LD -o $target -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
+
+trap.t: trap.5
+	cp trap.5 trap.t
+trap.5: trap.c
+	5c $CFLAGS trap.c
 
 syms:   $OFILES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE defaultARM7.c >syms

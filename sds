@@ -28,7 +28,7 @@ ip
 	ipifc
 	icmp
 	icmp6
-	ipmux
+#	ipmux
 
 lib
 	interp
@@ -77,7 +77,7 @@ port
 
 link
 	fifo
-	math
+#	math
 #	logo
 	ethernds
 	ethermedium
@@ -104,7 +104,6 @@ code
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
-	int swcursor = 1;
 
 	
 init
@@ -125,7 +124,7 @@ root
 # intialisation
 # dos file system
 	/dis/dossrv.dis
-	/dis/disk/format.dis
+#	/dis/disk/format.dis
 
 # kfs file system
 	/dis/disk/kfs.dis
@@ -140,7 +139,6 @@ root
 # For development work:
 	/dis/sh.dis
 	/dis/sh/std.dis
-	/dis/sh/expr.dis
 	/dis/ls.dis
 	/dis/cat.dis
 	/dis/bind.dis
@@ -175,11 +173,6 @@ root
 
 	/n/remote
 	/n/local
-	/n/client
-	/n/rdbg
-	/n/dump
-	/n/disk
-	/n/kfs
 
 # things that live in /n/local
 	/usr/inferno
@@ -224,7 +217,8 @@ root
 #	/dis/wm/snake.dis
 #	/dis/wm/tetris.dis
 #	/dis/lib/scoretable.dis
-	
+	/dis/sleep.dis
+
 	/lib/wmsetup
 	/lib/sh/profile
 	/icons/inferno.bit

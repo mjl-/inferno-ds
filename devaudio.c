@@ -87,7 +87,8 @@ static	char	Evolume[]	= "illegal volume specifier";
 
 /* TODO: use the 16 sound channels available */
 static int chan = 0;			/* sound channel index */
-static TxSound snd[NSChannels+1];	/* play and record */
+static TxSound Snd[NSChannels+1];	/* play and record */
+static TxSound* snd[] = (TxSound*)uncached(Snd);
 
 static void
 mxvolume(void)
@@ -97,29 +98,29 @@ mxvolume(void)
 	rov = audio.rovol[Vaudio];
 	lov = audio.lovol[Vaudio];
 	
-	snd[chan].chan = (audio.flags & Fmono? 1: 2);
-	snd[chan].rate = audio.lovol[Vspeed];
-	snd[chan].vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
-	snd[chan].pan = (Maxvol - Minvol) * rov / (2*lov+1);
-	snd[chan].fmt = audio.flags & F16bits;
+	snd[chan]->chan = (audio.flags & Fmono? 1: 2);
+	snd[chan]->rate = audio.lovol[Vspeed];
+	snd[chan]->vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
+	snd[chan]->pan = (Maxvol - Minvol) * rov / (2*lov+1);
+	snd[chan]->fmt = audio.flags & F16bits;
 }
 
 static void
 playaudio(void* d, ulong len)
 {
-	snd[chan].d = d;
-	snd[chan].n = len;
-	snd[chan].chan = chan;
-	fifoput(F9TAudio|F9Auplay, (ulong)&snd[chan]);
+	snd[chan]->d = d;
+	snd[chan]->n = len;
+	snd[chan]->chan = chan;
+	fifoput(F9TAudio|F9Auplay, (ulong)snd[chan]);
 }
 
 static void
 recaudio(void* d, ulong len)
 {
-	memmove(&snd[1], &snd[chan], sizeof(TxSound));
-	snd[1].d = d;
-	snd[1].n = len;
-	fifoput(F9TAudio|F9Aurec, (ulong)&snd[1]);
+	memmove(snd[1], snd[chan], sizeof(TxSound));
+	snd[1]->d = d;
+	snd[1]->n = len;
+	fifoput(F9TAudio|F9Aurec, (ulong)snd[1]);
 }
 
 static void
@@ -178,7 +179,7 @@ static long
 audioread(Chan *c, void *v, long n, vlong offset)
 {
 	int liv, riv, lov, rov;
-	long m, n0;
+	long m;
 	char buf[300], *p, *s, *e;
 
 	p = v;
@@ -236,7 +237,7 @@ audioread(Chan *c, void *v, long n, vlong offset)
 static long
 audiowrite(Chan *c, void *vp, long n, vlong)
 {
-	long m, n0;
+	long m;
 	int i, nf, v, left, right, in, out;
 	char buf[255], *field[Ncmd];
 	char *p;

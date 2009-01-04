@@ -17,8 +17,6 @@ extern char edata[], end[];
 
 extern ulong kerndate;
 extern int cflag;
-extern int consoleprint;
-extern int redirectconsole;
 extern int main_pool_pcnt;
 extern int heap_pool_pcnt;
 extern int image_pool_pcnt;

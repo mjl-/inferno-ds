@@ -26,7 +26,7 @@ nbfifoput(ulong cmd, ulong data)
 		return 0;
 	if(data>>Fdatalen){
 		print("nbfp: fifo msg (%lux|%lux) too big\n", data, cmd);
-		return;
+		return 0;
 	}
 	FIFOREG->send = (data<<Fcmdlen|cmd);
 	return 1;
@@ -37,11 +37,7 @@ fifoput(ulong cmd, ulong data)
 {
 	qlock(&putl);
 	sleep(&putr, fifocanput, nil);
-	if(data>>Fdatalen){
-		print("fp: fifo msg (%lux|%lux) too big\n", data, cmd);
-		return;
-	}
-	FIFOREG->send = (data<<Fcmdlen|cmd);
+	nbfifoput(cmd, data);
 	qunlock(&putl);
 }
 

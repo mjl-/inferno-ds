@@ -34,6 +34,7 @@ struct Conf
 	int		bmap;			/* buttons map selection */
 	int		screens;		/* number of screens */
 	int		portrait;		/* display orientation */
+	int		swcursor;		/* display swcursor */
 };
 
 #define NISAOPT 8
@@ -143,76 +144,3 @@ typedef struct MemBank {
 	uint	vbase;
 	uint	vlimit;
 } MemBank;
-
-enum {
-	// DMA configuration parameters
-
-	 // DMA Direction
-	DmaOUT=		0,
-	DmaIN=		1,
-
-	 // dma endianess
-	DmaLittle=	0,
-	DmaBig=		1,
-
-	 // dma devices
-	DmaUDC=		0,
-	DmaSDLC=	2,
-	DmaUART0=	4,
-	DmaHSSP=	6,
-	DmaUART1=	7,	// special case (is really 6)
-	DmaUART2=	8,
-	DmaMCPaudio=	10,
-	DmaMCPtelecom=	12,
-	DmaSSP=		14,
-};
-
-enum touch_source {
-	TOUCH_READ_X1, TOUCH_READ_X2, TOUCH_READ_X3, TOUCH_READ_X4,
-	TOUCH_READ_Y1, TOUCH_READ_Y2, TOUCH_READ_Y3, TOUCH_READ_Y4,
-	TOUCH_READ_P1, TOUCH_READ_P2,
-	TOUCH_READ_RX1, TOUCH_READ_RX2,
-	TOUCH_READ_RY1, TOUCH_READ_RY2,
-	TOUCH_NUMRAWCAL = 10,
-};
-
-struct TouchPnt {
-	int	x;
-	int	y;
-};
-
-struct TouchTrans {
-	int	xxm;
-	int	xym;
-	int	yxm;
-	int	yym;
-	int	xa;
-	int	ya;
-};
-
-struct TouchCal {
-	TouchPnt	p[4];	// screen points
-	TouchPnt	r[4][4];// raw points
-	TouchTrans 	t[4];	// transformations
-	TouchPnt	err;	// maximum error
-	TouchPnt	var;	// usual maximum variance for readings
-	int 		ptp;	// pressure threshold for press
-	int		ptr;	// pressure threshold for release
-};
-
-extern TouchCal touchcal;
-
-enum {
-	VMODE_MONO = 0x0001,    /* monochrome display */
-	VMODE_COLOR = 0x0002,   /* color (RGB) display */
-	VMODE_TFT = 0x0004,	/* TFT (active matrix) display */
-	VMODE_STATIC = 0x0010,  /* fixed palette */
-	VMODE_PSEUDO = 0x0020,  /* changeable palette */
-	VMODE_LINEAR = 0x0100,  /* linear frame buffer */
-	VMODE_PAGED = 0x0200,   /* paged frame buffer */
-	VMODE_PLANAR = 0x1000,  /* pixel bits split between planes */
-	VMODE_PACKED = 0x2000,  /* pixel bits packed together */
-	VMODE_LILEND = 0x4000,	/* little endian pixel layout */
-	VMODE_BIGEND = 0x8000,	/* big endian pixel layout */
-};
-

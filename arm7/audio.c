@@ -6,6 +6,7 @@
 #include <u.h>
 #include "../mem.h"
 #include "../io.h"
+#include <kern.h>
 #include "dat.h"
 #include "fns.h"
 #include "audio.h"
@@ -15,30 +16,34 @@ static void
 pm_setamp(uchar control) 
 {
 	busywait();
-	SPIREG->ctl = Spiena | SpiDevpower | Spi1mhz | Spicont;
+	SPIREG->ctl = Spiena|SpiDevpower|Spi1mhz|Spicont;
 	SPIREG->data = PM_AMP_OFFSET;
 	busywait();
-	SPIREG->ctl = Spiena | SpiDevpower | Spi1mhz;
+	SPIREG->ctl = Spiena|SpiDevpower|Spi1mhz;
 	SPIREG->data = control;
 }
 
 static uchar 
-mic_auxread(ushort sfmt) {
+mic_read(ushort sfmt) {
 	ushort res[2];
 
 	busywait();
-	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz | Spicont;
+	SPIREG->ctl = Spiena|SpiDevtouch|Spi2mhz|Spicont;
 	SPIREG->data = sfmt;	
 	busywait();
 	SPIREG->data = 0x00;
 	busywait();
 	res[1] = SPIREG->data;
-	SPIREG->ctl = Spiena | SpiDevtouch | Spi2mhz;
+	SPIREG->ctl = Spiena|SpiDevtouch|Spi2mhz;
 	SPIREG->data = 0x00;
 	busywait();
 	res[0] = SPIREG->data;
 
-	return (((res[1] & 0x7F) << 1) | ((res[0] >> 7) & 0x01));
+	if(sfmt == Tscgetmic8)
+		return (((res[1] & 0x7F) << 1) | ((res[0] >> 7) & 0x01));
+	else
+		return (((res[1] & 0x7F) << 5) | ((res[0] >> 3) & 0x1F));
+
 }
 
 static int nrs = 0;
@@ -49,8 +54,8 @@ recintr(void *a)
 	TxSound *snd = a;
 
 	if(snd->d && nrs++ < snd->n){
-		snd->d[nrs] = (char) mic_auxread(Tscgetmic8) ^ 0x80;
-		if (0 && nrs % 1024 == 0) print("%x[%d]\n", snd->d, nrs);
+		snd->d[nrs] = (char) mic_read(Tscgetmic8) ^ 0x80;
+		if (0 && nrs % 1024 == 0) print("%lux[%d]\n", (ulong) snd->d, nrs);
 	}else
 		stoprec(snd);
 
@@ -63,7 +68,8 @@ startrec(TxSound *snd)
 	TimerReg *t = TMRREG + AUDIOtimer;
 
 	pm_setamp(PM_AMP_ON);
-	
+	power_write(POWER_MIC_GAIN, 1 - 1);
+
 	nrs = 0;
 	t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
 	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
@@ -80,6 +86,7 @@ stoprec(TxSound *snd)
 	intrmask(TIMERAUDIObit, 0);
 
 	pm_setamp(PM_AMP_OFF);
+	power_write(POWER_MIC_GAIN, 0);
 
 	snd->d = nil;
 	return nrs;
@@ -93,7 +100,7 @@ playsound(TxSound *snd)
 	SNDREG->cr.ctl = Sndena | Maxvol;
 	SNDREG->bias = 0x200;
 
-	if(snd->chan < 0 || NSChannels < snd->chan)
+	if(snd->chan > NSChannels)
 		return;
 
 	schan = SCHANREG + snd->chan;

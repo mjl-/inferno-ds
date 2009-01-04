@@ -174,8 +174,9 @@ trapinit(void)
 		Irq[v].v = v;
 	}
 
-	serwrite = uartputs;
+	/* enable traps */
 	INTREG->ime=1;
+	//*(ulong*)IRQCHECK9 = 0;
 }
 
 static char *_trap_str[PsrMask+1] = {

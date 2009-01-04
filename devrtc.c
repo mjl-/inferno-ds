@@ -56,17 +56,17 @@ rtcclose(Chan*)
 static long	 
 rtcread(Chan *c, void *buf, long n, vlong off)
 {
-	ulong secs;
+	ulong secs, *ps = uncached(&secs);
 
 	if(c->qid.type & QTDIR)
 		return devdirread(c, buf, n, rtctab, nelem(rtctab), devgen);
 
 	switch((ulong)c->qid.path){
 	case Qrtc:
-		secs = 1;
-		fifoput(F9TSystem|F9Sysrrtc, (ulong)(&secs));
-		while(secs == 1); /* wait for arm7 write */
-		return readnum(off, buf, n, secs, NUMSIZE);
+		*ps = 1;
+		nbfifoput(F9TSystem|F9Sysrrtc, (ulong)ps);
+		while(*ps == 1); /* wait for arm7 write */
+		return readnum(off, buf, n, *ps, NUMSIZE);
 	}
 	error(Egreg);
 	return 0;		/* not reached */
@@ -81,9 +81,6 @@ rtcwrite(Chan *c, void *buf, long n, vlong off)
 
 	switch((ulong)c->qid.path){
 	case Qrtc:
-		/*
-		 *  write the time
-		 */
 		if(offset != 0 || n >= sizeof(sbuf)-1)
 			error(Ebadarg);
 		memmove(sbuf, buf, n);

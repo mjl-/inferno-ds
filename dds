@@ -106,7 +106,6 @@ code
 	int panicreset = 0;
 	char *tkfont = "/fonts/lucidasans/unicode.6.font";
 	int	tkstylus = 1;
-	int swcursor = 1;
 
 	
 init

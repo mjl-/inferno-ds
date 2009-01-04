@@ -5,7 +5,6 @@
 #include "dat.h"
 #include "fns.h"
 #include "spi.h"
-#include "rtc.h"
 #include "audio.h"
 
 #include "wifi.h"
@@ -37,6 +36,7 @@ fiforecvintr(void*)
 	nds_tx_packet *tx_packet;
 	uchar ndstype[1];
 	TxSound *snd;
+	int power, ier;
 
 	while(!(FIFOREG->ctl & FifoRempty)) {
 		vv = FIFOREG->recv;
@@ -47,18 +47,37 @@ fiforecvintr(void*)
 			switch(vv&Fcmdsmask){
 			case F9Sysbright:
 				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
-				if(ndstype[0] == Dslite || ndstype[0] == Ds)
+				if(ndstype[0] == FWdslite || ndstype[0] == FWds)
 					power_write(POWER_BACKLIGHT, v);
 				break;
 			
 			case F9Syspoweroff:
 				power_write(POWER_CONTROL, POWER0_SYSTEM_POWER);
 				break;
+			case F9Syssleep:
+				// save current power & int state.
+				ier = INTREG->ier;
+				power = power_read(POWER_CONTROL);
+				power_write(POWER_CONTROL, PM_LED_CONTROL(1));
+
+				// register & sleep for the lid open interrupt.
+				INTREG->ier = LIDbit;
+				swiSleep();
+				swiDelay(838000);	//100ms
+		
+				// restore power & int state.
+				INTREG->ier = ier;
+				power_write(POWER_CONTROL, power);
+				break;
+
 			case F9Sysreboot:
 				swiSoftReset();	// TODO: doesn't work
 				break;
 			case F9Sysleds:
-				power_write(POWER_CONTROL, v); // BUG: messes bligth bits
+				power = power_read(POWER_CONTROL);
+				power &= ~PM_LED_CONTROL(3);
+		                power |= power & 0xFF;
+				power_write(POWER_CONTROL, v);
 				break;
 			case F9Sysrrtc:
 				(*(ulong*)v) = nds_get_time7();
@@ -209,50 +228,43 @@ updatetouch(ulong bst)
 static ulong
 touch_read_temp(int *t1, int *t2)
 {
-	*t1 = touch_read_value(Tscgettemp1, MaxRetry, MaxRange);
-	*t2 = touch_read_value(Tscgettemp2, MaxRetry, MaxRange);
-	return 8490 * (*t2 - *t1) - 273*4096;
+	*t1 = touch_read(Tscgettemp1);
+	*t2 = touch_read(Tscgettemp2);
+	return (*t2 - *t1) * 8568 - 273*4096; /* C = K - 273 */
 }
 
 static void
 vblankintr(void*)
 {
-	int i;
 	static int hbt = 0;
 	ulong bst, cbst, bup, bdown;
-	static ulong obst;
+	static ulong obst = Btnmsk; /* initial button state */
 
 	hbt++;
 
-	if (hbt % 2 == 0){
-		/* check buttons state */
-		bst = KEYREG->in & Btn9msk;
-		bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
+	/* check buttons state */
+	bst = KEYREG->in & Btn9msk;
+	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
 	
-		/* skip bogus keypresses at start */
-		if (hbt == 2)
-			obst = bst;
+	updatetouch(bst);
 	
-		updatetouch(bst);
-		
-		cbst = bst^obst;
-		obst = bst;
-		bup = cbst & bst;
-		bdown = cbst & ~bst;
+	cbst = bst^obst;
+	obst = bst;
+	bup = cbst & bst;
+	bdown = cbst & ~bst;
 
-		if(bup)
-			nbfifoput(F7keyup, bup);
-		if(bdown)
-			nbfifoput(F7keydown, bdown);
+	if(bdown)
+		nbfifoput(F7keydown, bdown);
+	if(bup)
+		nbfifoput(F7keyup, bup);
 	
-		IPC->batt = touch_read_value(Tscgetbattery, MaxRetry, MaxRange);
-		IPC->temp = touch_read_temp(&IPC->td1, &IPC->td2);
-		//if(hbt%120 == 0) print("batt %d aux %d temp %d\n", IPC->batt, IPC->aux, IPC->temp);
+	IPC->aux = touch_read(Tscgetmic8);
+	IPC->temp = touch_read_temp(&IPC->td1, &IPC->td2);
+	//if(hbt++%30 == 0) print("aux %d temp %d\n", IPC->aux, IPC->temp);
 
-		/* clear FIFO errors */
-		if (FIFOREG->ctl & Fifoerror)
-			FIFOREG->ctl |= Fifoenable|Fifoerror;
-	}
+	/* clear FIFO errors */
+	if (FIFOREG->ctl & Fifoerror)
+		FIFOREG->ctl |= Fifoenable|Fifoerror;
 	
 	intrclear(VBLANKbit, 0);
 }

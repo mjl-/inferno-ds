@@ -1,6 +1,5 @@
 #!/dis/sh script
 load std
-load expr
 
 wmrun bind -a '#A' /dev # audio
 wmrun bind -b /icons/tinytk /icons/tk
@@ -16,12 +15,12 @@ wmrun wm/sh -w 250 -h 90 -ic '
 	fn wnec { echo -n $* > /net/ether0/0/ctl }
 
 	cat /net/ether0/clone > /dev/null
-	wnec scan on
+	wnec scan 1
+	sleep 1
 	rnes
-	wnec scan off
 
 	wnec channel 11
-	wnec essid cain
+	wnec essid 1
 	rnes
 
 	date

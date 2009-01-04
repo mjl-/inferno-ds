@@ -9,6 +9,7 @@
 #define Tscgetmic8	0xEC
 #define Tscgettemp2	0xF4
 
+short touch_read(ulong cmd);
 int touch_read_value(int cmd, int retry , int range);
 
 // Fixme: Does the hardware still support 16 bit comms mode?
@@ -49,7 +50,7 @@ enum
 };
 
 // PM control register bits - LED control
-#define PM_LED_CONTROL(m)    ((m)<<4)   ?
+#define PM_LED_CONTROL(m)    ((m)<<4)
 #define PM_LED_ON     (0<<4)   /* Steady on */
 #define PM_LED_SLEEP  (2<<4)   /* Blinking, mostly off */
 #define PM_LED_BLINK  (3<<4)   /* Blinking, mostly on */
@@ -76,4 +77,3 @@ uchar power_read(int reg);
 uchar power_write(int reg, int cmd);
 void busywait(void);
 void read_firmware(ulong, void *, ulong);
-

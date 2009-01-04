@@ -1,3 +1,4 @@
+/* TODO: document those according to gbatek */
 
 // Card bus
 #define CARD_CR1	(*(volatile ushort*)0x040001A0)
@@ -53,11 +54,9 @@ uchar cardEepromCommand(uchar cmd, ulong address);
  *  2:TYPE 2 64Kbit(8KByte)or 512kbit(64Kbyte)   EEPROM
  *  3:TYPE 3  2Mbit(256KByte) FLASH MEMORY (some rare 4Mbit and 8Mbit chips also)
  */
+
 int cardEepromGetType(void);
-
 ulong cardEepromGetSize(void);
-
 void cardEepromChipErase(void);
-
 void cardEepromSectorErase(ulong address);
 

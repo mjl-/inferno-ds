@@ -114,7 +114,8 @@ lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 	ld->subpal[p] = BGR15((r>>(32-5)), (g>>(32-5)),(b>>(32-5)));
 }
 
-enum { Lcdytrig = 192 };
+enum { Lcdytrig = 80 };
+#define SetYtrigger(n)	((lcd->lcsr&0x7F) | (n<<8) | ((n&0x100)>>2))
 
 static void
 setlcdmode(void)
@@ -123,7 +124,7 @@ setlcdmode(void)
 
 	POWERREG->pcr |= POWER_LCD|POWER_2D_A;
 	lcd->lccr = (Disp2dmode|5) | Dispbgactive(2);
-	lcd->lcsr |= (lcd->lcsr & 0x7F ) | (Lcdytrig << 8) | ((Lcdytrig & 0x100 ) >> 2) ;
+	lcd->lcsr |= SetYtrigger(Lcdytrig);
 
 	lcd->bgctl[2] = Bgctlrs32x32|Bgctl16bpp|Bgctlbmpbase(0)|(0 & Bgctlpriomsk);
 	if (ld->depth == 16) 
@@ -135,7 +136,7 @@ setlcdmode(void)
 	lcd->bg2rs.x = 0;
 	lcd->bg2rs.y = 0;
 
-	memset(ld->lower, 0xffff, Scrsize * ld->depth / BI2BY);
+	memset(ld->lower, 0xff, Scrsize * ld->depth / BI2BY);
 }
 
 static void
@@ -156,7 +157,7 @@ setsublcdmode(void)
 	sublcd->bg3rs.x = 0;
 	sublcd->bg3rs.y = 0;
 
-	memset(ld->upper, 0xffff, Scrsize * ld->depth / BI2BY);
+	memset(ld->upper, 0xff, Scrsize * ld->depth / BI2BY);
 }
 
 Vdisplay*
@@ -198,7 +199,7 @@ void
 lcd_flush(void)
 {
 	if(0)print("lcd_flush\n");
-	dcflushall();	/* need more precise addresses */
+//	dcflushall();	/* need more precise addresses */
 }
 
 void

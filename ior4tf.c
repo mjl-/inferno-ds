@@ -15,49 +15,49 @@ cardWaitReady(ulong flags, uchar *cmd)
 {
 	int ready = 0;
 
-	do {
+	while (!ready){
 		cardWriteCommand(cmd);
 		CARD_CR2 = flags;
-		do {
-			if (CARD_CR2 & CARD_DATA_READY)
-				if (!CARD_DATA_RD) ready = 1;
-		} while (CARD_CR2 & CARD_BUSY);
-	} while (!ready);
+		if(!(CARD_CR2 & CARD_BUSY))
+			continue;
+		if(!(CARD_CR2 & CARD_DATA_READY))
+			continue;
+		if (!CARD_DATA_RD)
+			ready = 1;
+	} 
 }
 
 static void
 bytecardPolledTransfer(ulong flags, ulong * dst, ulong len, uchar* cmd) {
-	ulong data;
-	ulong *target;
-
+	ulong i, data;
+	uchar *p;
+	
 	cardWriteCommand(cmd);
 	CARD_CR2 = flags;
-	target = dst + len;
-	do {
-		// Read data if available
-		if (CARD_CR2 & CARD_DATA_READY) {
-			data=CARD_DATA_RD;
-			if (dst < target) {
-				((uchar*)dst)[0] = data & 0xff;
-				((uchar*)dst)[1] = (data >> 8) & 0xff;
-				((uchar*)dst)[2] = (data >> 16) & 0xff;
-				((uchar*)dst)[3] = (data >> 24) & 0xff;
-			}
-			dst++;
-		}
-	} while (CARD_CR2 & CARD_BUSY);
+	for (i=0; i < len; i++){
+		if (!(CARD_CR2 & CARD_BUSY))
+			break;
+		while (!(CARD_CR2 & CARD_DATA_READY));
+		data = CARD_DATA_RD;
+		p = (uchar*)&dst[i];
+
+		*p++ = data & 0xff;
+		*p++ = (data >> 8) & 0xff;
+		*p++ = (data >> 16) & 0xff;
+		*p++ = (data >> 24) & 0xff;
+	}
 }
 
 static void
-LogicCardRead(ulong address, ulong *dst, ulong len)
+LogicCardRead(ulong addr, ulong *dst, ulong len)
 {
 	uchar cmd[8];
 
 	cmd[7] = 0xb9;
-	cmd[6] = (address >> 24) & 0xff;
-	cmd[5] = (address >> 16) & 0xff;
-	cmd[4] = (address >> 8)  & 0xff;
-	cmd[3] =  address        & 0xff;
+	cmd[6] = (addr >> 24) & 0xff;
+	cmd[5] = (addr >> 16) & 0xff;
+	cmd[4] = (addr >> 8)  & 0xff;
+	cmd[3] =  addr        & 0xff;
 	cmd[2] = 0;
 	cmd[1] = 0;
 	cmd[0] = 0;
@@ -72,53 +72,50 @@ LogicCardRead(ulong address, ulong *dst, ulong len)
 static ulong
 ReadCardInfo(void)
 {
-	uchar cmd[8];
+	uchar cmd[8] = {0, 0, 0, 0, 0, 0, 0, 0xb0};
 	ulong ret;
 
-	cmd[7] = 0xb0;
-	cmd[6] = 0;
-	cmd[5] = 0;
-	cmd[4] = 0;
-	cmd[3] = 0;
-	cmd[2] = 0;
-	cmd[1] = 0;
-	cmd[0] = 0;
 	cardPolledTransfer(0xa7586000, &ret, 1, cmd);
 	return ret;
 }
 
 static void
-LogicCardWrite(ulong address, ulong *source, ulong len)
+LogicCardWrite(ulong addr, ulong *src, ulong len)
 {
 	uchar cmd[8];
-	ulong data = 0;
-	ulong * target;
+	ulong i;
 
 	cmd[7] = 0xbb;
-	cmd[6] = (address >> 24) & 0xff;
-	cmd[5] = (address >> 16) & 0xff;
-	cmd[4] = (address >> 8)  & 0xff;
-	cmd[3] =  address        & 0xff;
+	cmd[6] = (addr >> 24) & 0xff;
+	cmd[5] = (addr >> 16) & 0xff;
+	cmd[4] = (addr >> 8)  & 0xff;
+	cmd[3] =  addr        & 0xff;
 	cmd[2] = 0;
 	cmd[1] = 0;
 	cmd[0] = 0;
 
 	cardWriteCommand(cmd);
 	CARD_CR2 = 0xe1586000;
-	target = source + len;
-	do {
-		// Write data if ready
-		if (CARD_CR2 & CARD_DATA_READY) {
-			if (source < target) {
-				if ((ulong)source & 0x03)
-					data = ((uchar*)source)[0] | (((uchar*)source)[1] << 8) | (((uchar*)source)[2] << 16) | (((uchar*)source)[3] << 24);
-				else
-					data = *source;
-			}
-			source++;
-			CARD_DATA_RD = data;
+
+	if ((ulong)src & 0x03){
+		for(i=0; i<len; i++){
+			 if(!(CARD_CR2 & CARD_BUSY))
+			 	break;
+			while(!(CARD_CR2 & CARD_DATA_READY));
+			CARD_DATA_RD = ((uchar*)src[i])[0] | 
+					(((uchar*)src[i])[1] << 8) |
+					(((uchar*)src[i])[2] << 16) |
+					(((uchar*)src[i])[3] << 24);
 		}
-	} while (CARD_CR2 & CARD_BUSY);
+	}else{
+		for(i=0; i<len; i++){
+			 if(!(CARD_CR2 & CARD_BUSY))
+			 	break;
+			while(!(CARD_CR2 & CARD_DATA_READY));
+			CARD_DATA_RD = src[i];
+		}
+	}
+	
 	cmd[7] = 0xbc;
 	cardWaitReady(0xa7586000, cmd);
 }
@@ -132,28 +129,32 @@ r4tf_init(void)
 	return ((CardInfo & 0x07) == 0x04);
 }
 
-static int
-r4tf_read(ulong sector, uchar numSecs, void* buffer)
+enum
 {
-	ulong *ulong_buffer = (ulong*)buffer, i;
+	Blkbits = 9,
+	Blksize = 1<<9,
+};
 
-	for (i = 0; i < numSecs; i++) {
-		LogicCardRead(sector << 9, ulong_buffer, 128);
-		sector++;
-		ulong_buffer += 128;
+static int
+r4tf_read(ulong start, ulong n, void* d)
+{
+	ulong *ud = (ulong*)d, i;
+
+	for (i = 0; i < n; i++) {
+		LogicCardRead((start+i)<<Blkbits, ud, (Blksize/4));
+		ud += (Blksize/4);
 	}
 	return 1;
 }
 
 static int
-r4tf_write(ulong sector, uchar numSecs, void* buffer)
+r4tf_write(ulong start, ulong n, void* d)
 {
-	ulong *ulong_buffer = (ulong*)buffer, i;
+	ulong *ud = (ulong*)d, i;
 
-	for (i = 0; i < numSecs; i++) {
-		LogicCardWrite(sector << 9, ulong_buffer, 128);
-		sector++;
-		ulong_buffer += 128;
+	for (i = 0; i < n; i++) {
+		LogicCardWrite((start+i)<<Blkbits, ud, (Blksize/4));
+		ud += (Blksize/4);
 	}
 	return 1;
 }

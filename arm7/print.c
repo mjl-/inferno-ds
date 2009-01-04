@@ -6,8 +6,8 @@
 #include "fns.h"
 
 /* 
- * simple [s]print routines for debugging,
- * at some point they could be used to bootstrap the print(10) lib.
+ * simple [s]print routines for debugging.
+ * grouped in this file to ease compilation inclusion/exclusion.
  */
 
 static int
@@ -97,17 +97,17 @@ sprint(char *s, char *fmt, ...)
 	return n;
 }
 
-/* TODO: SData seems overwritten */
-#define SData ((char*)IPC + sizeof(IPC))
+#define SData ((char*)IPC + sizeof(TxRegion))
 
 int
 print(char *fmt, ...)
 {
-	int n;
+	static int n = 0;
 	va_list ap;
 	char *s = SData;
 
-	memset((void*)s, '\0', 64);
+	if(n)
+		memset((void*)s, '\0', n);
 	va_start(ap, fmt);
 	n = vsprint(s, fmt, ap);
 	va_end(ap);

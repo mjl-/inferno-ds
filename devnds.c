@@ -4,10 +4,13 @@
 #include	"dat.h"
 #include	"fns.h"
 #include	"io.h"
+#include 	"arm7/dat.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
 
-#include 	"arm7/dat.h"
+#include	<draw.h>
+#include	<memdraw.h>
+#include	"screen.h"
 
 #define	DPRINT if(0)print
 
@@ -33,8 +36,8 @@ Dirtab ndstab[]={
 };
 
 static	Rune	rockermap[2][Numbtns] ={	/* right and left handed */
-	{ '\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown, No },
-	{ Left, Down, '\t', Esc, Pgdown, '\n', Pgup, '\b', RCtrl, RShift, Up, Right, No },
+	{ '\n', '\b', '\t', Esc, Right, Left, Up, Down, RCtrl, RShift, Pgup, Pgdown },
+	{ Left, Down, '\t', Esc, Pgdown, '\n', Pgup, '\b', RCtrl, RShift, Up, Right },
 };
 
 void
@@ -42,15 +45,12 @@ fiforecv(ulong vv)
 {
 	ulong v;
 	static uchar mousemod = 0;
-	static uchar lcdyoff = 0;
+	static Point m, om;
 	int i;
 
 	v = vv>>Fcmdlen;
 	switch(vv&Fcmdmask) {
 	case F7keyup:
-		if(v&(1<<Lclose))
-			blankscreen(0);
-
 		if(v&(1<<Pdown))
 			mousemod &= 1<<0;
 		if(v&(1<<Rbtn))
@@ -58,16 +58,10 @@ fiforecv(ulong vv)
 		if(v&(1<<Lbtn))
 			mousemod &= 1<<2;
 
-		if(v&1<<Selbtn && v&1<<Startbtn)
-			lcdyoff = lcdyoff > 0? 0: Scrheight;
+		if(v&(1<<Lclose))
+			blankscreen(0);
 
-		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
-			if (i==Rbtn||i==Lbtn){
-				continue;
-			}else if(v & (1<<i)){
-				kbdrepeat(0);
-				kbdputc(kbdq, rockermap[conf.bmap][i]);
-			}	
+		kbdrepeat(0);
 		break;
 	case F7keydown:
 		if(v&(1<<Pdown))
@@ -77,16 +71,32 @@ fiforecv(ulong vv)
 		if(v&(1<<Lbtn))
 			mousemod |= 1<<2;
 
-		if(v&(1<<Lclose))
+		if(v&(1<<Lclose)){
 			blankscreen(1);
+			//nbfifoput(F9TSystem|F9Syssleep, 1);
+		}
+
+		// TODO: kbdrepeat
+		v &= ~(1<<Pdown|1<<Rbtn|1<<Lbtn); //ignored
+		for(i = 0; i < nelem(rockermap[conf.bmap]); i++)
+			if(v & (1<<i)){
+				kbdrepeat(0);
+				kbdputc(kbdq, rockermap[conf.bmap][i]);
+				kbdrepeat(1);
+			}
 		break;
 	case F7mousedown:
 		//print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
-		mousetrack(mousemod, v&0xff, lcdyoff+((v>>8)&0xff), 0);
+		mousetrack(mousemod, v&0xff, (v>>8)&0xff, 0);
+		m = mousexy();
+		if(om.x != m.x || om.y != m.y)
+			swcursupdate(om.x, om.y, m.x, m.y);
+		om = m;
 		break;
 	case F7mouseup:
 		mousetrack(0, 0, 0, 1);
 		break;
+
 	case F7print:
 		print("%s", (char*) v); /* just forward arm7 prints */
 		break;
@@ -216,14 +226,14 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	ulong l;
 
 	char *langlst[Langmask+1] = {
-		[LJapanese] "Japanese",
-		[LEnglish] "English",
-		[LFrench] "French",
-		[LGerman] "German",
-		[LItalian] "Italian",
-		[LSpanish] "Spanish",
-		[LChinese] "Chinese",
-		[LOther] "Other",
+		[LJapanese] "ja", 
+		[LEnglish] "en",
+		[LFrench] "fr",
+		[LGerman] "de",
+		[LItalian] "it",
+		[LSpanish] "es",
+		[LChinese] "ch",
+		[LOther] "??",
 	};
 
 	switch((ulong)c->qid.path){
@@ -242,10 +252,10 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		snprint(tmp, READSTR,
 			"ds type: %x %s\n"
 			"battery: %d %s\n"
-			"temp: %d.%.2d\n",
+			"temp (%d): %d.%.2d\n",
 			t, (t == 0xff? "ds" : "ds-lite"), 
 			v, (v? "low" : "high"),
-			temp>>12, temp & ((1<<13) -1));
+			temp, temp>>12, temp & ((1<<13) -1));
 
 		n = readstr(offset, a, n, tmp);
 		poperror();
@@ -266,13 +276,13 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		p = seprint(p, e, "alarm %s [%.2d:%.2d]\n", pu->alarmon? "on": "off", pu->alarmhour, pu->alarmmin);
 		p = seprint(p, e, "adc t1 (%d,%d) t2 (%d,%d)\n", pu->adc.x1, pu->adc.y1, pu->adc.x2, pu->adc.y2);
 		p = seprint(p, e, "scr t1 (%d,%d) t2 (%d,%d)\n", pu->adc.xpx1, pu->adc.ypx1, pu->adc.xpx2, pu->adc.ypx2);
-		p = seprint(p, e, "flags 0x%02ux: lang %s blight %d %s %s %s\n", 
+		p = seprint(p, e, "flags (0x%lux) lang %s: %s %s %s\n", 
 			pu->flags,
 			langlst[pu->flags&Langmask],
-			(pu->flags>>Blightshift)&Blightmask,
 			(pu->flags & Gbalowerscreen)? "gbalowerscreen": "",
 			(pu->flags & Autostart)? "autostart": "",
 			(pu->flags & Nosettings)? "nosettings": "");
+		p = seprint(p, e, "blight %d\n", (pu->flags>>Blightshift)&Blightmask);
 
 		n = readstr(offset, a, n, tmp);
 		poperror();

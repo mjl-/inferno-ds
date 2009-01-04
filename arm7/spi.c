@@ -5,10 +5,10 @@
 #include "fns.h"
 #include "spi.h"
 
-static short
+short
 touch_read(ulong cmd) 
 {
-	ushort res;
+	ushort res[2];
 
 	busywait();
 
@@ -18,21 +18,21 @@ touch_read(ulong cmd)
 
 	SPIREG->data=0;
 	busywait();
-	res=SPIREG->data;
+	res[1]=SPIREG->data;
 
 	SPIREG->ctl=Spiena|SpiDevtouch|Spi2mhz;
 	SPIREG->data=0;
 	busywait();
 
-	res = ((res & 0x7F) << 5) | (SPIREG->data >> 3);
+	res[0] = SPIREG->data >> 3;
 	SPIREG->ctl = 0;
 
-	return res;
+	return  ((res[1] & 0x7F) << 5) | res[0];
 }
 
 /* based on: linux-2.6.x/arch/arm/mach-nds/arm7/spi.c */
 int
-touch_read_value(int cmd, int retry , int range){
+touch_read_value(int cmd, int retry, int range){
 	int i;
 	int cv, cr;
 	int ov;

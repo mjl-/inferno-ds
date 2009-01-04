@@ -143,7 +143,7 @@ lightup()
 {
 	fd := sys->open("#T/ndsctl", Sys->OWRITE);
 	if(fd != nil)
-		sys->fprint(fd, "blight 1");
+		sys->fprint(fd, "blight 0");
 }
 
 #
@@ -352,10 +352,6 @@ append(v: string, l: list of string): list of string
 #
 lfs(file: string): int
 {
-#	if(!flashpart("#F/flash/flashctl", flashparts))
-#		return -1;
-#	if(!ftlinit("#F/flash/fs"))
-#		return -1;
 	if(iskfs(file))
 		return lkfs(file);
 	c := chan of string;
@@ -417,52 +413,6 @@ startfs(c: chan of string, file: string, args: list of string, fd: ref Sys->FD)
 	* =>
 		c <-= "unknown exception";
 	}
-}
-
-#
-# partition flash
-#
-flashdone := 0;
-
-flashpart(ctl: string, parts: array of string): int
-{
-	if(flashdone)
-		return 1;
-	cfd := sys->open(ctl, Sys->ORDWR);
-	if(cfd == nil){
-		sys->print("can't open %s: %r\n", ctl);
-		return 0;
-	}
-	for(i := 0; i < len parts; i++)
-		if(sys->fprint(cfd, "%s", parts[i]) < 0){
-			sys->print("can't %q to %s: %r\n", parts[i], ctl);
-			return 0;
-		}
-	flashdone = 1;
-	return 1;
-}
-
-#
-# set up flash translation layer
-#
-ftldone := 0;
-
-ftlinit(flashmem: string): int
-{
-	if(ftldone)
-		return 1;
-	sys->print("Set flash translation of %s...\n", flashmem);
-	fd := sys->open("#X/ftlctl", Sys->OWRITE);
-	if(fd == nil){
-		sys->print("can't open #X/ftlctl: %r\n");
-		return 0;
-	}
-	if(sys->fprint(fd, "init %s", flashmem) <= 0){
-		sys->print("can't init flash translation: %r\n");
-		return 0;
-	}
-	ftldone = 1;
-	return 1;
 }
 
 configether()
