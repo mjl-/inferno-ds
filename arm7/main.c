@@ -6,7 +6,6 @@
 #include "fns.h"
 #include "spi.h"
 #include "audio.h"
-
 #include "wifi.h"
 
 /* So we can initialize our own data section and bss */
@@ -33,7 +32,6 @@ static void
 fiforecvintr(void*)
 {
 	ulong v, vv;
-	nds_tx_packet *tx_packet;
 	uchar ndstype[1];
 	TxSound *snd;
 	int power, ier;
@@ -83,7 +81,7 @@ fiforecvintr(void*)
 				(*(ulong*)v) = nds_get_time7();
 				break;
 			case F9Syswrtc:
-				nds_set_time7(*(ulong*)v);
+				//nds_set_time7(*(ulong*)v);
 				break;
 			}
 			break;
@@ -92,52 +90,11 @@ fiforecvintr(void*)
 			if(0)print("F9W %lux\n", vv & Fcmdmask);
 			switch(vv&Fcmdsmask){
 			case F9WFrmac:
-				memmove((void*)v, wifi_data.MacAddr, sizeof(wifi_data.MacAddr));
+				// mac is needed early by the arm9 in archds.c:/^archether
+				read_firmware(0x36, (ulong*)v, sizeof(WifiData->MacAddr));
 				break;
-			case F9WFwstats:
-				wifi_data.stats = (volatile ulong *)v;
-				break;
-			case F9WFapquery:
-				wifi_data.aplist = (Wifi_AccessPoint*)v;
-				break;
-			case F9WFrxpkt:
-				rx_packet = (nds_rx_packet*)v;
-				break;
-			case F9WFtxpkt:
-				tx_packet = (nds_tx_packet*)v;
-				wifi_send_ether_packet(tx_packet->len, tx_packet->data);
-				tx_packet = nil;
-				break;
-			case F9WFwap:
-				Wifi_SetAPMode(v);
-				break;
-			case F9WFwssid:
-				memmove(&wifi_data.ssid[1], (void*)v, sizeof(wifi_data.ssid));
-				wifi_data.ssid[0] = strlen(&wifi_data.ssid[1]);
-				Wifi_SetSSID(0, 0, 0);
-				if(0)print("%d %s\n", wifi_data.ssid[0], &wifi_data.ssid[1]);
-				break;
-			case F9WFwchan:
-				Wifi_RequestChannel(v);
-				break;
-			case F9WFwwepmode:
-				Wifi_SetWepMode(v);
-				break;
-
-			case F9WFwstate:
-				if(v)
-					wifi_open();
-				else
-					wifi_close();
-				break;
-			case F9WFscan:
-				wifi_start_scan();
-				break;
-			case F9WFstats:
-				wifi_stats_query();
-				break;
-			case F9WFrxdone:
-				wifi_rx_q_complete();
+			case F9WFinit:
+				Wifi_Init(v);
 				break;
 			}
 			break;
@@ -236,16 +193,27 @@ touch_read_temp(int *t1, int *t2)
 static void
 vblankintr(void*)
 {
+	Wifi_Update();
+
+	/* clear FIFO errors */
+	if (FIFOREG->ctl & Fifoerror)
+		FIFOREG->ctl |= Fifoenable|Fifoerror;
+	
+	intrclear(VBLANKbit, 0);
+}
+
+static void
+vcountintr(void*)
+{
 	static int hbt = 0;
 	ulong bst, cbst, bup, bdown;
 	static ulong obst = Btnmsk; /* initial button state */
 
 	hbt++;
-
 	/* check buttons state */
 	bst = KEYREG->in & Btn9msk;
 	bst |= (KEYREG->xy & Btn7msk) << (Xbtn-Xbtn7);
-	
+
 	updatetouch(bst);
 	
 	cbst = bst^obst;
@@ -262,11 +230,7 @@ vblankintr(void*)
 	IPC->temp = touch_read_temp(&IPC->td1, &IPC->td2);
 	//if(hbt++%30 == 0) print("aux %d temp %d\n", IPC->aux, IPC->temp);
 
-	/* clear FIFO errors */
-	if (FIFOREG->ctl & Fifoerror)
-		FIFOREG->ctl |= Fifoenable|Fifoerror;
-	
-	intrclear(VBLANKbit, 0);
+	intrclear(VCOUNTbit, 0);
 }
 
 int 
@@ -275,13 +239,13 @@ main(void)
 	INTREG->ime = 0;
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 	read_firmware(0x03FE00, (ulong*)UINFOMEM, sizeof(UserInfo));
-	ReadFlashData();
 	
 	/* dummy read to enable the touchpad PENIRQ */
 	touch_read_value(TscgetX, MaxRetry, MaxRange);
 
 	trapinit();
 	intrenable(VBLANKbit, vblankintr, nil, 0);
+	intrenable(VCOUNTbit, vcountintr, nil, 0);
 	FIFOREG->ctl = FifoRirq|Fifoerror|Fifoenable|FifoTflush;
 	intrenable(FRECVbit, fiforecvintr, nil, 0);
 
@@ -290,4 +254,3 @@ main(void)
 		swiWaitForVBlank();
 	return 0;
 }
-

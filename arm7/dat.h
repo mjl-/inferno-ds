@@ -1,15 +1,13 @@
 enum {
 	FWconsoletype =	0x1d,	/* 1 byte */
-	FWds =	0xff,
+	FWds =		0xff,
 	FWdslite =	0x20,
 	FWique =	0x43,
 };
 
 enum {
-	WIFItimer = 0,
-	AUDIOtimer = 1,
+	AUDIOtimer = 0,
 
-	TIMERWIFIbit = TIMER0bit+WIFItimer,
 	TIMERAUDIObit = TIMER0bit+AUDIOtimer,
 };
 

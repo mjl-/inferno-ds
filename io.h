@@ -100,24 +100,8 @@ enum
 	
 	/* Wifi */
 	F9WFrmac = 0,
-	F9WFwstats,
-	F9WFapquery,
-	F9WFrxpkt,
-	F9WFtxpkt,
-
-	F9WFwstate,
-	F9WFscan,
-	F9WFstats,
-	F9WFrxdone,
+	F9WFinit,
 	
- 	F9WFwssid,
- 	F9WFrap,
- 	F9WFwap,
- 	F9WFwchan,
- 	F9WFwwepkey,
- 	F9WFwwepkeyid,
- 	F9WFwwepmode,
- 	
 	/* Audio */
  	F9Auplay = 0,
 	F9Aurec,
