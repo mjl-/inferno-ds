@@ -40,11 +40,10 @@ bytecardPolledTransfer(ulong flags, ulong * dst, ulong len, uchar* cmd) {
 		while (!(CARD_CR2 & CARD_DATA_READY));
 		data = CARD_DATA_RD;
 		p = (uchar*)&dst[i];
-
-		*p++ = data & 0xff;
-		*p++ = (data >> 8) & 0xff;
-		*p++ = (data >> 16) & 0xff;
-		*p++ = (data >> 24) & 0xff;
+		p[0] = data & 0xff;
+		p[1] = (data >> 8) & 0xff;
+		p[2] = (data >> 16) & 0xff;
+		p[3] = (data >> 24) & 0xff;
 	}
 }
 

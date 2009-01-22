@@ -2,7 +2,6 @@
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "dat.h"
 #include "fns.h"
 
 // RTC registers

@@ -1,20 +1,10 @@
 #include "../port/portfns.h"
 
-ulong	aifinit(uchar *aifarr);
-void	aamloop(int);
 void	archconfinit(void);
-int	archflash12v(int);
-void	archflashwp(int);
 void	archreboot(void);
 void	archreset(void);
 void	archconsole(void);
-void	blankscreen(int);
-void	catchDref(char *s, void *v);
-void	catchDval(char *s, ulong v, ulong m);
-void	catchIref(char *s, void *a);
-void	cisread(int slotno, void (*f)(int, uchar *));
 int	cistrcmp(char *, char *);
-void	cleanDentry(void *);
 void	clockcheck(void);
 void	clockinit(void);
 void	clockpoll(void);
@@ -22,13 +12,6 @@ void	clockpoll(void);
 uint	cpsrr(void);
 void	dcflush(void*, ulong);
 void	dcflushall(void);
-void	dmasetup(int channel, int device, int direction, int endianess);
-void	dmastart(int channel, void *b1, int b1siz, void *b2, int b2siz);
-int	dmacontinue(int channel, void *buf, int bufsize);
-void	dmastop(int channel);
-int	dmaerror(int channel);
-void	dmareset(void);
-void	drainWBuffer(void);
 void	dumplongs(char *, ulong *, int);
 void	dumpregs(Ureg* ureg);
 void	dumpstk(ulong *);
@@ -46,49 +29,24 @@ void	intrenable(int, int, void (*)(Ureg*, void*), void*, char*);
 void	intrclear(int, int);
 void	intrmask(int, int);
 void	intrunmask(int, int);
-int	iprint(char *fmt, ...);
 void	installprof(void (*)(Ureg *, int));
-int	isvalid_va(void*);
 void	kbdinit(void);
-void	lcd_setbacklight(int);
-void	lcd_setbrightness(ushort);
-void	lcd_setcontrast(ushort);
-void	lcd_sethz(int);
-void	lights(ulong);
 void	links(void);
-void	mouseinit(void);
 ulong	mpuinit(void);
-void	nowriteSeg(void *, void *);
 void*	pa2va(ulong);
-void	putcsr(ulong);
 #define procsave(p)
 #define procrestore(p)
 ulong	rcpctl(void);
 ulong	rdtcm(void);
-void	remaplomem(void);
 ulong	ritcm(void);
-long	rtctime(void);
-void*	screenalloc(ulong);
 void	screeninit(void);
 void	(*screenputs)(char*, int);
 int	segflush(void*, ulong);
 void	setpanic(void);
 void	setr13(int, void*);
 uint	spsrr(void);
-void	touchrawcal(int q, int px, int py);
-int	touchcalibrate(void);
-int	touchreadxy(int *fx, int *fy);
-int	touchpressed(void);
-int	touchreleased(void);
-void	touchsetrawcal(int q, int n, int v);
-int	touchgetrawcal(int q, int n);
 void	trapinit(void);
 void	trapspecial(int (*)(Ureg *, uint));
-int	uartprint(char*, ...);
-void	uartspecial(int, int, char, Queue**, Queue**, int (*)(Queue*, int));
-void	umbfree(ulong addr, int size);
-ulong	umbmalloc(ulong addr, int size, int align);
-void	umbscan(void);
 ulong	va2pa(void*);
 void	vectors(void);
 void	vtable(void);
@@ -100,9 +58,6 @@ void	_vundcall(void);
 void	_vsvccall(void);
 void	_vpabcall(void);
 void	_vdabcall(void);
-void	vgaputc(char);
-void	writeBackBDC(void);
-void	writeBackDC(void);
 ulong	wcpctl(ulong);
 ulong	wdtcm(ulong);
 ulong	witcm(ulong);
@@ -110,14 +65,8 @@ ulong	witcm(ulong);
 #define KADDR(p)	((void *) p)
 #define PADDR(v)	va2pa((void*)(v))
 
-// #define timer_start()	(*OSCR)
-// #define timer_ticks(t)	(*OSCR - (ulong)(t))
-#define DELAY(ms)	timer_delay(MS2TMR(ms))
-#define MICRODELAY(us)	timer_delay(US2TMR(us))
 ushort	timer_start(void);
 ushort	timer_ticks(ulong);
-int 	timer_devwait(ulong *adr, ulong mask, ulong val, int ost);
-void 	timer_setwatchdog(int ost);
 void 	timer_delay(int ost);
 ulong	ms2tmr(int ms);
 int	tmr2ms(ulong t);
@@ -127,8 +76,6 @@ int	tmr2us(ulong t);
 void 	microdelay(int us);
 
 void	dispfont(void);
-
-void	putlogo(uchar *addr);
 
 long	ldiv(long num, long denom);
 vlong	vldiv(vlong num, vlong denom);

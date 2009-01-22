@@ -15,7 +15,7 @@ struct SChanReg {
 	ulong	src;
 	ushort	tmr;
 	ushort	rpt;
-	ulong	wlen; /* in words of 4 bytes */
+	ulong	wlen;	/* in words of 4 bytes */
 
 	uchar	pad3[16];
 };
@@ -72,16 +72,16 @@ enum {
 
 typedef struct TxSound TxSound;
 struct TxSound {
-  char *d;
-  ulong n;
-  ulong rate;
+	void *d;	/* data samples */
+	ulong n;	/* samples number */
+	ulong rate;	/* rate (hz) */
 
-  uchar chan;
-  uchar vol;
-  uchar pan;
-  uchar fmt;
+	uchar chan;	/* SCHANREG channel */
+	uchar vol;
+	uchar pan;
+	uchar fmt;	/* pcm8bit/pcm16bit (0/1) */
 };
 
-void startrec(TxSound *snd);
-int stoprec(TxSound *snd);
-void playsound(TxSound *snd);
+int audiorec(TxSound *snd, int on);
+int audioplay(TxSound *snd, int on);
+void audiopower(int dir, int on);

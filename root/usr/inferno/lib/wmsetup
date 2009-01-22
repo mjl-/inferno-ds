@@ -10,20 +10,17 @@ menu Pen			{ wm/pen }
 menu Halt		{ wmrun shutdown -h }
 
 wmrun wm/sh -w 250 -h 90 -ic '
-	fn rrtc { cat ''#r/rtc''; echo }
 	fn rnes { cat /net/ether0/ifstats }
 	fn wnec { echo -n $* > /net/ether0/0/ctl }
 
 	cat /net/ether0/clone > /dev/null
 	wnec scan 1
-	sleep 1
-	rnes
-
-	wnec channel 11
-	wnec essid 1
+	wnec essid default
 	rnes
 
 	date
+	
+	#echo debug > /dev/audioctl
 	auplay /usr/inferno/lib/invhit.iaf
+	cat /dev/audio | read 16000 > /dev/audio
 	'
-

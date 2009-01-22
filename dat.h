@@ -6,11 +6,6 @@ typedef struct Lock	Lock;
 typedef struct Mach	Mach;
 typedef struct Ureg	Ureg;
 typedef struct ISAConf	ISAConf;
-typedef struct PCMmap	PCMmap;
-typedef struct PCIcfg	PCIcfg;
-typedef struct TouchPnt TouchPnt;
-typedef struct TouchTrans TouchTrans;
-typedef struct TouchCal TouchCal;
 
 typedef ulong Instr;
 

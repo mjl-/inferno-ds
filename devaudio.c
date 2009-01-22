@@ -10,10 +10,14 @@
 
 static int debug = 0;
 
+#define	DPRINT	if(debug)print
+
 enum
 {
 	Qdir		= 0,
 	Qaudio,
+	Qvolume,
+	Qstatus,
 	Qaudioctl,
 
 	Fmono		= 1,
@@ -46,6 +50,8 @@ Dirtab audiodir[] =
 {
 	".",		{Qdir, 0, QTDIR},	0,	0555,
 	"audio",	{Qaudio},		0,	0666,
+	"volume",	{Qvolume},		0,	0666,
+	"audiostat",	{Qstatus},		0,	0444,
 	"audioctl",	{Qaudioctl},		0,	0666,
 };
 
@@ -86,9 +92,9 @@ static	char	Emode[]		= "illegal open mode";
 static	char	Evolume[]	= "illegal volume specifier";
 
 /* TODO: use the 16 sound channels available */
-static int chan = 0;			/* sound channel index */
+static int chan = 1;			/* audio sound channel */
 static TxSound Snd[NSChannels+1];	/* play and record */
-static TxSound* snd[] = (TxSound*)uncached(Snd);
+static TxSound* snd[NSChannels+1];
 
 static void
 mxvolume(void)
@@ -106,21 +112,23 @@ mxvolume(void)
 }
 
 static void
-playaudio(void* d, ulong len)
+playaudio(void* d, ulong n)
 {
 	snd[chan]->d = d;
-	snd[chan]->n = len;
+	snd[chan]->n = n;
 	snd[chan]->chan = chan;
 	fifoput(F9TAudio|F9Auplay, (ulong)snd[chan]);
 }
 
 static void
-recaudio(void* d, ulong len)
+recaudio(void* d, ulong n)
 {
-	memmove(snd[1], snd[chan], sizeof(TxSound));
-	snd[1]->d = d;
-	snd[1]->n = len;
-	fifoput(F9TAudio|F9Aurec, (ulong)snd[1]);
+	memmove(snd[0], snd[chan], sizeof(TxSound));
+	snd[0]->d = d;
+	snd[0]->n = n;
+	fifoput(F9TAudio|F9Aurec, (ulong)snd[0]);
+	while(snd[0]->d != nil)
+		;
 }
 
 static void
@@ -139,10 +147,13 @@ resetlevel(void)
 static void
 audioinit(void)
 {
+	int i;
+
 	audio.amode = Aclosed;
 	resetlevel();
-	fifoput(F9TAudio|F9Aupower, 1);
-	delay(15);	/* must wait 15 ms before using audio */
+
+	for(i=0; i< NSChannels+1; i++)
+		snd[i] = (TxSound*)uncached(&Snd[i]);
 }
 
 static Chan*
@@ -164,15 +175,97 @@ audiostat(Chan *c, uchar *db, int n)
 }
 
 static Chan*
-audioopen(Chan *c, int omode)
+audioopen(Chan *c, int mode)
 {
-	return devopen(c, omode, audiodir, nelem(audiodir), devgen);
+	int omode = mode;
+
+	switch((ulong)c->qid.path) {
+	default:
+		error(Eperm);
+		break;
+
+	case Qstatus:
+		if((omode&7) != OREAD)
+			error(Eperm);
+	case Qvolume:
+	case Qaudioctl:
+	case Qdir:
+		break;
+
+	case Qaudio:
+		omode = (omode & 0x7) + 1;
+		if (omode & ~(Aread | Awrite))
+			error(Ebadarg);
+		qlock(&audio);
+		if(audio.amode & omode){
+			qunlock(&audio);
+			error(Einuse);
+		}
+		
+		if(omode & Aread) {
+			fifoput(F9TAudio|F9Aupowerin, 1);
+			delay(30);	/* wait at least 15 ms */
+			audio.amode |= Aread;
+		}
+		if(omode & Awrite) {
+			fifoput(F9TAudio|F9Aupowerout, 1);
+			delay(30);	/* wait at least 15 ms */
+			audio.amode |= Awrite;
+		}
+		mxvolume();
+		qunlock(&audio);
+		DPRINT("#A: open\n");
+		break;
+	}
+
+	c = devopen(c, mode, audiodir, nelem(audiodir), devgen);
+	c->mode = openmode(mode);
+	c->flag |= COPEN;
+	c->offset = 0;
+	return c;
 }
 
 static void
 audioclose(Chan *c)
 {
-	USED(c);
+	switch((ulong)c->qid.path) {
+	default:
+		error(Eperm);
+		break;
+
+	case Qdir:
+	case Qvolume:
+	case Qaudioctl:
+	case Qstatus:
+		break;
+
+	case Qaudio:
+		DPRINT("#A: close\n");
+		if(c->flag & COPEN) {
+			qlock(&audio);
+			if(waserror()){
+				qunlock(&audio);
+				nexterror();
+			}
+			if (c->mode == OWRITE || c->mode == ORDWR) {
+				/* closing the write end */
+				audio.amode &= ~Awrite;
+			}
+			if (c->mode == OREAD || c->mode == ORDWR) {
+				/* closing the read end */
+				audio.amode &= ~Aread;
+			}
+			if (audio.amode == 0) {
+				/* turn audio off */
+				DPRINT("#A: audio off");
+				//fifoput(F9TAudio|F9Aupowerin, 0);
+				//fifoput(F9TAudio|F9Aupowerout, 0);
+			}
+			qunlock(&audio);
+			poperror();
+		}
+		break;
+	}
 }
 
 static long
@@ -227,6 +320,8 @@ audioread(Chan *c, void *v, long n, vlong offset)
 		break;
 
 	case Qaudio:
+		if((audio.amode & Aread) == 0)
+			error(Emode);
 		recaudio(p, n);
 		break;
 	}
@@ -360,6 +455,8 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 		break;
 
 	case Qaudio:
+		if((audio.amode & Awrite) == 0)
+			error(Emode);
 		playaudio(p, n);
 		break;
 	}

@@ -28,8 +28,8 @@ Bootpreadlen: con 128;
 
 ethername := "ether0";
 
-# standard Inferno flash partitions
-
+#
+# mount file system from dldi
 # add devices
 # start a shell or window manager
 #
@@ -109,6 +109,9 @@ init()
 
 	sys->chdir("/");
 
+	startup := "/nvfs/startup";
+	if(sys->open(startup, Sys->OREAD) != nil)
+		start("sh", startup :: nil);
 	user := rdenv("user", "inferno");
 	if(userok(user)){
 		start("wm/wm", nil);
@@ -348,7 +351,7 @@ append(v: string, l: list of string): list of string
 }
 
 #
-# serve local DOS or kfs file system using flash translation layer
+# serve local DOS or kfs file system using dldi
 #
 lfs(file: string): int
 {
@@ -540,37 +543,6 @@ netfs(mountpt: string): int
 	return -1;
 }
 
-calibrate()
-{
-	val := rf("/nvfs/calibrate", nil);
-	if(val != nil){
-		fd := sys->open("/dev/touchctl", Sys->OWRITE);
-		if(fd != nil && sys->fprint(fd, "%s", val) >= 0)
-			return;
-	}
-	done := chan of int;
-	spawn docal(done);
-	<-done;
-}
-
-docal(done: chan of int)
-{
-	sys->pctl(Sys->FORKFD, nil);
-	ofd := sys->create("/nvfs/calibrate", Sys->OWRITE, 8r644);
-	if(ofd != nil)
-		sys->dup(ofd.fd, 1);
-	cal := load Command "/dis/touchcal.dis";
-	if(cal != nil){
-		{
-			cal->init(nil, "touchcal" :: nil);
-		}exception{
-		"fail:*" =>
-			;
-		}
-	}
-	done <-= 1;
-}
-
 userok(user: string): int
 {
 	(ok, d) := sys->stat("/usr/"+user);
@@ -582,6 +554,7 @@ rdenv(name: string, def: string): string
 	s := rf("#e/"+name, nil);
 	if(s != nil)
 		return s;
+	s = rf("/nvfs/"+name, def);
 	while(s != nil && ((c := s[len s-1]) == '\n' || c == '\r'))
 		s = s[0: len s-1];
 	if(s != nil)

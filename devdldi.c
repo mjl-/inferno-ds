@@ -114,23 +114,61 @@ DLDIhdr hdr=
 	}
 };
 
-static void
-mbrtest(void)
+enum{
+	MbrMagic =	0xaa55,
+	NPart =		4,
+	ActivePart =	0x80,	/* active */
+
+	/* part type */
+	PartFat12 =	0x01,
+	PartFat16 =	0x04,
+	PartFat32 =	0x0b,
+	PartLinux =	0x83,
+	PartPlan9 =	0x39,
+};
+
+typedef struct Dospart Dospart;
+struct Dospart{
+	uchar flag;		/* active flag */
+	uchar shead;		/* starting head */
+	uchar scs[2];		/* starting cylinder/sector */
+	uchar type;		/* partition type */
+	uchar ehead;		/* ending head */
+	uchar ecs[2];		/* ending cylinder/sector */
+	ulong start;		/* starting sector */
+	ulong len;		/* length in sectors */
+};
+
+#define	Mbroff(s) ((uchar*)(s)+2)	/* adjust the Mbr offset */
+typedef struct Mbr Mbr;
+struct Mbr{				/* 512 bytes */
+	uchar pad[0x1be-2];		/* 446 bytes */
+	Dospart p[NPart];		/*  64 bytes */
+	uchar m[2];			/*   2 bytes */
+};
+
+/* parses mbr table to find usable partitions */
+static int
+mbrpart(void)
 {
-	int ret;
+	int i, ok;
 	uchar sect[SECTSZ];
+	Mbr* mbr = (Mbr*)Mbroff(sect);
 
 	memset(sect, 0, sizeof(sect));
-	ret=hdr.io.read(0, sizeof(sect)/SECTSZ, sect);
-	if (!ret){
-		print("read: failed\n");
-		return;
-	}
+	ok = hdr.io.read(0, sizeof(sect)/SECTSZ, sect);
+	DPRINT("mbrpart: read (%d) %s\n", ok, ok? "ok!": "ko!");
+	if(!ok)
+		return 0;
 
-	if (0 && sect[SECTSZ-2] == 0x55 && sect[SECTSZ-1] == 0xaa)
-		print("bingo: mbr found\n");
-	
-	/* TODO: parse mbr table, find fat/kfs */
+	if(((mbr->m[1]<<8)|mbr->m[0]) != MbrMagic)
+		return 0;
+
+	DPRINT("mbrpart: mbr (%x) found!\n", (mbr->m[1]<<8)|mbr->m[0]);
+	for(i=0; i < NPart; i++)
+		DPRINT("p%d: a%x t%x s%lux l%lud\n",
+			i, mbr->p[i].flag, mbr->p[i].type, mbr->p[i].start, mbr->p[i].len);
+	return 1;
 }
 
 enum { MaxIoifc = 3 };
@@ -156,7 +194,7 @@ dldiinit(void)
 		DPRINT("bad DLDIhdr start %lux %lux\n", &hdr, &hdr.sdata);
 
 	/*
-	print("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
+	DPRINT("DLDI hdr %lux-%lux sz: %d fix: %s%s%s%s\n",
 		hdr.sdata, hdr.etext, sizeof(hdr),
 		(hdr.sect2fix & Fixall)? "all": "",
 		(hdr.sect2fix & Fixglue)? "glue": "",
@@ -174,6 +212,7 @@ dldiinit(void)
 	
 	// detect card type using dldi's info
 	for(n = 0; ioifc[n]; n++){
+		DPRINT("ioifc[%d] %.4s\n", n, ioifc[n]->type);
 		if(memcmp(ioifc[n]->type, hdr.io.type, 4))
 			continue;
 		if(ioifc[n]->caps != hdr.io.caps)
@@ -202,7 +241,7 @@ dldiinit(void)
 		
 	// set the default io interface
 	memmove(&hdr.io, ioifc[n], sizeof(Ioifc));
-	mbrtest();
+	mbrpart();
 }
 
 static Chan*
@@ -243,7 +282,7 @@ dldiread(Chan* c, void* a, long n, vlong offset)
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		DPRINT("dldiread a %lx n %ld o %lld\n", a, n, offset);
+		//DPRINT("dldiread a %lx n %ld o %lld\n", a, n, offset);
 		if(offset % SECTSZ || n % SECTSZ)
 			error(Ebadsize);
 		hdr.io.read(offset / SECTSZ, n / SECTSZ, a);
@@ -262,7 +301,7 @@ dldiwrite(Chan* c, void* a, long n, vlong offset)
 	case Qdir:
 		return devdirread(c, a, n, dlditab, nelem(dlditab), devgen);
 	case Qdata:
-		DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n, offset);
+		//DPRINT("dldiwrite a %lx n %ld o %lld\n", a, n, offset);
 		if(offset % SECTSZ || n % SECTSZ)
 			error(Ebadsize);
 		hdr.io.write(offset / SECTSZ, n / SECTSZ, a);

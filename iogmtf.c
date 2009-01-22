@@ -23,7 +23,7 @@ openSpi(void)
 {
 	volatile ulong temp;
 	
-	CARD_CR1 |= Spiena|Spiirqena;
+	CARD_CR1 = Spiena|Spiirqena;
 	CARD_COMMAND[0] = 0xF2;
 	CARD_COMMAND[1] = 0x00;
 	CARD_COMMAND[2] = 0x00;
@@ -46,7 +46,7 @@ closeSpi(void)
 {
 	volatile ulong temp;
 
-	CARD_CR1 |= Spiena|Spiirqena;
+	CARD_CR1 = Spiena|Spiirqena;
 	CARD_COMMAND[0] = 0xF2;
 	CARD_COMMAND[1] = 0x00;
 	CARD_COMMAND[2] = 0x00;
@@ -240,7 +240,7 @@ gmtf_write(ulong sector, ulong numSectors, void* buffer) {
 
 static Ioifc io_gmtf = {
 	"GMTF",
-	Cread|Cwrite|Cslotgba,
+	Cread|Cwrite|Cslotnds,
 
 	gmtf_init,
 	gmtf_init,

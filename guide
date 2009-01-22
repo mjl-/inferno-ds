@@ -1,37 +1,30 @@
-win rc
-changes
-changes | grep  '# [ADMC]'
-svn diff > `date '+%0e%0m%0Y'`.patch
 git format-patch HEAD^
 git am -k -3 *.patch
-git archive --prefix=gds/ HEAD > gds.tar
+git archive --prefix=ds/ HEAD > ds.tar
 git checkout
 
-i inm isds.p9
+# i from http://inferno-lab.googlecode.com/svn/trunk/81/i
 cp dsinit.b ../init
 i mk 'CONF=sds' vclean
 i mk 'CONF=sds' syms
 i mk 'CONF=sds'
+i inm isds.p9
 
 u mount /mnt/usb
 cp i*ds.nds /mnt/usb; sync
 u umount /mnt/usb
 
 desmume isds.nds
-desmume --disable-3d isds.nds
 wine $home/nogba-2.6a/'NO$GBA.EXE' isds.nds
-wine $home/nogba-2.6b/'NO$GBA.EXE' isds.nds
 
-echo 'dsmap9(); asm(main)' | i acid -l acidmap isds.p9
-echo 'dsmap9(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9 > isds.dump
-echo 'dsmap7(); asm(main)' | i acid -l acidmap arm7/isds.p9
-echo 'dsmap7(); dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap arm7/isds.p9 > arm7/isds.dump
+echo 'dsmap9(); asm(main); // dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap isds.p9
+echo 'dsmap7(); asm(main); // dump(ktzero, etext-ktzero, "i")' | i acid -l acidmap arm7/isds.p9
 
 i emu disdep /os/init/dsinit.dis | sort |t+
 
 # ndstool usage
-ndstool -c rom.nds -9 arm9.bin -7 arm7.bin -y9 y9.bin -y7 y7.bin -d data -y overlay -t banner.bin -h header.bin # create
-ndstool -x rom.nds -9 arm9.bin -7 arm7.bin -y9 y9.bin -y7 y7.bin -d data -y overlay -t banner.bin -h header.bin # extract
+ndstool -c rom.nds -9 9.bin -7 7.bin -y9 y9.bin -y7 y7.bin -d d -y o -t b.bin -h h.bin # create
+ndstool -x rom.nds -9 9.bin -7 7.bin -y9 y9.bin -y7 y7.bin -d d -y o -t b.bin -h h.bin # extract
 
 # desmume cflash usage
 dd if=/dev/zero of=cfdisk.img bs=1048576 count=64
@@ -39,11 +32,10 @@ mkdosfs -F16 cfdisk.img
 mount cfdisk.img cfdisk/ -o loop,uid=$USER -t vfat
 umount cfdisk/
 
-i mk CONF=sds
-dlditool misc/Mpcf.dldi isds.nds 
-desmume '--cflash=cfdisk.img'  isds.nds
-desmume-cli '--cflash=cfdisk.img'  isds.nds
-arm-objdump -D -m arm -b binary misc/Mpcf.dldi
-arm-objdump -D -m arm -b binary misc/ttio.dldi
+i mk CONF=dds
+dlditool root/misc/Mpcf.dldi idds.nds 
+desmume --cflash=idds.kfs idds.nds
+desmume '--cflash=cfdisk.img'  idds.nds
+arm-objdump -D -m arm -b binary root/misc/Mpcf.dldi
 	
 xd isds.nds  | grep -i eda58dbf | awk '{hdr=strtonum("0x" $1); printf("/* TODO: fix DLDIhdr start %#0.8x */\n", hdr+64)}'

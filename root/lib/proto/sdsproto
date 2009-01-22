@@ -464,7 +464,6 @@ dis
 	zeros.dis
 env
 fonts
-	LICENCE
 	big5
 		+
 	charon
@@ -489,17 +488,16 @@ fonts
 		+
 	psrename
 icons
-	*
+	+
+
 keydb
 	countersigned
-	keys 600 inferno inferno /keydb/keys.dist
+	keys 600 inferno inferno /keydb/keys
 	signed
 lib
 	legal
 		*
 	acid
-		+
-	brutus
 		+
 	convcs
 		+
@@ -518,10 +516,10 @@ lib
 		*
 	ndb
 		common
-		dns	664	inferno inferno /lib/ndb/dns.dist
+		dns	664	inferno inferno /lib/ndb/dns
 		inferno
-		local 664	inferno inferno /lib/ndb/local.dist
-		registry 664	inferno inferno /lib/ndb/registry.dist
+		local 664	inferno inferno /lib/ndb/local
+		registry 664	inferno inferno /lib/ndb/registry
 		services
 	polyhedra
 	polyhedra.all
@@ -553,7 +551,6 @@ lib
 		+
 	units
 	usbdb
-	video.specs
 	wmcharon
 	wmsetup
 	wmsetup.grid
@@ -684,21 +681,18 @@ n
 net
 net.alt
 nvfs
+	+
 prof
 prog
 services
 	httpd
 		httpd.rewrite
 		httpd.suff
-	logs
-	ppp
 	webget
 		help.html
 		inferno.gif
 		start.html
 		vnlogo.gif
-src
-sys
 #mux
 #	basic
 #	email
@@ -722,6 +716,6 @@ usr
 		charon
 		keyring
 		lib
-			plumbing
+			*
 		namespace
 wrap

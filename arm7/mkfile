@@ -22,7 +22,6 @@ OFILES=\
 HFILES=\
 	../io.h\
 	../mem.h\
-	dat.h\
 	fns.h\
 	spi.h\
 	audio.h\

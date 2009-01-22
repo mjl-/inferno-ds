@@ -4,7 +4,6 @@
 #include	"dat.h"
 #include	"fns.h"
 #include	"io.h"
-#include 	"arm7/dat.h"
 #include	"../port/error.h"
 #include	<keyboard.h>
 
@@ -86,7 +85,7 @@ fiforecv(ulong vv)
 			}
 		break;
 	case F7mousedown:
-		//print("mousedown %lux %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, mousemod);
+		//print("mdown %lux %lud %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, (v>>16)&0xff, mousemod);
 		mousetrack(mousemod, v&0xff, (v>>8)&0xff, 0);
 		m = mousexy();
 		if(om.x != m.x || om.y != m.y)
@@ -246,15 +245,13 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 			free(tmp);
 			nexterror();
 		}
-		v = IPC->batt;
-		temp = IPC->temp;
-		t = 0xff;
+		fifoput(F9TSystem|F9Sysrtmp, (ulong)uncached(&temp));
 		snprint(tmp, READSTR,
 			"ds type: %x %s\n"
 			"battery: %d %s\n"
 			"temp (%d): %d.%.2d\n",
-			t, (t == 0xff? "ds" : "ds-lite"), 
-			v, (v? "low" : "high"),
+			1, (1? "ds" : "ds-lite"), 
+			0, (0? "low" : "high"),
 			temp, temp>>12, temp & ((1<<13) -1));
 
 		n = readstr(offset, a, n, tmp);

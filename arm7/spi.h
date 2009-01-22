@@ -30,23 +30,34 @@ enum power_reg
 {
 	POWER_CONTROL		= 0,
 	POWER_BATTERY		= 1,
-	POWER_MIC_CONTROL	= 2,
+	POWER_MIC_AMPL		= 2,
 	POWER_MIC_GAIN		= 3,
 	POWER_BACKLIGHT		= 4,
 
-	PM_READ_REGISTER 	= (1<<7),
+	POWER_READREG	 	= (1<<7),
 };
 
 // power control register bits
 enum
 {
-	POWER0_SOUND_AMP	= (1<<0),	/* Power the sound hardware (needed to hear stuff in GBA mode too) */
-	POWER0_SOUND_SPK	= (1<<1),	/* Power the main speakers, headphone output will still work. */
-	POWER0_LOWER_BACKLIGHT	= (1<<2),	/* Enable the top backlight if set */
-	POWER0_UPPER_BACKLIGHT	= (1<<3),	/* Enable the bottom backlight if set */
-	POWER0_LED_BLINK	= (1<<4),
-	POWER0_LED_FAST		= (1<<5),
-	POWER0_SYSTEM_POWER	= (1<<6),	/* Turn the power *off* if set */
+	// POWER_CONTROL
+	POWER_SOUND_AMP		= (1<<0),	/* Power the sound hardware (needed to hear stuff in GBA mode too) */
+	POWER_SOUND_SPK		= (1<<1),	/* Power the main speakers, headphone output will still work. */
+	POWER_BACKLIGHT_LOWER	= (1<<2),	/* Enable the bottom backlight if set */
+	POWER_BACKLIGHT_UPPER	= (1<<3),	/* Enable the top backlight if set */
+	POWER_LED_BLINK		= (1<<4),
+	POWER_LED_FAST		= (1<<5),
+	POWER_SYSTEM_POWER	= (1<<6),	/* Turn the power *off* if set */
+
+	// POWER_MIC_AMPL
+	POWER_MIC_AMPLOFF	= 0,
+	POWER_MIC_AMPLON	= 1,
+	
+	// POWER_MIC_GAIN
+	POWER_MIC_GAIN_20	= 0,		/* set the mic gain (in db) */
+	POWER_MIC_GAIN_40	= 1,
+	POWER_MIC_GAIN_80	= 2,
+	POWER_MIC_GAIN_160	= 3,
 };
 
 // PM control register bits - LED control
@@ -54,10 +65,6 @@ enum
 #define PM_LED_ON     (0<<4)   /* Steady on */
 #define PM_LED_SLEEP  (2<<4)   /* Blinking, mostly off */
 #define PM_LED_BLINK  (3<<4)   /* Blinking, mostly on */
-
-#define PM_AMP_OFFSET  2
-#define PM_AMP_ON      1
-#define PM_AMP_OFF     0
 
 #define FIRMWARE_WREN 0x06
 #define FIRMWARE_WRDI 0x04

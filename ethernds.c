@@ -10,7 +10,7 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
-static int dbg = 0;
+static int dbg = 1;
 #define	DBG	if(dbg)
 #define DPRINT	if(dbg)iprint
 
@@ -66,6 +66,7 @@ struct WFrame
 typedef struct Ctlr Ctlr;
 struct Ctlr {
 	Lock;
+	Rendez	timer;
 
 	uchar	*base;
 	int	type;
@@ -470,9 +471,14 @@ int Wifi_AssocStatus(void) {
 
 void Wifi_Init(u32 initflags){
 	memset(WifiData, 0, sizeof(Wifi_Data));
+	dcflushall();
 	WifiData->flags9 = WFLAG_ARM9_ACTIVE | (initflags & WFLAG_ARM9_INITFLAGMASK);
 	nbfifoput(F9TWifi|F9WFinit, (ulong)WifiData);
+
+	// wait for arm7 to be ready
+	//while(Wifi_CheckInit()==0);
 }
+
 
 int Wifi_CheckInit(void) {
 	if(!WifiData) return 0;
@@ -484,14 +490,15 @@ void Wifi_Update(void) {
 	int base, base2, len, fulllen;
 	if(!WifiData) return;
 
-#ifdef WIFI_USE_TCP_SGIP
-
 	if(!(WifiData->flags9&WFLAG_ARM9_ARM7READY)) {
 		if(WifiData->flags7 & WFLAG_ARM7_ACTIVE) {
 			WifiData->flags9 |=WFLAG_ARM9_ARM7READY;
 			// add network interface.
+#ifdef WIFI_USE_TCP_SGIP
 			wifi_hw = sgIP_Hub_AddHardwareInterface(&Wifi_TransmitFunction,&Wifi_Interface_Init);
             sgIP_timems=WifiData->random; //hacky! but it should work just fine :)
+
+#endif
 		}
 	}
 	if(WifiData->authlevel!=WIFI_AUTHLEVEL_ASSOCIATED && WifiData->flags9&WFLAG_ARM9_NETUP) {
@@ -499,8 +506,6 @@ void Wifi_Update(void) {
 	} else if(WifiData->authlevel==WIFI_AUTHLEVEL_ASSOCIATED && !(WifiData->flags9&WFLAG_ARM9_NETUP)) {
 		WifiData->flags9 |= (WFLAG_ARM9_NETUP);
 	}
-
-#endif
 
 	// check for received packets, forward to whatever wants them.
 	cnt=0;
@@ -728,17 +733,10 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 	p = seprint(p, e, "ie: 0x%ux if: 0x%ux ints: %ud tx: %ux/%ux\n",
 		debug[1], debug[2], debug[6], debug[3], debug[4]);
 
-	status = 0; //Wifi_AssocStatus();
+	status = Wifi_AssocStatus();
 	p = seprint(p, e, "mode (0x%ux/0x%ux) auth 0x%ux status (0x%ux) %s\n",
 		WifiData->curMode, WifiData->reqMode, WifiData->authlevel,
 		status, ASSOCSTATUS_STRINGS[status]);	
-
-	if(0){
-		p = seprint(p, e, "hwcnt: ");
-		for(i=WSTAT_HW_1B0; i<NUM_WIFI_STATS; i++)
-			p = seprint(p, e, "%lux, ", stats[i]);
-		p = seprint(p, e, "\n");
-	}
 
 	ap = WifiData->aplist;
 	// order by signal quality 
@@ -749,6 +747,9 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 
 		p = seprint(p, e, "%d: %s ch=%d (0x%ux)", i, ap->ssid, ap->channel, ap->flags);
 
+		if(1)
+		p = seprint(p, e, " q=%x", ap->rssi);
+			
 		if(0)
 		p = seprint(p, e, "sec=%s%s%s m=%s c=%s%s",
 			(ap->flags & WFLAG_APDATA_WEP? "wep": ""),
@@ -760,15 +761,9 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 			(ap->flags & WFLAG_APDATA_EXTCOMPATIBLE? "e": "")
 			);
 
-		if(1)
-		p = seprint(p, e, " q=%x", ap->rssi);
-			
 		if(0)
 		p = seprint(p, e, " b=%x%x%x%x%x%x",
 			ap->bssid[0], ap->bssid[1], ap->bssid[2], ap->bssid[3], ap->bssid[4], ap->bssid[5]);
-		if(0)
-		p = seprint(p, e, " m=%x%x%x%x%x%x",
-			ap->macaddr[0], ap->macaddr[1], ap->macaddr[2], ap->macaddr[3], ap->macaddr[4], ap->macaddr[5]);
 		p = seprint(p, e, "\n");
 	}
 
@@ -782,7 +777,7 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 static int
 w_option(Ctlr* ctlr, char* buf, long n)
 {
-	int i, r;
+	int i, j, r;
 	WKey *key;
 	Cmdbuf *cb;
 
@@ -802,13 +797,18 @@ w_option(Ctlr* ctlr, char* buf, long n)
 	}
 	else if(cistrcmp(cb->f[0], "essid") == 0){
 		if(cistrcmp(cb->f[1], "default") == 0){
-			Wifi_AutoConnect(); // request connect
+			Wifi_AutoConnect();
 		}else {
-			i = atoi(cb->f[1]);
-			if(0 <= i && i < Wifi_GetNumAP())
-				Wifi_ConnectAP(&WifiData->aplist[i], 0, ctlr->txkey, (u8*)ctlr->keys[ctlr->txkey].dat);
+			wifi_connect_state = 0;
+			/* search AP by ssid name */
+			j = Wifi_GetNumAP();
+			for (i=0; i < j; i++)
+				if (strcmp(WifiData->aplist[i].ssid, cb->f[1]) == 0)
+					break;
 
-			Wifi_AssocStatus(); // check status			
+			if(i < j)
+				Wifi_ConnectAP(&WifiData->aplist[i], WEPMODE_NONE, ctlr->txkey, (u8*)ctlr->keys[ctlr->txkey].dat);
+
 			Wifi_Update();
 		}
 	}
@@ -861,8 +861,10 @@ w_option(Ctlr* ctlr, char* buf, long n)
 		else
 			r = -1;
 		
-		if(ctlr->scan)
+		if(ctlr->scan){
 			Wifi_ScanMode();
+			while(WifiData->reqChannel!=1);
+		}
 	}
 	else if(cistrcmp(cb->f[0], "dbg") == 0){
 		dbg = atoi(cb->f[1]);
@@ -907,6 +909,25 @@ promiscuous(void* arg, int on)
 {
 	USED(arg, on);
 	DPRINT("promiscuous\n");
+	Wifi_SetPromiscuousMode(on);
+}
+
+static void
+w_timer(void* arg)
+{
+	Ether* ether = (Ether*) arg;
+	Ctlr* ctlr = (Ctlr*)ether->ctlr;
+
+	for(;;){
+		tsleep(&ctlr->timer, return0, 0, 100);
+		if(ctlr == 0)
+			break;
+
+		ilock(ctlr);
+		Wifi_Update();
+		iunlock(ctlr);
+	}
+	pexit("terminated", 0);
 }
 
 static void
@@ -921,6 +942,11 @@ attach(Ether *ether)
 	ctlr = (Ctlr*) ether->ctlr;
 	if (ctlr->attached == 0){
 		ctlr->attached = 1;
+		kproc("#l0timer", w_timer, ether, 0);
+	}else{
+//		if(!postnote(&ctlr->timer, 1, "kill", 0))
+//			print("timer note not posted\n");
+//		print("attach, killing 0x%p\n", ctlr->timer);
 	}
 }
 

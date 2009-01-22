@@ -88,7 +88,7 @@ link
 
 #	iottds
 #	iogmtf
-#	iompcf
+	iompcf
 	ior4tf iocard
 
 misc
@@ -129,7 +129,7 @@ root
 #	/dis/disk/format.dis
 
 # kfs file system
-#	/dis/disk/kfs.dis
+	/dis/disk/kfs.dis
 #	/dis/disk/kfscmd.dis
 
 # used by file systems and commands

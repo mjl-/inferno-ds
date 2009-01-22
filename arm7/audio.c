@@ -7,23 +7,11 @@
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "dat.h"
 #include "fns.h"
 #include "audio.h"
 #include "spi.h"
 
-static void 
-pm_setamp(uchar control) 
-{
-	busywait();
-	SPIREG->ctl = Spiena|SpiDevpower|Spi1mhz|Spicont;
-	SPIREG->data = PM_AMP_OFFSET;
-	busywait();
-	SPIREG->ctl = Spiena|SpiDevpower|Spi1mhz;
-	SPIREG->data = control;
-}
-
-static uchar 
+static ushort
 mic_read(ushort sfmt) {
 	ushort res[2];
 
@@ -46,6 +34,11 @@ mic_read(ushort sfmt) {
 
 }
 
+enum {
+	AUDIOtimer = 0,
+	TIMERAUDIObit = TIMER0bit+AUDIOtimer,
+};
+
 static int nrs = 0;
 
 static void
@@ -53,55 +46,47 @@ recintr(void *a)
 {	
 	TxSound *snd = a;
 
+	//print("snd7 %lx %lx %lx\n", (ulong)snd, (ulong)snd->d, snd->n);
 	if(snd->d && nrs++ < snd->n){
-		snd->d[nrs] = (char) mic_read(Tscgetmic8) ^ 0x80;
-		if (0 && nrs % 1024 == 0) print("%lux[%d]\n", (ulong) snd->d, nrs);
+		if(snd->fmt)
+			((ushort*)snd->d)[nrs] = mic_read(Tscgetmic12);
+		else
+			((uchar*)snd->d)[nrs] = mic_read(Tscgetmic8);
 	}else
-		stoprec(snd);
+		audiorec(snd, 0);
 
 	intrclear(TIMERAUDIObit, 0);
 }
 
-void 
-startrec(TxSound *snd) 
-{
-	TimerReg *t = TMRREG + AUDIOtimer;
-
-	pm_setamp(PM_AMP_ON);
-	power_write(POWER_MIC_GAIN, 1 - 1);
-
-	nrs = 0;
-	t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
-	t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
-	intrenable(TIMERAUDIObit, recintr, snd, 0);
-}
-
 int 
-stoprec(TxSound *snd) 
+audiorec(TxSound *snd, int on)
 {
 	TimerReg *t = TMRREG + AUDIOtimer;
 
-	USED(snd);
-	t->ctl &= ~Tmrena;
-	intrmask(TIMERAUDIObit, 0);
+	if(!snd)
+		return 0;
 
-	pm_setamp(PM_AMP_OFF);
-	power_write(POWER_MIC_GAIN, 0);
+	if(on){
+		nrs = 0;
+		t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
+		t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
+		intrenable(TIMERAUDIObit, recintr, snd, 0);
+	}else{
+		t->ctl &= ~Tmrena;
+		intrmask(TIMERAUDIObit, 0);
 
-	snd->d = nil;
-	return nrs;
+		snd->d = nil;
+		return nrs;
+	}
 }
 
-void 
-playsound(TxSound *snd)
+int
+audioplay(TxSound *snd, int on)
 {
 	SChanReg *schan;
-
-	SNDREG->cr.ctl = Sndena | Maxvol;
-	SNDREG->bias = 0x200;
-
-	if(snd->chan > NSChannels)
-		return;
+	
+	if(!snd || snd->chan > NSChannels)
+		return 0;
 
 	schan = SCHANREG + snd->chan;
 	schan->rpt = 0;
@@ -111,4 +96,42 @@ playsound(TxSound *snd)
 	schan->cr.vol = snd->vol;
 	schan->cr.pan = snd->pan;
 	schan->cr.ctl |= SCena | SCrep1shot | (snd->fmt? SCpcm16bit: SCpcm8bit);
+	return 1;
+}
+
+void
+audiopower(int dir, int on)
+{
+	uchar pwr;
+
+	pwr=power_read(POWER_CONTROL);
+	switch(dir){	/* audio in/out */
+	default:
+		break;
+	case F9Aupowerout:
+		if(on){
+			POWERREG->pcr |= 1<<POWER_SOUND;
+			SNDREG->cr.ctl = Sndena | Maxvol;
+			SNDREG->bias = 0x200;
+			power_write(POWER_CONTROL, pwr & ~POWER_SOUND_SPK);
+		}else{
+			POWERREG->pcr &= ~(1<<POWER_SOUND);
+			SNDREG->cr.ctl &= ~Sndena;
+			power_write(POWER_CONTROL, pwr | POWER_SOUND_SPK);
+		}
+		break;
+	case F9Aupowerin:
+		if(on){
+			power_write(POWER_CONTROL, pwr | POWER_SOUND_AMP);
+
+			power_write(POWER_MIC_AMPL, POWER_MIC_AMPLON);
+			power_write(POWER_MIC_GAIN, POWER_MIC_GAIN_20);
+		}else{
+			power_write(POWER_CONTROL, pwr & ~POWER_SOUND_AMP);
+
+			power_write(POWER_MIC_AMPL, POWER_MIC_AMPLOFF);
+			power_write(POWER_MIC_GAIN, POWER_MIC_GAIN_20);
+		}
+		break;
+	}
 }

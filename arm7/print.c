@@ -2,7 +2,6 @@
 #include "../mem.h"
 #include "../io.h"
 #include <kern.h>
-#include "dat.h"
 #include "fns.h"
 
 /* 
@@ -97,7 +96,7 @@ sprint(char *s, char *fmt, ...)
 	return n;
 }
 
-#define SData ((char*)IPC + sizeof(TxRegion))
+#define SData ((char*)IPC)
 
 int
 print(char *fmt, ...)

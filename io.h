@@ -97,7 +97,8 @@ enum
 	F9Sysleds,
 	F9Sysrrtc,
 	F9Syswrtc,
-	
+	F9Sysrtmp,
+
 	/* Wifi */
 	F9WFrmac = 0,
 	F9WFinit,
@@ -105,7 +106,8 @@ enum
 	/* Audio */
  	F9Auplay = 0,
 	F9Aurec,
-	F9Aupower,
+	F9Aupowerin,
+	F9Aupowerout,
 };
 
 /* F7 msgs: from arm7 to arm9 */
@@ -655,6 +657,10 @@ enum
 /* quote: "should prevent the cache from eating us alive..." - sgstair */
 #define iscached(addr)	(EWRAMZERO <= (addr) && (addr) < EWRAMTOP)
 #define uncached(addr)	((ulong*)((ulong)(addr) + (EWRAMTOP - EWRAMZERO + 1)))
+
+/* IPC memory: handy for debugging without fifo support */
+#define IPCMEM	0x023ff000	/* far at the end (EWRAMTOP) */
+#define IPC	(uncached(IPCMEM))
 
 /*
  * discio interface

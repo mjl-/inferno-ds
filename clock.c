@@ -12,14 +12,15 @@ static ulong timer_incr[4] = { 0, 0, 0, 0};
 typedef struct Clock0link Clock0link;
 typedef struct Clock0link {
 	void		(*clock)(void);
-	ulong		t;
+	ulong		tm;
 	Clock0link*	link;
 } Clock0link;
 
 static Clock0link *clock0link;
 static Lock clock0lock;
+
 static void (*prof_fcn)(Ureg *, int);
-static int	kproftickena;
+static int kproftickena;
 void	(*kproftick)(ulong);	/* set by devkprof.c when active */
 
 Timer*
@@ -36,7 +37,7 @@ addclock0link(void (*clock)(void), int ticks)
 		return nil;
 
 	ilock(&clock0lock);
-	lp->t = ticks;
+	lp->tm = ticks;
 	lp->clock = clock;
 	lp->link = clock0link;
 	clock0link = lp;
@@ -72,6 +73,7 @@ profintr(Ureg *ur, void*)
 #else
 	USED(ur);
 #endif
+	intrclear(TIMER0bit+1, 0);
 }
 
 static void
@@ -88,8 +90,8 @@ clockintr(Ureg *ur, void *)
 
 	if(canlock(&clock0lock)){
 		for(lp = clock0link; lp; lp = lp->link){
-			if(0)print("clkf %lux clkt %lud %d\n", lp->clock, m->ticks); // (m->ticks & lp->t) == lp->t
-			if((m->ticks & lp->t) == lp->t) //(lp->clock)
+			if(0)print("clkf %lux clkt %lud\n", lp->clock, m->ticks);
+			if((m->ticks & lp->tm) == lp->tm) // cheap aprox. to ticks % tm == 0
 				lp->clock();
 		}
 		unlock(&clock0lock);
@@ -126,8 +128,8 @@ installprof(void (*pf)(Ureg *, int))
 
 	s = splfhi();
 	prof_fcn = pf;
-	timerenable( 2, HZ+1, profintr, 0);
-	timer_incr[2] = timer_incr[0]+63;	/* fine tuning */
+	timerenable(1, HZ+1, profintr, 0);
+	timer_incr[1] = timer_incr[0]+63;	/* fine tuning */
 	splx(s);
 }
 
@@ -165,9 +167,6 @@ ulong _mularsv(ulong m0, ulong m1, ulong a, ulong s);
 #define MULDIVR64(x,a,b,n) ((ulong)_mularsv(x, FXDPTDIVR(a,b,n), 1<<((n)-1), (n)))
 
 
-// these routines are all limited to a maximum of 1165 seconds,
-// due to the wrap-around of the OSTIMER
-
 ushort
 timer_start(void)
 {
@@ -180,74 +179,27 @@ timer_ticks(ulong t0)
 	return TMRREG->data - t0;
 }
 
-int
-timer_devwait(ulong *adr, ulong mask, ulong val, int ost)
-{
-	int i;
-	ushort t0 = timer_start();
-	while((*adr & mask) != val) 
-		if(timer_ticks(t0) > ost)
-			return ((*adr & mask) == val) ? 0 : -1;
-		else
-			for (i = 0; i < 10; i++);	/* don't pound OSCR too hard! (why not?) */
-	return 0;
-}
-
-void
-timer_setwatchdog(int t)
-{
-	USED(t);
-}
-
 void
 timer_delay(int t)
 {	
 	ulong t0 = timer_start();
-	while(timer_ticks(t0) < t)
-		;
-}
-
-ulong
-us2tmr(int us)
-{
-	return MULDIV64(us, CLOCKFREQ, 1000000, 24);
-}
-
-int
-tmr2us(ulong t)
-{
-	return MULDIV64(t, 1000000, CLOCKFREQ, 24);
+	while(timer_ticks(t0) <= t)
+		; //print("d %ud < %d\n", timer_ticks(t0), t);
 }
 
 void
 microdelay(int us)
 {
-	ulong t0 = timer_start();
-	ulong t = us2tmr(us);
-	while(timer_ticks(t0) <= t)
-		;
+	ulong t = US2TMR(t);
+	timer_delay(t);
 }
 
-
-ulong
-ms2tmr(int ms)
-{
-	return MULDIV64(ms, CLOCKFREQ, 1000, 20);
-}
-
-int
-tmr2ms(ulong t)
-{
-	return MULDIV64(t, 1000, CLOCKFREQ, 32);
-}
 
 void
 delay(int ms)
 {
-	ulong t0 = timer_start();
-	ulong t = ms2tmr(ms);
-	while(timer_ticks(t0) <= t)
-		;
+	ulong t = MS2TMR(ms);
+	timer_delay(t);
 }
 
 /*

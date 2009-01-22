@@ -83,7 +83,6 @@ machinit(void)
 	m->cpuhz = 66*1000000;
 }
 
-#define idoc(m) if(1) iprint
 #define doc if(0) print
 
 void
@@ -155,7 +154,6 @@ init0(void)
 	cnameclose(o->pgrp->slash->name);
 	o->pgrp->slash->name = newcname("/");
 	o->pgrp->dot = cclone(o->pgrp->slash);
-	print("o->pgrp->dot %ulx\n", o->pgrp->dot);
 
 	chandevinit();
 	
@@ -264,4 +262,3 @@ va2pa(void *v)
 {
 	return (ulong)v;
 }
-

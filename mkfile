@@ -52,7 +52,7 @@ HFILES=\
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
 
-default:V: i$CONF.nds i$CONF.p9 i$CONF.SYM
+default:V: i$CONF.nds i$CONF.p9 i$CONF.SYM # i$CONF.kfs
 
 install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $INSTALLDIR/i$CONF.raw
 
@@ -69,7 +69,7 @@ trap.t: trap.5
 trap.5: trap.c
 	5c $CFLAGS trap.c
 
-i$CONF.kfs: root/lib/proto/$CONF'proto'
+i$CONF.kfs: root/lib/proto/sdsproto # could use $CONF'proto'
 	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}

@@ -17,30 +17,6 @@
 
 #define DPRINT if(0)print
 
-// swi bios calls (not used)
-enum {
-	Dssoftreset = 0x00,
-	Dsdelay = 0x03,
-	Dsintrwait = 0x04,
-	Dswaitforvblank = 0x05,
-	Dswaitforirq = 0x06,
-	Dsdivide = 0x09,
-	Dscopy = 0x0B,
-	Dsfastcopy = 0x0C,
-	Dssqrt = 0x0D,
-	Dscrc16 = 0x0E,
-	Dsisdebugger = 0x0F,
-	Dsunpackbits = 0x10,
-	Dsdecompresslzsswram = 0x11,
-	Dsdecompresslzssvram = 0x12,
-	Dsdecompresshuffman = 0x13,
-	Dsdecompressrlewram = 0x14,
-	Dsdecompressrlevram = 0x15,
-	Dsdecodedelta8 = 0x16,
-	Dsdecodedelta16 = 0x18,
-	sethaltcr = 0x1F,
-};
-
 /* Reset the DS registers to sensible defaults */
 void
 archreset(void)
@@ -270,7 +246,10 @@ archether(int ctlno, Ether *ether)
 			memset(ether->ea, 0x01, Eaddrlen);
 	}
 
-	strcpy(opt, "power=on essid=default station=ds");
+	if(0)	/* use WFC settings */
+		strcpy(opt, "power=on channel=11 scan=0 station=ds essid=default");
+	else	/* use specific ap */
+		strcpy(opt, "power=on channel=11 scan=0 station=ds essid=cain");
 	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;
