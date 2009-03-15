@@ -21,10 +21,13 @@ enum
 	Qaudioctl,
 
 	Fmono		= 1,
-	Fin			= 2,
+	Fin		= 2,
 	Fout		= 4,
 	F16bits		= 8,
-	
+	Fpcm		= 16,
+	Fadpcm		= 32,
+	Fpsg		= 64,
+
 	Aclosed		= 0,
 	Aread,
 	Awrite,
@@ -91,10 +94,9 @@ static	struct
 static	char	Emode[]		= "illegal open mode";
 static	char	Evolume[]	= "illegal volume specifier";
 
-/* TODO: use the 16 sound channels available */
-static int chan = 1;			/* audio sound channel */
-static TxSound Snd[NSChannels+1];	/* play and record */
-static TxSound* snd[NSChannels+1];
+static TxSound mixer;			/* mxvolume */
+static TxSound record;			/* recording */
+static TxSound snd[NSChannels];		/* playing */
 
 static void
 mxvolume(void)
@@ -104,31 +106,78 @@ mxvolume(void)
 	rov = audio.rovol[Vaudio];
 	lov = audio.lovol[Vaudio];
 	
-	snd[chan]->chan = (audio.flags & Fmono? 1: 2);
-	snd[chan]->rate = audio.lovol[Vspeed];
-	snd[chan]->vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
-	snd[chan]->pan = (Maxvol - Minvol) * rov / (2*lov+1);
-	snd[chan]->fmt = audio.flags & F16bits;
+	mixer.rate = audio.lovol[Vspeed];
+	mixer.vol = (Maxvol - Minvol) * (lov + rov) / (2*100);
+	mixer.pan = (Maxvol - Minvol) * rov / (2*lov+1);
+	
+	if(audio.flags & Fpcm)
+		mixer.flags |= AFlagpcm;
+	else if(audio.flags & Fadpcm)
+		mixer.flags |= AFlagadpcm;
+	else if(audio.flags & Fpsg)
+		mixer.flags &= ~AFlagpsg;
+	
+	if(audio.flags & Fmono)
+		mixer.flags |= AFlagmono;
+	else
+		mixer.flags &= ~AFlagmono;
+		
+	if(audio.flags & F16bits)
+		mixer.flags &= ~AFlag8bit;
+	else
+		mixer.flags |= AFlag8bit;
+}
+
+static int
+getchannel(void)
+{
+	int i;
+
+	for(i=0; i<NSChannels; i++)
+		if(!snd[i].inuse)
+			break;
+	
+	if(i == NSChannels)
+		return -1;
+	return i;
 }
 
 static void
 playaudio(void* d, ulong n)
 {
-	snd[chan]->d = d;
-	snd[chan]->n = n;
-	snd[chan]->chan = chan;
-	fifoput(F9TAudio|F9Auplay, (ulong)snd[chan]);
+	int i;
+
+	if((i=getchannel()) == -1)
+		error(Einuse);
+	DPRINT("#A: play %d\n", i);
+	memmove(&snd[i], &mixer, sizeof(TxSound));
+	snd[i].phys = (TxSound*)uncached(&snd[i]);
+	//snd[i].phys->inuse = 1;
+	snd[i].phys->d = d;
+	snd[i].phys->n = n;
+	snd[i].phys->chan = i;
+	fifoput(F9TAudio|F9Auplay, (ulong)snd[i].phys);
+}
+
+static int
+recording(void *a)
+{
+//	tsleep(&up->sleep, recording, &record, 100);
+	TxSound *snd = (TxSound*)a;
+	return snd->inuse;
 }
 
 static void
 recaudio(void* d, ulong n)
 {
-	memmove(snd[0], snd[chan], sizeof(TxSound));
-	snd[0]->d = d;
-	snd[0]->n = n;
-	fifoput(F9TAudio|F9Aurec, (ulong)snd[0]);
-	while(snd[0]->d != nil)
-		;
+	while(record.inuse);
+	DPRINT("i %x r %d f %x\n", record.inuse, record.rate, record.flags);
+	memmove(&record, &mixer, sizeof(TxSound));
+	record.phys = (TxSound*)uncached(&record);
+	record.phys->d = d;
+	record.phys->n = n;
+	fifoput(F9TAudio|F9Aurec, (ulong)record.phys);
+	while(record.inuse);
 }
 
 static void
@@ -152,8 +201,8 @@ audioinit(void)
 	audio.amode = Aclosed;
 	resetlevel();
 
-	for(i=0; i< NSChannels+1; i++)
-		snd[i] = (TxSound*)uncached(&Snd[i]);
+	for(i=0; i< NSChannels; i++)
+		snd[i].phys = (TxSound*)uncached(&snd[i]);
 }
 
 static Chan*
@@ -257,7 +306,7 @@ audioclose(Chan *c)
 			}
 			if (audio.amode == 0) {
 				/* turn audio off */
-				DPRINT("#A: audio off");
+				DPRINT("#A: audio off\n");
 				//fifoput(F9TAudio|F9Aupowerin, 0);
 				//fifoput(F9TAudio|F9Aupowerout, 0);
 			}
@@ -288,6 +337,7 @@ audioread(Chan *c, void *v, long n, vlong offset)
 		buf[0] = 0;
 		s = buf;
 		e = buf + sizeof(buf);
+		// TODO add encoding
 		for(m=0; volumes[m].name; m++){
 			liv = audio.livol[m];
 			riv = audio.rivol[m];
@@ -394,7 +444,13 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 			if(strcmp(field[i], "enc") == 0) {
 				if(++i >= nf)
 					error(Evolume);
-				if(strcmp(field[i], "pcm") != 0)
+				if(strcmp(field[i], "pcm") == 0)
+					audio.flags |= Apcm;
+				else if(strcmp(field[i], "adpcm") == 0)
+					audio.flags |= Aadpcm;
+				else if(strcmp(field[i], "psg") == 0)
+					audio.flags |= Apsg;
+				else
 					error(Evolume);
 				goto cont0;
 			}

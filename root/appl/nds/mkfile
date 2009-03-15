@@ -1,10 +1,12 @@
-<../../../mkconfig
+<../../../../mkconfig
+#<../../../../../mkconfig
 
 TARG=\
 	touchprint.dis\
 	memfiddle.dis\
 	rawimage.dis\
 	imagerle.dis\
+	morse.dis\
 
 MODULES=\
 

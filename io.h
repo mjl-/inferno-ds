@@ -627,10 +627,6 @@ enum
 	Ipcdataout	= 0xF00,
 	Ipcgenirq	= 1<<13,
 	Ipcirqena	= 1<<14,
-
-	/* intr fom arm7 wifi */
-	I7WFrxdone = 1<<8,
-	I7WFtxdone,
 };
 
 /*
@@ -685,3 +681,5 @@ struct Ioifc {
 	int (* clrstat)(void);
 	int (* deinit)(void);
 };
+
+void	addioifc(Ioifc *io);

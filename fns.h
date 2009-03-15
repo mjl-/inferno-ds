@@ -65,16 +65,10 @@ ulong	witcm(ulong);
 #define KADDR(p)	((void *) p)
 #define PADDR(v)	va2pa((void*)(v))
 
-ushort	timer_start(void);
-ushort	timer_ticks(ulong);
-void 	timer_delay(int ost);
-ulong	ms2tmr(int ms);
-int	tmr2ms(ulong t);
 void	delay(int ms);
-ulong	us2tmr(int us);
-int	tmr2us(ulong t);
 void 	microdelay(int us);
 
+/* ds port specific */
 void	dispfont(void);
 
 long	ldiv(long num, long denom);

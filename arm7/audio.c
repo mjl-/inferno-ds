@@ -47,11 +47,21 @@ recintr(void *a)
 	TxSound *snd = a;
 
 	//print("snd7 %lx %lx %lx\n", (ulong)snd, (ulong)snd->d, snd->n);
-	if(snd->d && nrs++ < snd->n){
-		if(snd->fmt)
-			((ushort*)snd->d)[nrs] = mic_read(Tscgetmic12);
-		else
+	if(snd->inuse && nrs++ < snd->n){
+		switch(snd->flags & (AFlagsigned|AFlag8bit)){
+		case (AFlag8bit):
 			((uchar*)snd->d)[nrs] = mic_read(Tscgetmic8);
+			break;
+		case (AFlagsigned|AFlag8bit):
+			((uchar*)snd->d)[nrs] = mic_read(Tscgetmic8) ^ 0x80;
+			break;
+		case (AFlagsigned):
+			((ushort*)snd->d)[nrs] = (mic_read(Tscgetmic12) - 2048) << 4; // ^ 0x8000;
+			break;
+		default:
+			((ushort*)snd->d)[nrs] = mic_read(Tscgetmic12);
+			break;
+		}
 	}else
 		audiorec(snd, 0);
 
@@ -63,19 +73,21 @@ audiorec(TxSound *snd, int on)
 {
 	TimerReg *t = TMRREG + AUDIOtimer;
 
-	if(!snd)
+	if(!snd || snd->d == nil)
 		return 0;
 
 	if(on){
 		nrs = 0;
+		snd->inuse = 1;
+
 		t->data = TIMER_BASE(Tmrdiv1) / snd->rate;
 		t->ctl = Tmrena | Tmrdiv1 | Tmrirq;
 		intrenable(TIMERAUDIObit, recintr, snd, 0);
 	}else{
 		t->ctl &= ~Tmrena;
 		intrmask(TIMERAUDIObit, 0);
-
-		snd->d = nil;
+		
+		snd->inuse = 0;
 		return nrs;
 	}
 }
@@ -90,17 +102,17 @@ audioplay(TxSound *snd, int on)
 
 	schan = SCHANREG + snd->chan;
 	schan->rpt = 0;
-	schan->tmr = SCHAN_BASE / (int)snd->rate;
+	schan->tmr = SCHAN_BASE / snd->rate;
 	schan->src = (ulong) snd->d;
-	schan->wlen = snd->fmt? snd->n>>2: snd->n>>1;
+	schan->wlen = snd->flags & AFlag8bit? snd->n>>1: snd->n>>2;
 	schan->cr.vol = snd->vol;
 	schan->cr.pan = snd->pan;
-	schan->cr.ctl |= SCena | SCrep1shot | (snd->fmt? SCpcm16bit: SCpcm8bit);
+	schan->cr.ctl |= SCena | SCrep1shot | (snd->flags & AFlag8bit? SCpcm8bit: SCpcm16bit);
 	return 1;
 }
 
 void
-audiopower(int dir, int on)
+audiopower(int dir, int l)
 {
 	uchar pwr;
 
@@ -109,7 +121,7 @@ audiopower(int dir, int on)
 	default:
 		break;
 	case F9Aupowerout:
-		if(on){
+		if(l){
 			POWERREG->pcr |= 1<<POWER_SOUND;
 			SNDREG->cr.ctl = Sndena | Maxvol;
 			SNDREG->bias = 0x200;
@@ -121,16 +133,16 @@ audiopower(int dir, int on)
 		}
 		break;
 	case F9Aupowerin:
-		if(on){
+		if(l){
 			power_write(POWER_CONTROL, pwr | POWER_SOUND_AMP);
 
 			power_write(POWER_MIC_AMPL, POWER_MIC_AMPLON);
-			power_write(POWER_MIC_GAIN, POWER_MIC_GAIN_20);
+			power_write(POWER_MIC_GAIN, l);
 		}else{
 			power_write(POWER_CONTROL, pwr & ~POWER_SOUND_AMP);
 
 			power_write(POWER_MIC_AMPL, POWER_MIC_AMPLOFF);
-			power_write(POWER_MIC_GAIN, POWER_MIC_GAIN_20);
+			power_write(POWER_MIC_GAIN, l);
 		}
 		break;
 	}

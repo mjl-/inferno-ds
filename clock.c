@@ -167,19 +167,19 @@ ulong _mularsv(ulong m0, ulong m1, ulong a, ulong s);
 #define MULDIVR64(x,a,b,n) ((ulong)_mularsv(x, FXDPTDIVR(a,b,n), 1<<((n)-1), (n)))
 
 
-ushort
+static ushort
 timer_start(void)
 {
 	return TMRREG->data;
 }
 
-ushort
+static ushort
 timer_ticks(ulong t0)
 {
 	return TMRREG->data - t0;
 }
 
-void
+static void
 timer_delay(int t)
 {	
 	ulong t0 = timer_start();
@@ -190,10 +190,9 @@ timer_delay(int t)
 void
 microdelay(int us)
 {
-	ulong t = US2TMR(t);
+	ulong t = US2TMR(us);
 	timer_delay(t);
 }
-
 
 void
 delay(int ms)

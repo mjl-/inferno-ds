@@ -68,20 +68,34 @@ struct SndReg {
 
 enum {
 	Sndena		= 1<<15,
+
+	/* TxSound.flags: */
+	AFlagin		= 1<<0,	/* direction: audio in/out */
+	AFlag8bit	= 1<<1,	/* sample size: 8 bit/16 bit (1/0) */
+	AFlagsigned	= 1<<2,	/* sample sign: signed/unsigned */
+	AFlagmono	= 1<<3,	/* sample chans: mono/stereo */
+
+	/* encoding */
+	AFlagpcm	= 1<<4,	
+	AFlagadpcm	= 1<<5,
+	AFlagpsg	= 1<<6,
 };
 
 typedef struct TxSound TxSound;
 struct TxSound {
-	void *d;	/* data samples */
-	ulong n;	/* samples number */
-	ulong rate;	/* rate (hz) */
+	ushort	inuse;
+	ushort	flags;	/* audio flags */
+	TxSound	*phys;	/* uncached self-ptr to this TxSound */
 
-	uchar chan;	/* SCHANREG channel */
-	uchar vol;
-	uchar pan;
-	uchar fmt;	/* pcm8bit/pcm16bit (0/1) */
+	void	*d;	/* data samples */
+	ulong	n;	/* samples number */
+	long	rate;	/* rate (hz) */
+
+	uchar	vol;	/* volume */
+	uchar	pan;	/* panning */
+	uchar	chan;	/* SCHANREG channel */
 };
 
 int audiorec(TxSound *snd, int on);
 int audioplay(TxSound *snd, int on);
-void audiopower(int dir, int on);
+void audiopower(int dir, int level);

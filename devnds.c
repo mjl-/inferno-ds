@@ -16,7 +16,6 @@
 enum {
 	Qdir,
 	Qctl,
-	Qinfo,
 	Qfw,
 	Qrom,
 	Qsram,
@@ -27,7 +26,6 @@ static
 Dirtab ndstab[]={
 	".",		{Qdir, 0, QTDIR},		0,		0555,
 	"ndsctl",	{Qctl},		0,		0600,
-	"ndsinfo",	{Qinfo},	0,		0600,
 	"ndsfw",	{Qfw},		0,		0400,
 	"ndsrom",	{Qrom},		0,		0600,
 	"ndssram",	{Qsram},	0,		0600,
@@ -217,7 +215,7 @@ static long
 ndsread(Chan* c, void* a, long n, vlong offset)
 {
 	char *tmp, *p, *e;
-	int v, t, temp, len;
+	int temp, len;
 	UserInfo *pu = UINFOREG;
 	uchar *pa;
 	uchar b;
@@ -239,26 +237,6 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 	case Qdir:
 		return devdirread(c, a, n, ndstab, nelem(ndstab), devgen);
 
-	case Qinfo:
-		tmp = malloc(READSTR);
-		if(waserror()){
-			free(tmp);
-			nexterror();
-		}
-		fifoput(F9TSystem|F9Sysrtmp, (ulong)uncached(&temp));
-		snprint(tmp, READSTR,
-			"ds type: %x %s\n"
-			"battery: %d %s\n"
-			"temp (%d): %d.%.2d\n",
-			1, (1? "ds" : "ds-lite"), 
-			0, (0? "low" : "high"),
-			temp, temp>>12, temp & ((1<<13) -1));
-
-		n = readstr(offset, a, n, tmp);
-		poperror();
-		free(tmp);
-		break;
-
 	case Qfw:
 		tmp = p = malloc(READSTR);
 		if(waserror()) {
@@ -273,13 +251,22 @@ ndsread(Chan* c, void* a, long n, vlong offset)
 		p = seprint(p, e, "alarm %s [%.2d:%.2d]\n", pu->alarmon? "on": "off", pu->alarmhour, pu->alarmmin);
 		p = seprint(p, e, "adc t1 (%d,%d) t2 (%d,%d)\n", pu->adc.x1, pu->adc.y1, pu->adc.x2, pu->adc.y2);
 		p = seprint(p, e, "scr t1 (%d,%d) t2 (%d,%d)\n", pu->adc.xpx1, pu->adc.ypx1, pu->adc.xpx2, pu->adc.ypx2);
-		p = seprint(p, e, "flags (0x%lux) lang %s: %s %s %s\n", 
+		p = seprint(p, e, "flags (0x%ux) lang %s: %s %s %s\n", 
 			pu->flags,
 			langlst[pu->flags&Langmask],
 			(pu->flags & Gbalowerscreen)? "gbalowerscreen": "",
 			(pu->flags & Autostart)? "autostart": "",
 			(pu->flags & Nosettings)? "nosettings": "");
 		p = seprint(p, e, "blight %d\n", (pu->flags>>Blightshift)&Blightmask);
+
+		fifoput(F9TSystem|F9Sysrtmp, (ulong)uncached(&temp));
+		p = seprint(p, e,
+			"ds type: %x %s\n"
+			"battery: %d %s\n"
+			"temp (%d): %d.%.2d\n",
+			1, (1? "ds" : "ds-lite"), 
+			0, (0? "low" : "high"),
+			temp, temp>>12, temp & ((1<<13) -1));
 
 		n = readstr(offset, a, n, tmp);
 		poperror();

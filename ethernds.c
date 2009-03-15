@@ -112,6 +112,43 @@ WifiSyncHandler synchandler = 0;
 #define Spinlock_Acquire(arg)	SPINLOCK_OK
 #define Spinlock_Release(arg)
 
+void ethhdr_print(char f, void * d) {
+	Etherpkt *p = d;
+	
+	print("%c:%x%x%x%x%x%x %x%x%x%x%x%x %x%x\n",
+		f,
+		p->d[0], p->d[1], p->d[2], p->d[3], p->d[4], p->d[5],
+		p->s[0], p->s[1], p->s[2], p->s[3], p->s[4], p->s[5],
+		p->type[0], p->type[1]);
+}
+
+static char*
+dump_pkt(uchar *data, ushort len)
+{
+	uchar *c;
+	static char buff[2024];
+	char *c2;
+
+	c = data;
+	c2 = buff;
+	while ((c - data) < len) {
+		if (((*c) >> 4) > 9)
+			*(c2++) = ((*c) >> 4) - 10 + 'A';
+		else
+			*(c2++) = ((*c) >> 4) + '0';
+
+		if (((*c) & 0x0f) > 9)
+			*(c2++) = ((*c) & 0x0f) - 10 + 'A';
+		else
+			*(c2++) = ((*c) & 0x0f) + '0';
+		c++;
+		if ((c - data) % 2 == 0)
+			*(c2++) = ' ';
+	}
+	*c2 = '\0';
+	return buff;
+}
+
 void Wifi_CopyMacAddr(volatile void * dest, volatile void * src) {
 	((u16 *)dest)[0]=((u16 *)src)[0];
 	((u16 *)dest)[1]=((u16 *)src)[1];
@@ -139,6 +176,24 @@ void Wifi_TxBufferWrite(s32 start, s32 len, u16 * data) {
 		}
 		start=0;
 	}
+}
+
+int Wifi_RxRawReadPacket(s32 packetID, s32 readlength, u16 * data) {
+	int readlen,read_data;
+	readlength= (readlength+1)/2;
+	read_data=0;
+	while(readlength>0) {
+		readlen=readlength;
+		if(readlen>(WIFI_RXBUFFER_SIZE/2)-packetID) readlen=(WIFI_RXBUFFER_SIZE/2)-packetID;
+		readlength-=readlen;
+		read_data+=readlen;
+		while(readlen>0) {
+			*(data++) = WifiData->rxbufData[packetID++];
+			readlen--;
+		}
+		packetID=0;
+	}
+	return read_data;
 }
 
 u16 Wifi_RxReadOffset(s32 base, s32 offset) {
@@ -174,7 +229,7 @@ void Wifi_RawSetPacketHandler(WifiPacketHandler wphfunc) {
 	packethandler=wphfunc;
 }
 void Wifi_SetSyncHandler(WifiSyncHandler wshfunc) {
-   synchandler=wshfunc;
+	synchandler=wshfunc;
 }
 
 void Wifi_DisableWifi(void) {
@@ -513,17 +568,15 @@ void Wifi_Update(void) {
 		base = WifiData->rxbufIn;
 		len=Wifi_RxReadOffset(base,4);
 		fulllen=((len+3)&(~3))+12;
-#ifdef WIFI_USE_TCP_SGIP
 		// Do lwIP interfacing for rx here
 		if((Wifi_RxReadOffset(base,6)&0x01CF)==0x0008) // if it is a non-null data packet coming from the AP (toDS==0)
 		{
 			u16 framehdr[6+12+2+4];
-			sgIP_memblock * mb;
 			int hdrlen;
 			base2=base;
 			Wifi_RxRawReadPacket(base,22*2,framehdr);
 
-        // ethhdr_print('!',framehdr+8);
+        		ethhdr_print('!',framehdr+8);
 			if((framehdr[8]==((u16 *)WifiData->MacAddr)[0] && framehdr[9]==((u16 *)WifiData->MacAddr)[1] && framehdr[10]==((u16 *)WifiData->MacAddr)[2]) ||
 				(framehdr[8]==0xFFFF && framehdr[9]==0xFFFF && framehdr[10]==0xFFFF)) {
 				// destination matches our mac address, or the broadcast address.
@@ -534,6 +587,9 @@ void Wifi_Update(void) {
 				//}
           //  SGIP_DEBUG_MESSAGE(("%04X %04X %04X %04X %04X",Wifi_RxReadOffset(base2-8,0),Wifi_RxReadOffset(base2-7,0),Wifi_RxReadOffset(base2-6,0),Wifi_RxReadOffset(base2-5,0),Wifi_RxReadOffset(base2-4,0)));
 				// check for LLC/SLIP header...
+				
+#ifdef WIFI_USE_TCP_SGIP
+				sgIP_memblock * mb;
 				if(Wifi_RxReadOffset(base2-4,0)==0xAAAA && Wifi_RxReadOffset(base2-4,1)==0x0003 && Wifi_RxReadOffset(base2-4,2)==0) {
 					mb = sgIP_memblock_allocHW(14,len-8-hdrlen);
 					if(mb) {
@@ -555,10 +611,10 @@ void Wifi_Update(void) {
 
 					}
 				}
+#endif
 			}
 		}
 
-#endif
 
 		// check if we have a handler
 		if(packethandler) {
@@ -575,29 +631,29 @@ void Wifi_Update(void) {
 	}
 }
 
-/*
-int Wifi_TransmitFunction(sgIP_memblock * mb) {
+/* modified to fit devether.c interface */
+int Wifi_TransmitFunction(Block * b) {
 	// convert ethernet frame into wireless frame and output.
 	// ethernet header: 6byte dest, 6byte src, 2byte protocol_id
 	// assumes individual pbuf len is >=14 bytes, it's pretty likely ;) - also hopes pbuf len is a multiple of 2 :|
 	int base,framelen, hdrlen, writelen;
-   int copytotal, copyexpect;
+	int copytotal, copyexpect;
 	u16 framehdr[6+12+2];
-	sgIP_memblock * t;
-   framelen=mb->totallength-14+8 + (WifiData->wepmode7?4:0);
-
-   if(!(WifiData->flags9&WFLAG_ARM9_NETUP)) {
-	   SGIP_DEBUG_MESSAGE(("Transmit:err_netdown"));
-	   sgIP_memblock_free(mb);
-	   return 0; //?
-   }
+	Block * t;
+	framelen=BLEN(b)-14+8 + (WifiData->wepmode7?4:0);
+	
+	if(!(WifiData->flags9&WFLAG_ARM9_NETUP)) {
+		DPRINT(("Transmit:err_netdown"));
+		freeb(b);
+		return 0; //?
+	}
 	if(framelen+40>Wifi_TxBufferWordsAvailable()*2) { // error, can't send this much!
-		SGIP_DEBUG_MESSAGE(("Transmit:err_space"));
-      sgIP_memblock_free(mb);
+		DPRINT(("Transmit:err_space"));
+		freeb(b);
 		return 0; //?
 	}
 	
-	ethhdr_print('T',mb->datastart);
+	ethhdr_print('T',b->rp);
 	framehdr[0]=0;
 	framehdr[1]=0;
 	framehdr[2]=0;
@@ -610,21 +666,21 @@ int Wifi_TransmitFunction(sgIP_memblock * mb) {
 		framehdr[6]=0x0008;
 		Wifi_CopyMacAddr(framehdr+14,WifiData->bssid7);
 		Wifi_CopyMacAddr(framehdr+11,WifiData->MacAddr);
-		Wifi_CopyMacAddr(framehdr+8,((u8 *)mb->datastart));
+		Wifi_CopyMacAddr(framehdr+8,((u8 *)b->rp));
 	} else {
 		framehdr[6]=0x0108;
 		Wifi_CopyMacAddr(framehdr+8,WifiData->bssid7);
 		Wifi_CopyMacAddr(framehdr+11,WifiData->MacAddr);
-		Wifi_CopyMacAddr(framehdr+14,((u8 *)mb->datastart));
+		Wifi_CopyMacAddr(framehdr+14,((u8 *)b->rp));
 	}
 	if(WifiData->wepmode7)  { framehdr[6] |=0x4000; hdrlen=20; }
 	framehdr[17] = 0;
 	framehdr[18] = 0; // wep IV, will be filled in if needed on the arm7 side.
 	framehdr[19] = 0;
 
-   framehdr[5]=framelen+hdrlen*2-12+4;
-   copyexpect= ((framelen+hdrlen*2-12+4) +12 -4 +1)/2;
-   copytotal=0;
+	framehdr[5]=framelen+hdrlen*2-12+4;
+	copyexpect= ((framelen+hdrlen*2-12+4) +12 -4 +1)/2;
+	copytotal=0;
 
 	WifiData->stats[WSTAT_TXQUEUEDPACKETS]++;
 	WifiData->stats[WSTAT_TXQUEUEDBYTES]+=framelen+hdrlen*2;
@@ -632,52 +688,53 @@ int Wifi_TransmitFunction(sgIP_memblock * mb) {
 	base = WifiData->txbufOut;
 	Wifi_TxBufferWrite(base,hdrlen,framehdr);
 	base += hdrlen;
-   copytotal+=hdrlen;
+	copytotal+=hdrlen;
 	if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
 
 	// add LLC header
 	framehdr[0]=0xAAAA;
 	framehdr[1]=0x0003;
 	framehdr[2]=0x0000;
-	framehdr[3]=((u16 *)mb->datastart)[6]; // frame type
+	framehdr[3]=((u16 *)b->rp)[6]; // frame type
 
 	Wifi_TxBufferWrite(base,4,framehdr);
 	base += 4;
-   copytotal+=4;
+	copytotal+=4;
 	if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
 
-	t=mb;
-	writelen=(mb->thislength-14);
+	t=b;
+	writelen=(BLEN(b)-14);
 	if(writelen) {
-		Wifi_TxBufferWrite(base,(writelen+1)/2,((u16 *)mb->datastart)+7);
+		Wifi_TxBufferWrite(base,(writelen+1)/2,((u16 *)b->rp)+7);
 		base+=(writelen+1)/2;
-      copytotal+=(writelen+1)/2;
+		copytotal+=(writelen+1)/2;
 		if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
 	}
-	while(mb->next) {
-		mb=mb->next;
-		writelen=mb->thislength;
-		Wifi_TxBufferWrite(base,(writelen+1)/2,((u16 *)mb->datastart));
+/*	
+	while(b->next) {
+		b=b->next;
+		writelen=BLEN(b);
+		Wifi_TxBufferWrite(base,(writelen+1)/2,((u16 *)b->rp));
 		base+=(writelen+1)/2;
-      copytotal+=(writelen+1)/2;
+		copytotal+=(writelen+1)/2;
 		if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
 	}
-   if(WifiData->wepmode7) { // add required extra bytes
-      base+=2;
-      copytotal+=2;
-      if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
-   }
+*/
+	if(WifiData->wepmode7) { // add required extra bytes
+		base+=2;
+		copytotal+=2;
+		if(base>=(WIFI_TXBUFFER_SIZE/2)) base -= WIFI_TXBUFFER_SIZE/2;
+	}
 	WifiData->txbufOut=base; // update fifo out pos, done sending packet.
 
-	sgIP_memblock_free(t); // free packet, as we're the last stop on this chain.
+	freeb(t); // free packet, as we're the last stop on this chain.
 
-   if(copytotal!=copyexpect) {
-      SGIP_DEBUG_MESSAGE(("Tx exp:%i que:%i",copyexpect,copytotal));
-   }
-   if(synchandler) synchandler();
-	return 0;
+	if(copytotal!=copyexpect) {
+		DPRINT("Tx exp:%d que:%d\n",copyexpect,copytotal);
+	}
+	if(synchandler) synchandler();
+		return 0;
 }
-*/
 
 static const char * ASSOCSTATUS_STRINGS[] = {
 	[ASSOCSTATUS_DISCONNECTED] = "disconnected",	// not *trying* to connect
@@ -950,64 +1007,6 @@ attach(Ether *ether)
 	}
 }
 
-static char*
-dump_pkt(uchar *data, ushort len)
-{
-	uchar *c;
-	static char buff[2024];
-	char *c2;
-
-	c = data;
-	c2 = buff;
-	while ((c - data) < len) {
-		if (((*c) >> 4) > 9)
-			*(c2++) = ((*c) >> 4) - 10 + 'A';
-		else
-			*(c2++) = ((*c) >> 4) + '0';
-
-		if (((*c) & 0x0f) > 9)
-			*(c2++) = ((*c) & 0x0f) - 10 + 'A';
-		else
-			*(c2++) = ((*c) & 0x0f) + '0';
-		c++;
-		if ((c - data) % 2 == 0)
-			*(c2++) = ' ';
-	}
-	*c2 = '\0';
-	return buff;
-}
-
-static void
-txloadpacket(Ether *ether)
-{
-	Ctlr *ctlr;
-	Block *b;
-	int lenb;
-
-	ctlr = ether->ctlr;
-	b = ctlr->waiting;
-	ctlr->waiting = nil;
-	if(b == nil)
-		return;	// shouldn't happen
-/*
-	// only transmit one packet at a time
-	lenb = BLEN(b);
-	
-	// wrap up packet information and send it to arm7
-	memmove((void *)ctlr->txpktbuf, b->rp, lenb);
-	ctlr->txpkt.len = lenb;
-	ctlr->txpkt.data = (void *)ctlr->txpktbuf;
-	freeb(b);
-
-	if(1)print("dump txpkt[%lud] @ %lux:\n%s",
-		(ulong)ctlr->txpkt.len, ctlr->txpkt.data,
-		dump_pkt((uchar*)ctlr->txpkt.data, ctlr->txpkt.len));
-
-	// write data to memory before ARM7 gets hands on
-	dcflush(&ctlr->txpkt, sizeof(ctlr->txpkt));
-*/
-}
-
 static void
 txstart(Ether *ether)
 {
@@ -1020,7 +1019,7 @@ txstart(Ether *ether)
 		if((ctlr->waiting = qget(ether->oq)) == nil)
 			break;
 		/* ctlr->waiting is a new block to transmit: allocate space */
-		txloadpacket(ether);
+		Wifi_TransmitFunction(ctlr->waiting);
 	}
 }
 
@@ -1028,70 +1027,6 @@ enum {
 	WF_Data		= 0x0008,
 	WF_Fromds	= 0x0200,
 };
-
-static void
-rxstart(Ether *ether)
-{
-	static uchar bcastaddr[Eaddrlen] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-	Wifi_RxHeader *rx_hdr;
-	WFrame *f;
-	Ctlr *ctlr;
-	Block* bp;
-	Etherpkt* ep;
-
-	if (ether->ctlr == nil)
-		return;
-
-	ctlr = ether->ctlr;
-/*
-	// invalidate cache before we read data written by ARM7
-	dcflush(&ctlr->rxpkt, sizeof(ctlr->rxpkt));
-
-	if(1)print("dump rxpkt[%lud] @ %lux:\n%s",
-		(ulong)ctlr->rxpkt.len, ctlr->rxpkt.data,
-		dump_pkt((uchar*)ctlr->rxpkt.data, ctlr->rxpkt.len));
-
-	rx_hdr = (Wifi_RxHeader*)(uchar*)&ctlr->rxpkt + 2;
-	f = (WFrame *)(uchar*)&ctlr->rxpkt + 2;
-
-	if ((f->framectl & 0x01CF) == WF_Data) {
-		if (memcmp(ether->ea, f->addr1, Eaddrlen) == 0
-			|| memcmp(ether->ea, bcastaddr, Eaddrlen) == 0){
-
-			// hdrlen == 802.11 header length  bytes
-			int base2, hdrlen;
-			base2 = 22;
-			hdrlen = 24;
-			// looks like WEP IV and IVC are removed from RX packets
-
-			// check for LLC/SLIP header...
-			if (((ushort *) rx_hdr)[base2 - 4 + 0] == 0xAAAA
-			    && ((ushort *) rx_hdr)[base2 - 4 + 1] == 0x0003
-			    && ((ushort *) rx_hdr)[base2 - 4 + 2] == 0) {
-				// mb = sgIP_memblock_allocHW(14,len-8-hdrlen);
-				// Wifi_RxRawReadPacket(base2,(len-8-hdrlen)&(~1),((u16 *)mb->datastart)+7);
-				int len = rx_hdr->byteLength;
-				bp = iallocb(ETHERHDRSIZE + len - 8 + hdrlen + 2);
-				if (!bp)
-					return;
-
-				ep = (Etherpkt*) bp->wp;
-				memmove(ep->d, f->addr1, Eaddrlen);
-				if (f->framectl & WF_Fromds)
-					memmove(ep->s, f->addr3, Eaddrlen);
-				else
-					memmove(ep->s, f->addr2, Eaddrlen);
-		
-				memmove(ep->type,&f->type,2);
-				bp->wp = bp->rp+(ETHERHDRSIZE+f->dlen);
-
-				etheriq(ether, bp, 1);
-			}
-		}
-
-	}
-*/
-}
 
 static void
 transmit(Ether *ether)
@@ -1117,19 +1052,8 @@ interrupt(Ureg*, void *arg)
 	ctlr = ether->ctlr;
 	if (ctlr == nil)
 		return;
-	
-	/* IPCSYNC irq:
-	 * used by arm7 to notify the arm9 
-	 * that there's wifi activity (tx/rx)
-	 */ 
-	type = IPCREG->ctl & Ipcdatain;
-	ilock(ctlr);
-	if (type == I7WFrxdone)
-		rxstart(ether);
-	else if (type == I7WFtxdone)
-		print("txdone\n");
-	intrclear(ether->irq, 0);
-	iunlock(ctlr);
+
+	/* could call Wifi_Update */
 }
 
 /* set scanning interval */

@@ -1,0 +1,148 @@
+.TH MORSE 1
+
+.SH NAME
+morse \- a Morse code encoder/decoder
+
+.SH SYNOPSIS
+.B morse
+[
+.B -dic
+] [
+.B -at
+] [
+.B -de
+] [
+.B -w
+.I wpm
+] [
+.B -A
+.I ampl
+] [
+.B -W
+.I freq
+]
+.
+
+.SH DESCRIPTION
+.B Morse
+is a program that speaks (encodes) and understands (decodes) Morse code.
+Morse data can be either in textual format (Morse elements: [.- ]) or
+in audio format (PCM samples).
+
+.PP
+Morse expects data to come from stdin, processes it, and and sends the result to stdout.
+
+This allows to decouple the various operation modes, and allow
+multiple variations (using pipes, see the examples below).
+Moreover it allows to separe signal recording
+from audio processing and decoding,
+which eases testing and implementation.
+
+.SS Options
+.TP
+.B -d
+Print debugging messages.
+.TP
+.B -i
+Uses the Enter key, to input on/off morse symbols.
+.TP
+.B -c
+Either checks or sets the 
+.IR audio (3)
+settings (encoding, speed, bits, channels)
+
+.TP
+.B -[at]
+Select the data format which can be either: audio (a) or text (t).
+.TP
+.B -[de]
+Either perform Morse decoding (d) or encoding (e).
+
+.TP
+.B -w wpm
+Set the morse code speed to
+.I wpm
+words per minute.
+.TP
+.BI -A " ampl "
+Set the 
+.I amplitude
+of the sinusoidal wave used in the morse audio samples.
+.TP
+.BI -W " freq "
+Set the
+.I frequency
+of the sinusoidal wave used in the morse audio samples.
+
+.SH EXAMPLE
+Encode text into morse code and viceversa:
+.EX
+	echo -n morse | morse -e
+	echo -n '-- --- .-. ... . ' | morse -d
+.EE
+And to encode into audible morse code and viceversa:
+.EX
+	echo -n '-- --- .-. ... . ' | morse -aec > morse.raw
+	morse -ad < morse.raw
+.EE
+
+Moreover is possible to close the encode/decode loop
+.EX
+	echo -n morse | morse -e | morse -aec | morse -ad
+	echo -n morse | morse -e | morse -aec | morse -ad | morse -d
+	...
+.EE
+
+Where the last pipe (|) could be replaced by any 
+medium capable of transmitting the data;
+either in electronic, audible or RF waves.
+
+.PP
+
+This allows to implement a kind of remote control
+to access devices by sending/receiving morse code.
+
+Some interesting articles out there provide some
+usage ideas/examples for 
+.BR Morse :
+
+.IP 
+.B - http://www.learnmorsecode.com/
+.IP 
+.B - http://en.wikipedia.org/wiki/Text_messaging
+.IP 
+.B - http://www.staton.us/electronics/cpc/cpc.html
+.IP 
+.B - http://5b4az.chronos.org.uk/pages/morse.html
+
+.SH STATUS
+
+.B Morse
+is a work in progress,
+an experiment performed to learn (by doing something useful/interesting)
+about the fields of Morse, audio & signal processing.
+
+.PP
+Ideas, suggestions and improvements are welcome.
+
+.SH REFERENCES
+
+.IP ``The Radio Amateur's Handbook (ARRL)'',
+.B http://www.arrl.org/catalog/?words=arrl+handbook
+, for details about radio and Morse code, eg. the alphabet, encoding and decoding.
+
+.IP ``The Scientist and Engineer's Guide to Digital Signal Processing'',
+.B http://www.dspguide.com/pdfbook.htm
+and
+.IP ``The Spectral Audio Signal Processing book''
+.B http://www.dsprelated.com/dspbooks/sasp
+, for details related with Goertzel tone detection algorithm and digital audio.
+
+
+.SH SOURCE
+.B /appl/cmd/nds/morse.b
+.br
+
+.SH SEE ALSO
+.IR audio (6), 
+.IR audio (3)

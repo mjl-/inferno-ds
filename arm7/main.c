@@ -49,7 +49,6 @@ fiforecvintr(void*)
 {
 	ulong v, vv;
 	uchar ndstype[1];
-	TxSound *snd;
 	int power, ier;
 
 	while(!(FIFOREG->ctl & FifoRempty)) {

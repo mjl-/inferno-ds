@@ -1,0 +1,6 @@
+<../mkconfig
+
+MAN=\
+	1/morse\
+
+<mkman

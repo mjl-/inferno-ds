@@ -80,7 +80,7 @@ intrenable(int sort, int v, void (*f)(Ureg*, void*), void* a, char *tbdf)
 {
 	int x;
 
-	USED(tbdf);
+	USED(sort, tbdf);
 	if(v < 0 || v > MaxIRQbit)
 		panic("intrenable: irq source %d out of range\n", v);
 	Irq[v].r = f;

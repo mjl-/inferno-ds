@@ -1,0 +1,206 @@
+<HTML><HEAD>
+<TITLE>Inferno's MORSE(1
+)</TITLE>
+</HEAD>
+<BODY bgcolor="#FFFFFF">
+[<a href="../index.html">manual index</a>][<a href="INDEX.html">section index</a>]<p><DL>
+
+<DT><H4>NAME
+</H4>
+<DD>
+morse - a Morse code encoder/decoder
+
+<P><DT><H4>SYNOPSIS
+</H4>
+<DD>
+<B>morse
+</B>
+[
+<B>-dic
+</B>
+] [
+<B>-at
+</B>
+] [
+<B>-de
+</B>
+] [
+<B>-w
+</B>
+<I>wpm
+</I>
+] [
+<B>-A
+</B>
+<I>ampl
+</I>
+] [
+<B>-W
+</B>
+<I>freq
+</I>
+]
+
+<P><DT><H4>DESCRIPTION
+</H4>
+<DD>
+<B>Morse
+</B>
+is a program that speaks (encodes) and understands (decodes) Morse code.
+Morse data can be either in textual format (Morse elements: [.- ]) or
+in audio format (PCM samples).
+
+<P>Morse expects data to come from stdin, processes it, and and sends the result to stdout.
+
+This allows to decouple the various operation modes, and allow
+multiple variations (using pipes, see the examples below).
+Moreover it allows to separe signal recording
+from audio processing and decoding,
+which eases testing and implementation.
+
+<P><DL><DT><FONT SIZE=3><B>Options
+</B></FONT>
+<DD>
+<DL compact>
+<DT><B>-d
+</B>
+<DD>Print debugging messages.
+<BR><DT><B>-i
+</B>
+<DD>Uses the Enter key, to input on/off morse symbols.
+<BR><DT><B>-c
+</B>
+<DD>Either checks or sets the 
+<A href="../3/audio.html"><I>audio</I>(3)</A>
+
+settings (encoding, speed, bits, channels)
+
+<BR><DT><B>-[at]
+</B>
+<DD>Select the data format which can be either: audio (a) or text (t).
+<BR><DT><B>-[de]
+</B>
+<DD>Either perform Morse decoding (d) or encoding (e).
+
+<BR><DT><B>-w wpm
+</B>
+<DD>Set the morse code speed to
+<I>wpm
+</I>
+words per minute.
+<BR><DT><B>-A</B><I> ampl </I>
+<DD>Set the 
+<I>amplitude
+</I>
+of the sinusoidal wave used in the morse audio samples.
+<BR><DT><B>-W</B><I> freq </I>
+<DD>Set the
+<I>frequency
+</I>
+of the sinusoidal wave used in the morse audio samples.
+
+</DL>
+</DL>
+<P><DT><H4>EXAMPLE
+</H4>
+<DD>
+Encode text into morse code and viceversa:
+<PRE>
+	echo -n morse | morse -e
+	echo -n '-- --- .-. ... . ' | morse -d
+</PRE>
+And to encode into audible morse code and viceversa:
+<PRE>
+	echo -n '-- --- .-. ... . ' | morse -aec &gt; morse.raw
+	morse -ad &lt; morse.raw
+</PRE>
+
+Moreover is possible to close the encode/decode loop
+<PRE>
+	echo -n morse | morse -e | morse -aec | morse -ad
+	echo -n morse | morse -e | morse -aec | morse -ad | morse -d
+	...
+</PRE>
+
+Where the last pipe (|) could be replaced by any 
+medium capable of transmitting the data;
+either in electronic, audible or RF waves.
+
+<P>
+This allows to implement a kind of remote control
+to access devices by sending/receiving morse code.
+
+Some interesting articles out there provide some
+usage ideas/examples for 
+<B>Morse</B>:
+
+
+<DL compact>
+<P>
+<DD><B>- http://www.learnmorsecode.com/
+</B>
+<P>
+<DD><B>- http://en.wikipedia.org/wiki/Text_messaging
+</B>
+<P>
+<DD><B>- http://www.staton.us/electronics/cpc/cpc.html
+</B>
+<P>
+<DD><B>- http://5b4az.chronos.org.uk/pages/morse.html
+</B>
+
+</DL>
+<P><DT><H4>STATUS
+</H4>
+<DD>
+
+<B>Morse
+</B>
+is a work in progress,
+an experiment performed to learn (by doing something useful/interesting)
+about the fields of Morse, audio & signal processing.
+
+<P>Ideas, suggestions and improvements are welcome.
+
+<P><DT><H4>REFERENCES
+</H4>
+<DD>
+
+<DL compact>
+<DT>``The Radio Amateur's Handbook (ARRL)'',
+
+<DD><B>http://www.arrl.org/catalog/?words=arrl+handbook
+</B>
+, for details about radio and Morse code, eg. the alphabet, encoding and decoding.
+
+<P><DT>``The Scientist and Engineer's Guide to Digital Signal Processing'',
+
+<DD><B>http://www.dspguide.com/pdfbook.htm
+</B>
+and
+<P><DT>``The Spectral Audio Signal Processing book''
+
+<DD><B>http://www.dsprelated.com/dspbooks/sasp
+</B>
+, for details related with Goertzel tone detection algorithm and digital audio.
+
+
+</DL>
+<P><DT><H4>SOURCE
+</H4>
+<DD>
+<B>/appl/cmd/nds/morse.b
+</B>
+<BR>
+
+<P><DT><H4>SEE ALSO
+</H4>
+<DD>
+<A href="../6/audio.html"><I>audio</I>(6)</A>,
+<A href="../3/audio.html"><I>audio</I>(3)</A>
+
+</DL>
+<P><TABLE width="100%" border=0 cellpadding=10 cellspacing=0 bgcolor="#E0E0E0">
+<TR><TD align=left><FONT SIZE=-1>MORSE(1
+)</FONT></TD>
+<TD align=right><FONT SIZE=-1><I>Rev:&nbsp;&nbsp;Sun Mar 15 11:06:21 GMT 2009</I></FONT></TD></TR></TABLE>
