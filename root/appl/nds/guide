@@ -7,6 +7,7 @@ read 16000 < /dev/audio | xd -u
 
 man -f man/1/morse
 
+# http://www.cs.utwente.nl/~ptdeboer/ham/rscw/ 
 echo -n morse | morse -e
 echo -n '-- --- .-. ... . ' | morse -d
 
@@ -17,15 +18,28 @@ echo -n morse | morse -e | morse -aec | morse -ad
 echo -n morse | morse -e | morse -aec | morse -ad | morse -d
 
 # random tests
-man cons pointer | markov | fmt | morse -e
-for i in 0 1 2 3 4 5 6 7 8 9{
-	m=`{read $i < /dev/random | xd -u -c | sed 's/[0-9a-f][0-9a-f]//g'}
-	echo $m	"{echo $m | morse -e}
-	echo -n $m | morse -e | morse -aec > /dev/audio
-}
 for i in 0 1 2 3 4 5 6 7 8 9{
 	m=`{read 32 < /dev/random | md5sum | tr a-z A-Z}
 	echo $m
 	echo -n $m | morse -e | morse -ae | morse -ad |  morse -d
 	echo
 }
+
+# real test data http://www.arrl.org/w1aw/morse.html
+hget http://www.arrl.org/w1aw/morse/050520WPM.mp3 > 050520WPM.mp3
+hget http://www.arrl.org/w1aw/morse/050520.txt > 050520.txt
+
+# http://www.topology.org/linux/audio.html#mp3
+sox -V 050520WPM.mp3 -r 8000 -b 1 -c 1 -u 050520WPM.wav
+sox -V 050520WPM.mp3 -r 8000 -b 8 -c 1 -u 050520WPM.raw
+
+cat 050520WPM.raw | morse -adc -w 20 -W 750
+
+for f in 350 450 550 650 760 850{
+	echo -n MORSE | morse -e | morse -aec -W $f | morse -adc -W $f | morse -d
+	echo
+}
+
+9 rc /usr/inferno/os/ds/root/appl/nds/emukoch 2 20 10
+
+sox -u -b 8 -c 1 -r 8000 koch-2-20-10.raw koch-2-20-10.wav

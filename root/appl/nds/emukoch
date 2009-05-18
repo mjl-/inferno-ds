@@ -1,0 +1,31 @@
+#!/usr/local/plan9/bin/rc
+
+emu sh -c '
+	builtin cd /os/ds/root/appl/nds/
+	limbo morse.b
+
+	nchars=$1
+	wpm=$2
+	secs=$3
+	
+	bind -a ''#A'' /dev
+
+	file=`{mkkoch -a -c $nchars -w $wpm -s $secs}
+
+#	cat 050520WPM.raw | morse -adc -w 20 -W 750 -T140000000 | morse -d
+	cat $file.txt
+	cat $file.raw | morse -ad -w $wpm -T 100000000
+	cat $file.raw | morse -ad -w $wpm -T 100000000 | morse -d
+
+#	audio-oss.c enc is borken
+	auplay $file.iaf
+' $*
+
+file=koch-$1-$2-$3
+if (! test -r $file.mp3){
+	lame $file.wav $file.mp3
+}
+if (! test -r $file.mp3.m4a){
+	mp3aac $file.mp3
+}
+#madplay $file.mp3

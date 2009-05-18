@@ -15,46 +15,66 @@ include "string.m";
 	str: String;
 include "math.m";
 	math: Math;
+include "rand.m";
+	rand: Rand;
+include "daytime.m";
+	daytime: Daytime;
 
 Morse: module
 {
-	Q20: type fixed(2.0**-20);		# fixed arith, choosen to fit precision=1.0/ARATE.
+	Q20: type fixed(2.0**-20);		# fixed arith, choosen to fit precision=1/ARATE
 	Q28: type fixed(2.0**-2, 2.0**28);	# fixed arith, for Goertzel algorithm
 
 	# LENs provided in number of morse elements, using DIT as unit
 	DITLEN:	con 1;	# dit element '.' (short pulse)
 	DAHLEN:	con 3;	# dah element '-' (long  pulse)
-	SPCLEN:	con 3;	# inter element space: ' '
+	
+	ESPCLEN:con 1;	# inter element space
+	LSPCLEN:con 3;	# inter letter space: ' '
 	WSPCLEN:con 7;	# inter word space: '/'
-	WORDLEN:con 50;	# length of reference word "PARIS"
+	WORDLEN:con 50;	# dits of reference word "PARIS"
 
 	ENC, AUD: con 1<<iota;	# modes
 
-	wpm: int;	# words per minute (words measured as WORDLEN)
+	wpm:	int;		# words per minute (words measured as WORDLEN dits)
 
-	A: int;		# signal's amp
-	W: int;		# signal's freq
-	P: int;		# signal's phase
+	# signal's parameters & default values DFLT*
+	A:	int;		# amp
+	W:	int;		# freq
+	P:	int;		# phase
+	R:	int;		# noise
+	Z:	int;		# zero
 
-	N: int;		# Goertzel samples/block
-	T: int;		# slice detection threshold
+	N:	int;		# Goertzel samples/block
+	T:	int;		# slice detection threshold
+	
+	Byte:		con 1<<8;
 
 	DFLTWPM:	con 15;
-	DFLTAMP:	con 25;
-	DFLTFREQ:	con 600;
+	DFLTAMP:	con 2*Byte/5;
+	DFLTFREQ:	con 700;
 	DFLTPHASE:	con 0;
+	DFLTRND:	con 0;
+	DFLTZERO:	con (Byte/2);
+
 	DFLTBLK:	con 100;
-	DFLTTHR:	con 1;
-		
+	DFLTTHR:	con 0;
+	
+	wave:		ref Wave;
+
 	Wave: adt
 	{
 		d:	array of byte;	# data samples
-		n: 	int;		# num samples
+		n: 	int;			# num samples
 
-		init:	fn(A, W, P: int);
-		mk:	fn(s: self ref Wave, morse: string);
-		tone:	fn(s: self ref Wave, n, tdit: int);
-		space:	fn(s: self ref Wave, n, tdit: int);
+		# tone & space hold the n samples of a period T:
+		# n=len tone;	T=1/(W/ARATE);	i=1/NPOINTS,  T=i*n
+		tone:	array of byte;
+		space:	array of byte;
+
+		init:	fn(s: self ref Wave, A, W, P, R, Z: int);
+		cp:		fn(s: self ref Wave, d: array of byte, n,tdit: int);
+		mk:		fn(s: self ref Wave, morse: string);
 	};
 
 	init:		fn(ctxt: ref Draw->Context, argv: list of string);
@@ -66,127 +86,145 @@ Morse: module
 	morkbdi:	fn(in,out: ref Sys->FD);	# keyboard to morse
 };
 
+# NOTE amorse is lexicographically sorted (using as key ascii letters)
 amorse := array[] of {
-	("A", ".-"),		("B", "-..."),	("C", "-.-."),	("D", "-.."),
-	("E", "."),		("F", "..-."),	("G", "--."),		("H", "...."),
-	("I", ".."),		("J", ".---"),	("K", "-.-"),		("L", ".-.."),
+	("\n", "...-.-"),	(" ", " "),		("!", "-.-.--"),	("\"", ".-..-."),
+	("#", "-...-.-"),	("$", "...-..-"),	("&", "-.-.-"),		("'", ".----."),
+	("(", "-.--."),		(")", "-.--.-"),	("*", ".-..."),		("+", ".-.-."),
+	(",", "--..--"),	("-", "-....-"),	(".", ".-.-.-"),	("/", "-..-."),
+	
+	("0", "-----"),		("1", ".----"),		("2", "..---"),		("3", "...--"),	
+	("4", "....-"),		("5", "....."),		("6", "-...."),		("7", "--..."),	
+	("8", "---.."),		("9", "----."),
+
+	(":", "---..."),	(";", "-.-.-."), 	("=", "-...-"),		("?", "..--.."),
+	("@", ".--.-."),
+	
+	("A", ".-"),		("B", "-..."),		("C", "-.-."),		("D", "-.."),
+	("E", "."),		("F", "..-."),		("G", "--."),		("H", "...."),
+	("I", ".."),		("J", ".---"),		("K", "-.-"),		("L", ".-.."),
 	("M", "--"),		("N", "-."),		("O", "---"),		("P", ".--."),
-	("Q", "--.-"),	("R", ".-."),		("S", "..."),		("T", "-"),
-	("U", "..-"),		("V", "...-"),	("W", ".--"),		("X", "-..-"),
-	("Y", "-.--"),	("Z", "--.."),
+	("Q", "--.-"),		("R", ".-."),		("S", "..."),		("T", "-"),
+	("U", "..-"),		("V", "...-"),		("W", ".--"),		("X", "-..-"),
+	("Y", "-.--"),		("Z", "--.."),
 
-	("1", ".----"),	("2", "..---"),	("3", "...--"),	("4", "....-"),
-	("5", "....."),	("6", "-...."),	("7", "--..."),	("8", "---.."),
-	("9", "----."),	("0", "-----"),
-
-	("Á", ".--.-"),	("Ä", ".-.-"),	("É", "..-.."),	("Ñ", "--.--"),
-	("Ö", "---."),	("Ü", "..--"),
-	(".", ".-.-.-"),	(",", "--..--"),	("?", "..--.."),	("'", ".----."),
-	("!", "-.-.--"),	("/", "-..-."),	("-", "-....-"),	("(", "-.--."),
-	(")", "-.--.-"),	("&", "-.-.-"),	(":", "---..."),	(";", "-.-.-."),
-	("=", "-...-"),	("_", "..--.-"),
-	("\"", ".-..-."),("@", ".--.-."),	("+", ".-.-."),	("$", "...-..-"),
-	("*", ".-..."),	("#", "-...-.-"),
-	("\n", "...-.-"), (" ", " "),
-	};
-
-TONELEN: con 16; # bytes
-tone := array [TONELEN] of {
-	byte 16rA7, byte 16r81, byte 16rA7, byte 16r00,
-	byte 16r59, byte 16r7F, byte 16r59, byte 16r00,
+	("_", "..--.-"),
+	("Á", ".--.-"),		("Ä", ".-.-"),		("É", "..-.."),		("Ñ", "--.--"),
+	("Ö", "---."),		("Ü", "..--"),
 };
 
-space := array [TONELEN] of {
-	byte 16r00, byte 16r00, byte 16r00, byte 16r00,
-	byte 16r00, byte 16r00, byte 16r00, byte 16r00,
-};
-
+NPOINTS: con 1;		
 # http://www.comportco.com/~w5alt/cw/cwindex.php?pg=5
-Wave.init(A, W, P: int)
+Wave.init(s: self ref Wave, A, W, P, R, Z: int)
 {
-	x := Q20(2.0 * math->Pi * real W * (real 1.0 / real ARATE));
-	for (i := 0; i < TONELEN; i++)
+	wlen := (ARATE/W) / NPOINTS;
+	s.tone = array[wlen] of byte;
+	s.space = array[wlen] of byte;
+
+	dpiw := Q20(2.0 * real W * math->Pi / real ARATE);
+	for (i := 0; i < wlen; i++)
 	{
-		tone[i] = byte (Q20(A) * Q20(math->sin(real (x*Q20(i) + Q20(P)))));
-		space[i] = byte 16r00;
+		s.space[i] = byte Z;
+		s.tone[i] = byte Z + byte (real A * math->sin(real (dpiw * Q20(i) + Q20(P))));
+		
+		if(R){
+			s.space[i] +=  byte (R/2 - rand->rand(R));
+			s.tone[i] += byte (R/2 - rand->rand(R));
+		}
 
 		# dprints the tone to fix it at compile time
-		dprint(sys->sprint("byte 16r%.2X, ", int tone[i]));
+		dprint(sys->sprint("byte 16r%.2X, ", int s.tone[i]));
 		if(i % 4 == 3)
 			dprint("\n");
 	}
 }
 
-Wave.tone(s: self ref Wave, n,tdit: int)
+# attenuated A
+att(A, i, n: int): int
 {
-	for (i:=0; i<n*tdit; i++){
-		s.d[s.n:] = tone;
-		s.n += len tone;
+	b := n/2;
+	c := n/2;
+	return A * int math->exp(- real ((i-b)*(i-b)/(2*c*c)) );
+}
+
+Wave.cp(s: self ref Wave, d: array of byte, n,tdit: int)
+{
+	i: int;
+	m: int;
+
+	m=n*tdit;
+	for (i=0; i<m; i++){
+		s.d[s.n:] = d;
+		s.n += len d;
 	}
 }
 
-Wave.space(s: self ref Wave, n,tdit: int)
+wpm2tdit(wpm: int): int
 {
-	for(i:=0; i< n*tdit; i++){
-		s.d[s.n:] = space;
-		s.n += len space;
-	}
+	MIN2MS: con 60*1000;
+	
+	msxdit := (MIN2MS)/(wpm*WORDLEN); # in ms
+	return msxdit;
 }
 
 Wave.mk(s: self ref Wave, morse: string)
 {
-	n, extra: int;
-	tdit: int = (60*1000)/(wpm*WORDLEN); # in ms
+	n, x: int; 	# num of dits
+	tdit: int;	# dit time (in ms)
 	
-	comp := Q20(0);	# compression factor
+	tdit = wpm2tdit(wpm);
+	comp := Q20(0);		# compression factor
 	if(wpm <= 12){
 		# for low wpm compress the elements,
 		# stretching the silences to maintain wpm
-		comp = (Q20(tdit) / Q20(100)) - Q20(1);
-		tdit = 100;
+		tdit12 := wpm2tdit(wpm);
+		comp = (Q20(tdit) / Q20(tdit12)) - Q20(1);
+		tdit = tdit12;
 	}
-	
-	n = 0;
-	extra = 0;
+
+	# TODO this first pass calculates the samples array size
+	n = x = 0;
 	for (i := 0; i < len morse; i++){
 		c := morse[i];
 		if (c == '.'){
-			extra += DITLEN + DITLEN;
-			n += DITLEN + DITLEN;
+			x += DITLEN + ESPCLEN;
+			n += DITLEN + ESPCLEN;
 		}else if (c == '-'){
-			extra += DAHLEN + DITLEN;
-			n += DAHLEN + DITLEN;
+			x += DAHLEN + ESPCLEN;
+			n += DAHLEN + ESPCLEN;
 		}else if (c == ' '){
-			extra += SPCLEN - DITLEN;
-			n += SPCLEN - DITLEN + int (Q20(extra) * comp);
+			x += LSPCLEN + ESPCLEN;
+			n += LSPCLEN + int (Q20(x - ESPCLEN) * comp);
+			x = 0;
 		}else if (c == '/'){
-			extra += WSPCLEN - DITLEN;
-			n += WSPCLEN - DITLEN + int (Q20(extra) * comp);
+			x += WSPCLEN + ESPCLEN;
+			n += WSPCLEN + int (Q20(x - ESPCLEN) * comp);
+			x = 0;
 		}
 	}
 	
 	s.n = 0;
-	s.d = array[n*tdit*TONELEN] of byte;
+	s.d = array[n*tdit*len s.tone] of byte;
 	
-	extra = 0;
+	n = x = 0;
 	for (i = 0; i < len morse; i++){
 		c := morse[i];
 		if (c == '.'){
-			extra += DITLEN + DITLEN;
-			s.tone(DITLEN, tdit);
-			s.space(DITLEN, tdit);
+			x += DITLEN + ESPCLEN;
+			s.cp(s.tone, DITLEN, tdit);
+			s.cp(s.space, ESPCLEN, tdit);
 		}else if (c == '-'){
-			extra += DAHLEN + DITLEN;
-			s.tone(DAHLEN, tdit);
-			s.space(DITLEN, tdit);
+			x += DAHLEN + ESPCLEN;
+ 			s.cp(s.tone, DAHLEN, tdit);
+			s.cp(s.space, ESPCLEN, tdit);
 		}else if (c == ' '){
-			extra += SPCLEN - DITLEN;
-			s.space(SPCLEN - DITLEN + int (Q20(extra) * comp), tdit);
-			extra = 0;
+			x += LSPCLEN + ESPCLEN;
+			s.cp(s.space, LSPCLEN + int (Q20(x - ESPCLEN) * comp), tdit);
+			x = 0;
 		}else if (c == '/'){
-			extra += WSPCLEN - DITLEN;
-			s.space(WSPCLEN - DITLEN + int (Q20(extra) * comp), tdit);
-			extra = 0;
+			x += WSPCLEN + ESPCLEN;
+			s.cp(s.space, WSPCLEN + int (Q20(x - ESPCLEN) * comp), tdit);
+			x = 0;
 		}
 	}
 }
@@ -194,11 +232,12 @@ Wave.mk(s: self ref Wave, morse: string)
 # encode text to morse
 morenct(in,out: ref sys->FD)
 {
-	c := array[1] of byte;
-	i := 0;
+	c:= array[1] of byte;
+	i: int;
 
 	while(sys->readn(in, c, 1) > 0){
 		C := str->toupper(string c);
+
 		for(i = 0; i < len amorse; i++){
 			(t, m) := amorse[i];
 			if(C == t){
@@ -206,6 +245,7 @@ morenct(in,out: ref sys->FD)
 				break;
 			}
 		}
+
 	}
 	sys->fprint(out, "\n");
 }
@@ -218,16 +258,17 @@ mordect(in,out: ref sys->FD)
 
 	b := 0;
 	i := 0;
-	
+
 	while(sys->readn(in, c, 1) > 0){
 		if((c[0] == byte '.' || c[0] == byte '-') && i < len cc)
 			cc[i++] = c[0];
 		if(c[0] == byte ' '){
+			dprint(sys->sprint("\n  dec i %d b %d\n", i, b));
 			if(i == 0){
-				if(b >= 1) {
+				if(b >= 1){
 					sys->fprint(out, " ");
 					b = 0;
-				} else
+				}else
 					b++;
 				continue;
 			}
@@ -240,7 +281,7 @@ mordect(in,out: ref sys->FD)
 				}
 			}
 			i = 0;
-			cc = array[16] of { * => byte 0};
+			cc = array[len cc] of { * => byte 0};
 		}
 	}
 }
@@ -263,24 +304,24 @@ wf(file, s: string): int
 
 morenca(in,out: ref sys->FD)
 {
-	w := ref Wave;
 	c := array[1] of byte;
 
 	while(sys->readn(in, c, len c) > 0){
-		w.mk(string c);
-		if (sys->write(out, w.d, len w.d) < 0)
+		wave.mk(string c);
+		if (sys->write(out, wave.d, len wave.d) < 0)
 			warn(sys->sprint("morenca: %r\n"));
 	}
 }
 
 # uses Goertzel algorithm for signal detection,
-# variations in W can help to tune/detect the right freq.
+# use variations in W to match the targetet freq.
 # see http://www.embedded.com/story/OEG20020819S0057
 
 mordeca(in,out: ref sys->FD)
 {
 	sample:= array[N] of byte;
 	st := ref State(0, 0, "");
+	i, n: int;
 
 	k, w: Q28;
 	c, q0, q1, q2: Q28;
@@ -288,27 +329,31 @@ mordeca(in,out: ref sys->FD)
 	# check that N is a good choice
 	dprint(sys->sprint("demorse: W %% (ARATE / N) == %d\n", W % (ARATE / N)));
 	
-	k = Q28((1 + 2 * N * W / ARATE) / 2);	# W is target signal's freq
+	k = Q28(1/2) + Q28(N * W / ARATE);
 	w = Q28(2.0 * math->Pi) / Q28(N) * k;	# freq
 	c = Q28(2.0 * math->cos(real w));	# coefficient
 
+	mt := Q28(0);	# signal power
 	for(;;){
-		if(sys->read(in, sample, len sample) == 0)
+		if((n = sys->read(in, sample, len sample)) == 0)
 			break;
 
 		q1 = Q28(0);
 		q2 = Q28(0);
-		for(i:=0; i < len sample; i++){
-			q0 = c * q1 - q2 + Q28(sample[i]);
+		for(i=0; i < n; i++){
+			s := Q28(sample[i] - byte Z);
+
+			q0 = c * q1 - q2 + s;
 			q2 = q1;
 			q1 = q0;
+
+			mt += s*s;
 		}
 
-		m2 := q1*q1 + q2*q2 - q1*q2*c;
-		slice(int m2, st);
+		m := q1*q1 + q2*q2 - q1*q2*c;
+		slice(int m, int mt, st);
 	}
 
-#	mc := ""; for(i:=0; i < len st.m; i++) if(st.m[i] != '_') mc[len mc] = st.m[i];
 	sys->fprint(out, "%s\n", st.m);
 }
 
@@ -320,36 +365,44 @@ State: adt
 };
 
 # break input into slices: tone/silence
-slice(m: int, s: ref State)
+slice(m, mt: int, s: ref State)
 {
-	tdit: int = (60*1000)/(wpm*WORDLEN);
-	ditlen: int = DITLEN*tdit*TONELEN/N - 1;
+	tdit: int;
+	ditlen: int;
 	
-	istone := (m < -T || +T < m);
+	tdit = wpm2tdit(wpm);
+	ditlen = DITLEN*tdit*len wave.tone/N;
+	
+	istone := (m < -T || T < m); # TODO find a formula for T=f(m,mt,...)
 	s.t += istone;
 	s.s += !istone;
-
-	if(s.t > ditlen){ 
+	
+	# TODO ignore impossible transitions
+	if(s.t >= ditlen){ 
 		s.t = 0;
 		s.s = 0;
 		s.m += ".";
 		lenm := len s.m;
-		if(lenm >= 3 && s.m[lenm-3:lenm] == "..."){
-			s.m = s.m[0:lenm-3] + "-";
+
+		# DAH
+		if(lenm >= DAHLEN && s.m[lenm-DAHLEN:lenm] == "..."){
+			s.m = s.m[0:lenm-DAHLEN] + "-";
 		}
 	}
 
-	if(s.s > ditlen){
+	if(s.s >= ditlen){
 		s.t = 0;
 		s.s = 0;
 		s.m += "_";
 		lenm := len s.m;
-		if(lenm >= 3 && s.m[lenm-3:lenm] == "___"){
-			s.m = s.m[0:lenm-3] + " ";
+
+		# ESPC
+		if(lenm >= LSPCLEN && s.m[lenm-LSPCLEN:lenm] == "___"){
+			s.m = s.m[0:lenm-LSPCLEN] + " ";
 		}
 	}
 
-	dprint(sys->sprint("mo %d %d %d ", m, s.t, s.s));
+	dprint(sys->sprint("m %d mt %d %d %d %d ", m, mt, s.t, s.s, ditlen));
 	dprint(sys->sprint("m %s\n", s.m));
 }
 
@@ -400,12 +453,12 @@ audioctl(set: int)
 	if(set){
 		for(i:=0; i < len audioctl; i++)
 			if(wf("/dev/audioctl", audioctl[i]) != len audioctl[i])
-				warn("audioctl: bad write\n");
+				warn(sys->sprint("audioctl wf: %r\n"));
 	}else{
 		# TODO: read on audioctl sigsegv/linux
 		s := rf("/dev/audioctl");
 		for(i:=0; i < len audioctl; i++)
-			warn("audioctl: bad read\n");
+			warn(sys->sprint("audioctl rf: %r\n"));
 	}
 }
 
@@ -421,9 +474,9 @@ warn(s: string)
 	sys->fprint(sys->fildes(2), "%s", s);
 }
 
-usage(diag: string)
+usage(s: string)
 {
-	sys->print("usage: morse [-Dic] [-atde] [-w wpm] [-A amp] [-W freq]\n%s", diag);
+	sys->print("usage: morse [-Dic] [-atde] [-w wpm] [-A amp] [-W freq]\n%s", s);
 }
 
 init(nil: ref Draw->Context, args: list of string)
@@ -433,11 +486,18 @@ init(nil: ref Draw->Context, args: list of string)
 	str = load String String->PATH;
 	math = load Math Math->PATH;
 
+	rand = load Rand Rand->PATH;
+	daytime = load Daytime Daytime->PATH;
+	rand->init(daytime->now());
+	rand->init(rand->rand(1<<ABITS)^rand->rand(1<<ABITS));
+	daytime = nil;
+
 	stdin := sys->fildes(0);
 	stdout := sys->fildes(1);
 
 	wpm = DFLTWPM;
 	(A, W, P) = (DFLTAMP, DFLTFREQ, DFLTPHASE);
+	(R, Z) = (DFLTRND, DFLTZERO);
 	(N, T) = (DFLTBLK, DFLTTHR);
 
 	mode := 0;
@@ -455,6 +515,8 @@ init(nil: ref Draw->Context, args: list of string)
 		'A' => (A, nil) = str->toint(arg->arg(), 10);
 		'W' => (W, nil) = str->toint(arg->arg(), 10);
 		'P' => (P, nil) = str->toint(arg->arg(), 10);
+		'R' => (R, nil) = str->toint(arg->arg(), 10);
+		'Z' => (Z, nil) = str->toint(arg->arg(), 10);
 
 		'N' => (N, nil) = str->toint(arg->arg(), 10);
 		'T' => (T, nil) = str->toint(arg->arg(), 10);
@@ -465,9 +527,10 @@ init(nil: ref Draw->Context, args: list of string)
 		* => usage(nil); exit;
 	}
 	args = arg->argv();
-
-	Wave.init(A, W, P);
-
+	
+	wave = ref Wave;
+	wave.init(A, W, P, R, Z);
+	
 	dprint(sys->sprint("mode %x\n", mode));
 	if(mode & AUD){
 		# audioctl(0);
