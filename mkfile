@@ -15,8 +15,10 @@ INSTALLDIR=$ROOT/Inferno/$OBJTYPE/bin	#path of directory where kernel is install
 
 <| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $ETHERS, $VGAS, $PORT, $MISC, $LIBS, $OTHERS
 
-KTZERO=0x02000130
+KTZERO9=0x02000130	# 0x130 (Mach)
+KTLOAD9=0x02000110	# -0x20 (size of a.out header)
 KTZERO7=0x03800000
+KTLOAD7=0x037fffe0	# -0x20 (size of a.out header)
 
 OBJ=\
 	l.$O\
@@ -52,15 +54,15 @@ HFILES=\
 CFLAGS=-wFV -I$ROOT/Inferno/$OBJTYPE/include -I$ROOT/include -I$ROOT/libinterp -r
 KERNDATE=`{ndate}
 
-default:V: i$CONF.nds i$CONF.p9 i$CONF.SYM # i$CONF.kfs
+default:V: i$CONF.nds i$CONF.SYM # i$CONF.kfs
 
-install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.p9.gz $INSTALLDIR/i$CONF.raw
+install:V: $INSTALLDIR/i$CONF $INSTALLDIR/i$CONF.gz $INSTALLDIR/i$CONF.raw
 
 i$CONF: $OBJ $CONF.c $CONF.root.h $LIBNAMES
 	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target -H0 -T$KTZERO -l $OBJ $CONF.$O $LIBFILES
+	$LD -o $target -R4 -T$KTZERO9 -l $OBJ $CONF.$O $LIBFILES
 
-arm7/i$CONF arm7/i$CONF.p9: $ARM7SRC
+arm7/i$CONF: $ARM7SRC
 	cd arm7; mk CONF'='$CONF
 
 # must be ARM code, even when OBJTYPE=thumb
@@ -76,8 +78,8 @@ REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$CONF
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
-		-7 arm7/i$CONF -r7 $KTZERO7 -e7 $KTZERO7 \
-		-9 i$CONF -r9 $KTZERO -e9 $KTZERO
+		-7 arm7/i$CONF -r7 $KTLOAD7 -e7 $KTZERO7 \
+		-9 i$CONF -r9 $KTLOAD9 -e9 $KTZERO9
 	# append rom data at end of .nds (see root/dis/mkkfs)
 	echo -n ROMZERO9 >> i$CONF.nds
 #	dlditool misc/R4tf.dldi i$CONF.nds
@@ -85,11 +87,7 @@ i$CONF.nds: i$CONF arm7/i$CONF
 i$CONF.ds.gba: i$CONF.nds
 	dsbuild $prereq -o $target
 
-i$CONF.p9: $OBJ $CONF.c $CONF.root.h $LIBNAMES
-	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
-	$LD -o $target -R4 -T$KTZERO -l $OBJ $CONF.$O $LIBFILES
-
-i$CONF.SYM: i$CONF.p9 arm7/i$CONF.p9
+i$CONF.SYM: i$CONF arm7/i$CONF
 	$SHELLNAME mksymtab $prereq > $target
 
 <../port/portmkfile

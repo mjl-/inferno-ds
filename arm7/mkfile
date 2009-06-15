@@ -32,12 +32,9 @@ LIBS=\
 
 CFLAGS=-wFV -I $ROOT/Inferno/arm/include -I $ROOT/include -r
 
-default:V: i$CONF i$CONF.p9
+default:V: i$CONF
 
 i$CONF: $OFILES
-	$LD -o $target -H0 -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
-
-i$CONF.p9: $OFILES
 	$LD -o $target -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
 
 trap.t: trap.5
@@ -50,6 +47,6 @@ syms:   $OFILES
 
 vclean:V: clean
 	rm -f syms
-	rm -f i$CONF i$CONF.p9
+	rm -f i$CONF
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE

@@ -445,11 +445,11 @@ audiowrite(Chan *c, void *vp, long n, vlong)
 				if(++i >= nf)
 					error(Evolume);
 				if(strcmp(field[i], "pcm") == 0)
-					audio.flags |= Apcm;
+					audio.flags |= AFlagpcm;
 				else if(strcmp(field[i], "adpcm") == 0)
-					audio.flags |= Aadpcm;
+					audio.flags |= AFlagadpcm;
 				else if(strcmp(field[i], "psg") == 0)
-					audio.flags |= Apsg;
+					audio.flags |= AFlagpsg;
 				else
 					error(Evolume);
 				goto cont0;

@@ -177,13 +177,13 @@ root
 
 # things that live in /n/local
 	/usr/inferno
-	/usr/inferno/charon
-	/usr/inferno/keyring
-	/usr/inferno/lib
-	/usr/inferno/lib/plumbing
-	/usr/inferno/lib/profile
-	/usr/inferno/lib/wmsetup
-	/usr/inferno/namespace
+	/usr/inferno/namespace		/os/ds/root/usr/inferno/namespace
+	/usr/inferno/keyring		/os/ds/root/usr/inferno/keyring
+	/usr/inferno/lib		/os/ds/root/usr/inferno/lib
+	/usr/inferno/lib/plumbing	/os/ds/root/usr/inferno/lib/plumbing
+	/usr/inferno/lib/profile	/os/ds/root/usr/inferno/lib/profile
+	/usr/inferno/lib/wmsetup	/os/ds/root/usr/inferno/lib/wmsetup
+	/usr/inferno/lib/invhit.iaf	/os/ds/root/usr/inferno/lib/invhit.iaf
 	/fonts/lucidasans/lsr.10
 	/fonts/lucidasans/lsb.10
 	/fonts/lucidasans/unicode.6.font
@@ -235,7 +235,6 @@ root
 	/icons/tinytk/ok.bit
 
 	/dis/auplay.dis
-	/usr/inferno/lib/invhit.iaf
 
 #	/dis/lib/devpointer.dis
 #	/dis/nds/touchprint.dis
