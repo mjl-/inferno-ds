@@ -76,12 +76,12 @@ i$CONF.kfs: root/lib/proto/sdsproto # could use $CONF'proto'
 
 REV=`{svn info | sed -n 's/^Revisi.n: /rev./p'}
 i$CONF.nds: i$CONF arm7/i$CONF
+	kstrip -o i$CONF.st i$CONF
+	kstrip -o arm7/i$CONF.st arm7/i$CONF
 	ndstool -g INFR -m ME -c i$CONF.nds -b ds.bmp \
 		'Native Inferno Kernel NDS port;inferno-ds '$REV';code.google.com/p/inferno-ds' \
-		-7 arm7/i$CONF -r7 $KTLOAD7 -e7 $KTZERO7 \
-		-9 i$CONF -r9 $KTLOAD9 -e9 $KTZERO9
-	# append rom data at end of .nds (see root/dis/mkkfs)
-	echo -n ROMZERO9 >> i$CONF.nds
+		-7 arm7/i$CONF.st -r7 $KTLOAD7 -e7 $KTZERO7 \
+		-9 i$CONF.st -r9 $KTLOAD9 -e9 $KTZERO9
 #	dlditool misc/R4tf.dldi i$CONF.nds
 
 i$CONF.ds.gba: i$CONF.nds

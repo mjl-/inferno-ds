@@ -43,7 +43,7 @@ trap.5: trap.c
 	5c $CFLAGS trap.c
 
 syms:   $OFILES
-	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE defaultARM7.c >syms
+	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE main.c >syms
 
 vclean:V: clean
 	rm -f syms
