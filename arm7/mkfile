@@ -47,6 +47,6 @@ syms:   $OFILES
 
 vclean:V: clean
 	rm -f syms
-	rm -f i$CONF
+	rm -f i$CONF i$CONF.*
 
 <$ROOT/mkfiles/mkone-$SHELLTYPE
