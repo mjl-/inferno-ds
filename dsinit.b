@@ -57,9 +57,9 @@ init()
 			err("local file system unusable");
 	}
 
-	netok := sys->bind("#l", "/net", Sys->MREPL) >= 0;
+	netok := dobind("#l", "/net", Sys->MREPL) >= 0;
 	if(!netok){
-		netok = sys->bind("#l1", "/net", Sys->MREPL) >= 0;
+		netok = dobind("#l1", "/net", Sys->MREPL) >= 0;
 		if(netok)
 			ethername = "ether1";
 	}
@@ -254,6 +254,7 @@ askrootsource(localok: int, netok: int): (string, string)
 		if(netok)
 			sources = "local+remote" :: sources;
 	}
+
 Query:
 	for(;;) {
 		s := "";

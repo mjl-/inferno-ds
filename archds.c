@@ -15,7 +15,7 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
-#define DPRINT if(0)print
+#define DPRINT if(0)iprint
 
 /* Reset the DS registers to sensible defaults */
 void
@@ -71,13 +71,6 @@ archreboot(void)
 	fifoput(F9TSystem|F9Sysreboot, 1);
 	for(;;)
 		spllo();
-}
-
-/* no need for this? */
-void
-archpowerup(void)
-{
-	;
 }
 
 enum
@@ -214,6 +207,13 @@ archlcdmode(LCDmode *m)
 	return 0;
 }
 
+/* desmume/ideas only debug print */
+void
+uartputs(char* s, int n) {
+	USED(n);
+	if(0) swidebug(s);
+}
+
 /*
  * set ether parameters: the contents should be derived from EEPROM or NVRAM
  */
@@ -238,13 +238,6 @@ archether(int ctlno, Ether *ether)
 	
 	memset(ether->ea, 0xff, Eaddrlen);
  	nbfifoput(F9TWifi|F9WFrmac, (ulong)uncached(ether->ea));	/* mac from arm7 */
-	if(1){	/* workaround for desmume */
- 		uchar i, maczero[Eaddrlen] = {0,0,0,0,0,0};
- 		
- 		for(i=0; i < 1<<(8*sizeof(uchar))-1; i++);
- 		if(memcmp(uncached(ether->ea), maczero, Eaddrlen) == 0)
-			memset(ether->ea, 0x01, Eaddrlen);
-	}
 
 	if(0)	/* use WFC settings */
 		strcpy(opt, "power=on channel=11 scan=0 station=ds essid=default");

@@ -438,3 +438,9 @@ TEXT	idle(SB), $-4
 	MCR		CpMPU, 0, R0, C(CpCacheCtl), C(0), 4 /* wait for interrupt */
 	RET
 
+/*
+ *	swidebug: print debug string in R0
+ */
+TEXT	swidebug(SB), $-4
+	SWI	0xFC0000
+	RET

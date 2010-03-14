@@ -45,6 +45,7 @@ int	segflush(void*, ulong);
 void	setpanic(void);
 void	setr13(int, void*);
 uint	spsrr(void);
+void	swidebug(char *);
 void	trapinit(void);
 void	trapspecial(int (*)(Ureg *, uint));
 ulong	va2pa(void*);

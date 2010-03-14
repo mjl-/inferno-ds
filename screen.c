@@ -152,15 +152,17 @@ flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 {
 	int h, w;
 
+	/*
 	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n",
 		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
-	if(0){ static int i=0; if (i++ % 40 == 0) print("f\n");}
-	/* TODO: sync with vblank period: 192 < vcount < 261 */
-	if (0 && LCDREG->vcount - 192 > 1){
+
+	// TODO: sync with vblank period: 192 < vcount < 261
+	if (LCDREG->vcount - 192 > 1){
 		while(LCDREG->vcount>192);
 		while(LCDREG->vcount<192);
 	}
-
+	*/
+    
 	if (conf.screens >= 1){
 		ulong *ud = (ulong*)d;
 		ulong *us = (ulong*)s;
@@ -218,11 +220,8 @@ setscreen(LCDmode *mode)
 	gscreen->depth = vd->depth;
 	gscreen->width = wordsperline(gscreen->r, gscreen->depth);
 	
-	xgdata.bdata = (uchar*)vd->sfb; 
-	if(conf.portrait == 0)
-		flushpixels = flush2fb;
-	else
-		flushpixels = flush2fb;
+	xgdata.bdata = (uchar*)vd->sfb;
+	flushpixels = flush2fb;
 	
 	memimageinit();
 	memdefont = getmemdefont();
@@ -278,8 +277,8 @@ while(0){	/* just to get some video memory timings */
 	while(LCDREG->vcount<192);
 
 	print("t %d v %d-%d\n", m->ticks-tstart, vstart, LCDREG->vcount);
-}	
-	
+}
+
 	return (uchar*)gscreen->data->bdata;
 }
 

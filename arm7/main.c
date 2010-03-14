@@ -149,10 +149,6 @@ enum {
 	MaxRange = 30,
 };
 
-static int tscinit = 0;
-static int xscale, yscale;
-static int xoffset, yoffset;
-
 #define inball(ov, v, d) ((ov - d < v) && (v < ov + d))
 
 static void 
@@ -161,6 +157,10 @@ updatetouch(ulong bst)
 	short x, y, z1, z2;
 	short px, py, pz;
 	static short opx = 0, opy = 0;
+
+	static int tscinit = 0;
+	static int xscale, yscale;
+	static int xoffset, yoffset;
 	UserInfo *pu=UINFOREG;
 
 	if (!tscinit){
@@ -180,8 +180,8 @@ updatetouch(ulong bst)
 		z1 = touch_read_value(TscgetZ1, MaxRetry, MaxRange);
 		z2 = touch_read_value(TscgetZ2, MaxRetry, MaxRange);
 
-		px = (x * xscale - xoffset + xscale/2 ) >>19;
-		py = (y * yscale - yoffset + yscale/2 ) >>19;
+		px = ((x * xscale - xoffset + xscale/2 ) >>19) & 0xFF;
+		py = ((y * yscale - yoffset + yscale/2 ) >>19) & 0xFF;
 		pz = px * (z2+1)/(z1+1) - px;
 
 		if(px < 0) px=0;

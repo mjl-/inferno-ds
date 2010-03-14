@@ -83,7 +83,7 @@ machinit(void)
 	m->cpuhz = 66*1000000;
 }
 
-#define doc if(0) print
+#define doc if(0)iprint
 
 void
 main(void)
@@ -116,6 +116,7 @@ main(void)
 	doc("screeninit...\n");
 	screeninit();
 
+	doc("links...\n");
 	links();
 	procinit();
 	chandevreset();

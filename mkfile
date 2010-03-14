@@ -68,8 +68,8 @@ arm7/i$CONF: $ARM7SRC
 # must be ARM code, even when OBJTYPE=thumb
 trap.t: trap.5
 	cp trap.5 trap.t
-trap.5: trap.c
-	5c $CFLAGS trap.c
+%.5: %.c
+	5c $CFLAGS $stem.c
 
 i$CONF.kfs: root/lib/proto/sdsproto # could use $CONF'proto'
 	emu -c1 /os/ds/root/dis/mkkfs /os/ds/$prereq /os/ds/$target || true

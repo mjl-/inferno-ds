@@ -10,7 +10,7 @@
 
 static int debug = 0;
 
-#define	DPRINT	if(debug)print
+#define	DPRINT	if(debug)iprint
 
 enum
 {

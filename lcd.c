@@ -114,7 +114,13 @@ lcd_setcolor(ulong p, ulong r, ulong g, ulong b)
 	ld->subpal[p] = BGR15((r>>(32-5)), (g>>(32-5)),(b>>(32-5)));
 }
 
-enum { Lcdytrig = 80 };
+enum
+{
+    Lcdytrig = 80,
+    Black = 0x00,
+    White = 0xff,
+};
+
 #define SetYtrigger(n)	((lcd->lcsr&0x7F) | (n<<8) | ((n&0x100)>>2))
 
 static void
@@ -136,7 +142,7 @@ setlcdmode(void)
 	lcd->bg2rs.x = 0;
 	lcd->bg2rs.y = 0;
 
-	memset(ld->lower, 0xff, Scrsize * ld->depth / BI2BY);
+	memset(ld->lower, White, Scrsize * ld->depth / BI2BY);
 }
 
 static void
@@ -157,7 +163,7 @@ setsublcdmode(void)
 	sublcd->bg3rs.x = 0;
 	sublcd->bg3rs.y = 0;
 
-	memset(ld->upper, 0xff, Scrsize * ld->depth / BI2BY);
+	memset(ld->upper, White, Scrsize * ld->depth / BI2BY);
 }
 
 Vdisplay*
@@ -169,8 +175,8 @@ lcd_init(LCDmode *p)
 	DPRINT("%dx%dx%d: hz=%d\n", ld->x, ld->y, ld->depth, ld->hz);
 
 	// lcd fb @ 0x06000000, soft fb @ 0x0x06300000
-      	VRAMREG->acr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(0);	// [0x00000,0x20000]
-      	VRAMREG->bcr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(1);	// [0x20000,0x40000]
+	VRAMREG->acr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(0);	// [0x00000,0x20000]
+	VRAMREG->bcr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(1);	// [0x20000,0x40000]
 	VRAMREG->dcr = Vramena|VRAM_MAIN_BG|VRAM_OFFSET(2);	// [0x40000,0x60000]
 	// sublcd fb @ 0x06200000, 
 	VRAMREG->ccr = Vramena|VRAM_SUB_BG|VRAM_OFFSET(0);
@@ -198,7 +204,7 @@ lcd_init(LCDmode *p)
 void
 lcd_flush(void)
 {
-	if(0)print("lcd_flush\n");
+//	DPRINT("lcd_flush\n");
 //	dcflushall();	/* need more precise addresses */
 }
 
@@ -211,10 +217,4 @@ blankscreen(int blank)
 		power->pcr |= POWER_LCD;
 	else
 		power->pcr &= ~POWER_LCD;
-}
-
-/* TODO no$gba debug print */
-void
-uartputs(char* s, int n) {
-	USED(s,n);
 }

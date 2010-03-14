@@ -22,5 +22,5 @@ wmrun wm/sh -w 250 -h 90 -ic '
 	
 	#echo debug > /dev/audioctl
 	auplay /usr/inferno/lib/invhit.iaf
-	cat /dev/audio | read 16000 > /dev/audio
+	#cat /dev/audio | read 16000 > /dev/audio
 	'

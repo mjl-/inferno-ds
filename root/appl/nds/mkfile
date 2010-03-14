@@ -6,7 +6,6 @@ TARG=\
 	memfiddle.dis\
 	rawimage.dis\
 	imagerle.dis\
-	morse.dis\
 
 MODULES=\
 

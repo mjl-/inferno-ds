@@ -81,8 +81,6 @@ link
 #	logo
 	ethernds
 	ethermedium
-#	ethermii
-#	pppmedium ppp compress
 
 #	iottds
 #	iogmtf
