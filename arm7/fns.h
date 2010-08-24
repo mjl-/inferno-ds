@@ -14,3 +14,4 @@ void	swiSoftReset(void);
 void	swiWaitForVBlank(void);
 void	swiDelay(ulong);
 void	swiSleep(void);
+void	swidebug(char *);

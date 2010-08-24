@@ -7,6 +7,8 @@
 #include "../port/error.h"
 #include "version.h"
 
+#define DPRINT if(1)iprint
+
 Mach *m = (Mach*)MACHADDR;
 Proc *up = 0;
 Conf conf;
@@ -56,7 +58,7 @@ void
 halt(void)
 {
 	spllo();
-	print("cpu halted\n");
+	DPRINT("cpu halted\n");
 	while(1);
 }
 
@@ -83,40 +85,37 @@ machinit(void)
 	m->cpuhz = 66*1000000;
 }
 
-#define doc if(0)iprint
-
 void
 main(void)
 {
 	memset(edata, 0, end-edata); 		/* clear the BSS */
 	
-	doc("mpuinit...\n");
+	DPRINT("mpuinit...\n");
 	mpuinit();
 	wcpctl(rcpctl() | CpCmpu);		/* TODO: should be in mpuinit */
-	doc("machinit...\n");
+	DPRINT("machinit...\n");
 	machinit();
 	archreset();
 	quotefmtinstall();
-	doc("confinit...\n");
+	DPRINT("confinit...\n");
 	confinit();
 
-	doc("xinit...\n");
+	DPRINT("xinit...\n");
 	xinit();
-	doc("poolinit...\n");
+	DPRINT("poolinit...\n");
 	poolsizeinit();
 	poolinit();
 
-	doc("trapinit...\n");
+	DPRINT("trapinit...\n");
 	trapinit(); 
-	doc("clockinit...\n");
+	DPRINT("clockinit...\n");
 	clockinit(); 
-	doc("printinit...\n");
+	DPRINT("printinit...\n");
 	printinit();
 
-	doc("screeninit...\n");
+	DPRINT("screeninit...\n");
 	screeninit();
 
-	doc("links...\n");
 	links();
 	procinit();
 	chandevreset();

@@ -10,9 +10,9 @@
 #include "../port/netif.h"
 #include "etherif.h"
 
-static int dbg = 1;
-#define	DBG	if(dbg)
-#define DPRINT	if(dbg)iprint
+static int dbg = 0;
+#define DBG if(dbg)
+#define DPRINT	DBG iprint
 
 enum
 {
@@ -69,22 +69,22 @@ struct Ctlr {
 	Rendez	timer;
 
 	uchar	*base;
-	int	type;
-	int	rev;
-	int	hasmii;
-	int	phyad;
-	int	bank;	/* currently selected bank */
+	int type;
+	int rev;
+	int hasmii;
+	int phyad;
+	int bank;	/* currently selected bank */
 	Block*	waiting;	/* waiting for space in FIFO */
 
-	int 	attached;
+	int		attached;
 	char	wantname[WNameLen];
 	char	nodename[WNameLen];
 	
-	int	ptype;			// AP mode/type
-	int	crypt;			// encryption off/on
-	int	txkey;			// transmit key
+	int ptype;			// AP mode/type
+	int crypt;			// encryption off/on
+	int txkey;			// transmit key
 	WKey	keys[WNKeys];		// default keys
-	int	scan;
+	int scan;
 
 	Stats;
 };
@@ -115,7 +115,7 @@ WifiSyncHandler synchandler = 0;
 void ethhdr_print(char f, void * d) {
 	Etherpkt *p = d;
 	
-	print("%c:%x%x%x%x%x%x %x%x%x%x%x%x %x%x\n",
+	DPRINT("%c:%x%x%x%x%x%x %x%x%x%x%x%x %x%x\n",
 		f,
 		p->d[0], p->d[1], p->d[2], p->d[3], p->d[4], p->d[5],
 		p->s[0], p->s[1], p->s[2], p->s[3], p->s[4], p->s[5],
@@ -264,24 +264,24 @@ int Wifi_GetNumAP(void) {
 }
 
 int Wifi_GetAPData(int apnum, Wifi_AccessPoint * apdata) {
-        int j;
-    
+		int j;
+	
 	if(!apdata) return WIFI_RETURN_PARAMERROR;
 
 	
 	if(WifiData->aplist[apnum].flags&WFLAG_APDATA_ACTIVE) {
-	    while(Spinlock_Acquire(WifiData->aplist[apnum])!=SPINLOCK_OK);
-	    {
+		while(Spinlock_Acquire(WifiData->aplist[apnum])!=SPINLOCK_OK);
+		{
 		// additionally calculate average RSSI here
 		WifiData->aplist[apnum].rssi=0;
 		for(j=0;j<8;j++) {
-		    WifiData->aplist[apnum].rssi+=WifiData->aplist[apnum].rssi_past[j];
+			WifiData->aplist[apnum].rssi+=WifiData->aplist[apnum].rssi_past[j];
 		}
 		WifiData->aplist[apnum].rssi = WifiData->aplist[apnum].rssi >> 3;
 		*apdata = WifiData->aplist[apnum]; // yay for struct copy!
 		Spinlock_Release(WifiData->aplist[apnum]);
 		return WIFI_RETURN_OK;
-	    }
+		}
 	}
 
 	return WIFI_RETURN_ERROR;
@@ -411,9 +411,9 @@ int Wifi_AssocStatus(void) {
 			case WIFIMODE_NORMAL:
 			case WIFIMODE_DISASSOCIATE:
 				return ASSOCSTATUS_DISCONNECTED;
-            case WIFIMODE_SCAN:
-                if(WifiData->reqReqFlags&WFLAG_REQ_APCONNECT) return ASSOCSTATUS_AUTHENTICATING;
-                return ASSOCSTATUS_DISCONNECTED;
+			case WIFIMODE_SCAN:
+				if(WifiData->reqReqFlags&WFLAG_REQ_APCONNECT) return ASSOCSTATUS_AUTHENTICATING;
+				return ASSOCSTATUS_DISCONNECTED;
 			case WIFIMODE_ASSOCIATE:
 				switch(WifiData->authlevel) {
 				case WIFI_AUTHLEVEL_DISCONNECTED:
@@ -466,7 +466,7 @@ int Wifi_AssocStatus(void) {
 						wifi_connect_state=3;
 						WifiData->flags9|=WFLAG_ARM9_NETREADY;
 						sgIP_ARP_SendGratARP(wifi_hw);
-                        sgIP_DNS_Record_Localhost();
+						sgIP_DNS_Record_Localhost();
 						return ASSOCSTATUS_ASSOCIATED;
 					default:
 					case SGIP_DHCP_STATUS_IDLE:
@@ -531,9 +531,8 @@ void Wifi_Init(u32 initflags){
 	nbfifoput(F9TWifi|F9WFinit, (ulong)WifiData);
 
 	// wait for arm7 to be ready
-	//while(Wifi_CheckInit()==0);
+	while(Wifi_CheckInit()==0) Wifi_Update();
 }
-
 
 int Wifi_CheckInit(void) {
 	if(!WifiData) return 0;
@@ -551,7 +550,7 @@ void Wifi_Update(void) {
 			// add network interface.
 #ifdef WIFI_USE_TCP_SGIP
 			wifi_hw = sgIP_Hub_AddHardwareInterface(&Wifi_TransmitFunction,&Wifi_Interface_Init);
-            sgIP_timems=WifiData->random; //hacky! but it should work just fine :)
+			sgIP_timems=WifiData->random; //hacky! but it should work just fine :)
 
 #endif
 		}
@@ -576,16 +575,16 @@ void Wifi_Update(void) {
 			base2=base;
 			Wifi_RxRawReadPacket(base,22*2,framehdr);
 
-        		ethhdr_print('!',framehdr+8);
+				ethhdr_print('!',framehdr+8);
 			if((framehdr[8]==((u16 *)WifiData->MacAddr)[0] && framehdr[9]==((u16 *)WifiData->MacAddr)[1] && framehdr[10]==((u16 *)WifiData->MacAddr)[2]) ||
 				(framehdr[8]==0xFFFF && framehdr[9]==0xFFFF && framehdr[10]==0xFFFF)) {
 				// destination matches our mac address, or the broadcast address.
 				//if(framehdr[6]&0x4000) { // wep enabled (when receiving WEP packets, the IV is stripped for us! how nice :|
 				//	base2+=24; hdrlen=28;  // base2+=[wifi hdr 12byte]+[802 header hdrlen]+[slip hdr 8byte]
 				//} else { 
-					base2+=22; hdrlen=24;
+				//	base2+=22; hdrlen=24;
 				//}
-          //  SGIP_DEBUG_MESSAGE(("%04X %04X %04X %04X %04X",Wifi_RxReadOffset(base2-8,0),Wifi_RxReadOffset(base2-7,0),Wifi_RxReadOffset(base2-6,0),Wifi_RxReadOffset(base2-5,0),Wifi_RxReadOffset(base2-4,0)));
+		  //  SGIP_DEBUG_MESSAGE(("%04X %04X %04X %04X %04X",Wifi_RxReadOffset(base2-8,0),Wifi_RxReadOffset(base2-7,0),Wifi_RxReadOffset(base2-6,0),Wifi_RxReadOffset(base2-5,0),Wifi_RxReadOffset(base2-4,0)));
 				// check for LLC/SLIP header...
 				
 #ifdef WIFI_USE_TCP_SGIP
@@ -643,12 +642,12 @@ int Wifi_TransmitFunction(Block * b) {
 	framelen=BLEN(b)-14+8 + (WifiData->wepmode7?4:0);
 	
 	if(!(WifiData->flags9&WFLAG_ARM9_NETUP)) {
-		DPRINT(("Transmit:err_netdown"));
+		DPRINT(("tx:err_netdown\n"));
 		freeb(b);
 		return 0; //?
 	}
 	if(framelen+40>Wifi_TxBufferWordsAvailable()*2) { // error, can't send this much!
-		DPRINT(("Transmit:err_space"));
+		DPRINT(("tx:err_space\n"));
 		freeb(b);
 		return 0; //?
 	}
@@ -673,7 +672,7 @@ int Wifi_TransmitFunction(Block * b) {
 		Wifi_CopyMacAddr(framehdr+11,WifiData->MacAddr);
 		Wifi_CopyMacAddr(framehdr+14,((u8 *)b->rp));
 	}
-	if(WifiData->wepmode7)  { framehdr[6] |=0x4000; hdrlen=20; }
+	if(WifiData->wepmode7)	{ framehdr[6] |=0x4000; hdrlen=20; }
 	framehdr[17] = 0;
 	framehdr[18] = 0; // wep IV, will be filled in if needed on the arm7 side.
 	framehdr[19] = 0;
@@ -802,10 +801,7 @@ ifstat(Ether* ether, void* a, long n, ulong offset)
 		if ((void*)ap == nil || !(ap->flags & WFLAG_APDATA_ACTIVE))
 			continue;
 
-		p = seprint(p, e, "%d: %s ch=%d (0x%ux)", i, ap->ssid, ap->channel, ap->flags);
-
-		if(1)
-		p = seprint(p, e, " q=%x", ap->rssi);
+		p = seprint(p, e, "%d: %s ch=%d (0x%ux) q=%x", i, ap->ssid, ap->channel, ap->flags, ap->rssi);
 			
 		if(0)
 		p = seprint(p, e, "sec=%s%s%s m=%s c=%s%s",
@@ -857,16 +853,14 @@ w_option(Ctlr* ctlr, char* buf, long n)
 			Wifi_AutoConnect();
 		}else {
 			wifi_connect_state = 0;
-			/* search AP by ssid name */
 			j = Wifi_GetNumAP();
-			for (i=0; i < j; i++)
+			for (i=0; i < j; i++){
 				if (strcmp(WifiData->aplist[i].ssid, cb->f[1]) == 0)
 					break;
-
+			}
 			if(i < j)
 				Wifi_ConnectAP(&WifiData->aplist[i], WEPMODE_NONE, ctlr->txkey, (u8*)ctlr->keys[ctlr->txkey].dat);
-
-			Wifi_Update();
+            while(Wifi_AssocStatus() != ASSOCSTATUS_AUTHENTICATING);
 		}
 	}
 	else if(cistrcmp(cb->f[0], "station") == 0){
@@ -880,11 +874,7 @@ w_option(Ctlr* ctlr, char* buf, long n)
 			r = -1;
 	}
 	else if(cistrcmp(cb->f[0], "crypt") == 0){
-		if(cistrcmp(cb->f[1], "off") == 0)
-			ctlr->crypt = 0;
-		else if(cistrcmp(cb->f[1], "on") == 0)
-			ctlr->crypt = 1;
-		else if((i = atoi(cb->f[1])) >= 0 && i < 3)
+		if((i = atoi(cb->f[1])) >= 0 && i < 3)
 			ctlr->crypt = i;
 		else
 			r = -1;
@@ -909,18 +899,13 @@ w_option(Ctlr* ctlr, char* buf, long n)
 			r = -1;
 	}
 	else if(cistrcmp(cb->f[0], "scan") == 0){
-		if(cistrcmp(cb->f[1], "off") == 0)
-			ctlr->scan = 0;
-		else if(cistrcmp(cb->f[1], "on") == 0)
-			ctlr->scan = 1;
-		else if((i = atoi(cb->f[1])) == 0 || i == 1)
+		if((i = atoi(cb->f[1])) == 0 || i == 1)
 			ctlr->scan = i;
 		else
 			r = -1;
-		
+
 		if(ctlr->scan){
 			Wifi_ScanMode();
-			while(WifiData->reqChannel!=1);
 		}
 	}
 	else if(cistrcmp(cb->f[0], "dbg") == 0){
@@ -993,7 +978,8 @@ attach(Ether *ether)
 	Ctlr* ctlr;
 	
 	DPRINT("attach\n");
-	if (ether->ctlr == nil)
+	
+	if(!ether || !ether->ctlr)
 		return;
 
 	ctlr = (Ctlr*) ether->ctlr;
@@ -1045,7 +1031,6 @@ interrupt(Ureg*, void *arg)
 {
 	Ether *ether;
 	Ctlr *ctlr;
-	ulong type;
 	
 	DPRINT("interrupt\n");
 	ether = arg;
@@ -1053,7 +1038,7 @@ interrupt(Ureg*, void *arg)
 	if (ctlr == nil)
 		return;
 
-	/* could call Wifi_Update */
+	//Wifi_Update();
 }
 
 /* set scanning interval */
@@ -1113,6 +1098,6 @@ etherndsreset(Ether* ether)
 void
 etherndslink(void)
 {
-	addethercard("nds",  etherndsreset);
+	addethercard("nds",	 etherndsreset);
 }
 

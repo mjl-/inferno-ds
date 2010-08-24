@@ -97,11 +97,9 @@ typedef struct {
 	LCDparam;
 	ushort*	pal;
 	ushort*	subpal;
-	ushort*	upper;
-	ushort*	lower;
 } LCDdisplay;
 
-static LCDdisplay	*ld;	// current active display
+static LCDdisplay	*ld;
 static LCDdisplay main_display;
 
 /* TODO: use 256 color palette */
@@ -118,7 +116,7 @@ enum
 {
     Lcdytrig = 80,
     Black = 0x00,
-    White = 0xff,
+    White = 0xFF,
 };
 
 #define SetYtrigger(n)	((lcd->lcsr&0x7F) | (n<<8) | ((n&0x100)>>2))
@@ -205,7 +203,7 @@ void
 lcd_flush(void)
 {
 //	DPRINT("lcd_flush\n");
-//	dcflushall();	/* need more precise addresses */
+	dcflushall();	/* need more precise addresses */
 }
 
 void

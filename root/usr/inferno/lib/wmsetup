@@ -13,14 +13,14 @@ wmrun wm/sh -w 250 -h 90 -ic '
 	fn rnes { cat /net/ether0/ifstats }
 	fn wnec { echo -n $* > /net/ether0/0/ctl }
 
-	cat /net/ether0/clone > /dev/null
-	wnec scan 1
-	wnec essid default
+#	cat /net/ether0/clone > /dev/null
+#	wnec scan 1
+#	wnec essid default
 	rnes
 
 	date
 	
-	#echo debug > /dev/audioctl
-	auplay /usr/inferno/lib/invhit.iaf
-	#cat /dev/audio | read 16000 > /dev/audio
+#	echo debug > /dev/audioctl
+#	auplay /usr/inferno/lib/invhit.iaf
+#	cat /dev/audio | read 16000 > /dev/audio
 	'

@@ -19,7 +19,7 @@
 #include	"io.h"
 #include	"../port/error.h"
 
-#define	DPRINT	if(0)print
+#define	DPRINT	if(0)iprint
 
 enum{
 	Qdir,

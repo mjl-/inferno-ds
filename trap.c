@@ -143,7 +143,7 @@ trapinit(void)
 
 	/* setup TCM(base, size): stores highly accessed data: vectors, Mach0, stacks */
 	witcm(0x00000000 | 0x20);	/* size = 32 MB */
-	wdtcm(0x00000000 | 0x0a);	/* size = 16 KB */
+	//wdtcm(0x00000000 | 0x0a);	/* size = 16 KB */
 
 	cp = rcpctl();
 	wcpctl(cp | CpCdtcml);

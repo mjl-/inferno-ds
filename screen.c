@@ -13,22 +13,22 @@
 
 #include "screen.h"
 
-#define	DPRINT	if(0)iprint
+#define DPRINT	if(1)iprint
 
 static Memdata xgdata;
 static Memimage xgscreen =
 {
 	{0, 0, 0, 0},	/* r */
 	{0, 0, 0, 0},	/* clipr */
-	8,			/* depth */
-	1,			/* nchan */
+	8,		/* depth */
+	1,		/* nchan */
 	CMAP8,		/* chan */
-	nil,			/* cmap */
-	&xgdata,		/* data */
-	0,			/* zero */
-	0,			/* width */
-	nil,			/* layer */
-	0,			/* flags */
+	nil,		/* cmap */
+	&xgdata,	/* data */
+	0,		/* zero */
+	0,		/* width */
+	nil,		/* layer */
+	0,		/* flags */
 };
 
 Memimage *gscreen;
@@ -49,21 +49,19 @@ static void lcdscreenputs(char*, int);
 static void screenpbuf(char*, int);
 void (*screenputs)(char*, int) = screenpbuf;
 
-static	void	(*flushpixels)(Rectangle, uchar*, int, uchar*, int);
-
 static Cursor arrow = {
 	.offset = { -1, -1 },
 	.clr = {
-	[0x00]  0xFF, 0xFF, 0x80, 0x01, 0x80, 0x02, 0x80, 0x0C,
-	[0x08]  0x80, 0x10, 0x80, 0x10, 0x80, 0x08, 0x80, 0x04,
-	[0x10]  0x80, 0x02, 0x80, 0x01, 0x80, 0x02, 0x8C, 0x04,
-	[0x18]  0x92, 0x08, 0x91, 0x10, 0xA0, 0xA0, 0xC0, 0x40,
+	[0x00]	0xFF, 0xFF, 0x80, 0x01, 0x80, 0x02, 0x80, 0x0C,
+	[0x08]	0x80, 0x10, 0x80, 0x10, 0x80, 0x08, 0x80, 0x04,
+	[0x10]	0x80, 0x02, 0x80, 0x01, 0x80, 0x02, 0x8C, 0x04,
+	[0x18]	0x92, 0x08, 0x91, 0x10, 0xA0, 0xA0, 0xC0, 0x40,
 	},
 	.set = {
-	[0x00]  0x00, 0x00, 0x7F, 0xFE, 0x7F, 0xFC, 0x7F, 0xF0,
-	[0x08]  0x7F, 0xE0, 0x7F, 0xE0, 0x7F, 0xF0, 0x7F, 0xF8,
-	[0x10]  0x7F, 0xFC, 0x7F, 0xFE, 0x7F, 0xFC, 0x73, 0xF8,
-	[0x18]  0x61, 0xF0, 0x60, 0xE0, 0x40, 0x40, 0x00, 0x00,
+	[0x00]	0x00, 0x00, 0x7F, 0xFE, 0x7F, 0xFC, 0x7F, 0xF0,
+	[0x08]	0x7F, 0xE0, 0x7F, 0xE0, 0x7F, 0xF0, 0x7F, 0xF8,
+	[0x10]	0x7F, 0xFC, 0x7F, 0xFE, 0x7F, 0xFC, 0x73, 0xF8,
+	[0x18]	0x61, 0xF0, 0x60, 0xE0, 0x40, 0x40, 0x00, 0x00,
 	},
 };
 
@@ -141,7 +139,7 @@ void flushmemscreen(Rectangle r);
 static void
 screenclear(void)
 {
-	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
+	memimagedraw(gscreen, gscreen->r, back, ZP, memopaque, ZP, SoverD);
 	curpos = window.min;
 	flushmemscreen(gscreen->r);
 }
@@ -152,17 +150,15 @@ flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 {
 	int h, w;
 
-	/*
-	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n",
-		s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
-
+//	DPRINT("1) s=%lux sw=%d d=%lux dw=%d r=(%d,%d)(%d,%d)\n", s, sw, d, dw, r.min.x, r.min.y, r.max.x, r.max.y);
+/*
 	// TODO: sync with vblank period: 192 < vcount < 261
 	if (LCDREG->vcount - 192 > 1){
 		while(LCDREG->vcount>192);
 		while(LCDREG->vcount<192);
 	}
-	*/
-    
+*/
+
 	if (conf.screens >= 1){
 		ulong *ud = (ulong*)d;
 		ulong *us = (ulong*)s;
@@ -171,11 +167,12 @@ flush2fb(Rectangle r, uchar *s, int sw, uchar *d, int dw)
 		r.min.x &= ~15;
 		r.max.x = (r.max.x + 15) & ~15;
 
-		for(h = r.min.y; h < r.max.y; h++)
-			for(w = r.min.x; w < r.max.x; w++){
-				i = (h * Scrwidth + w)/2;
+		for(h = r.min.y; h <= r.max.y; h++){
+			for(w = r.min.x; w <= r.max.x; w++){
+				i = (h * Scrwidth + w)/2; w++;
 				ud[i] = (1<<31)|(1<<15)|us[i];
 			}
+		}
 	}
 	if (conf.screens == 2){
 		ushort *ud = (ushort*)(d + 0x00200000);
@@ -221,14 +218,13 @@ setscreen(LCDmode *mode)
 	gscreen->width = wordsperline(gscreen->r, gscreen->depth);
 	
 	xgdata.bdata = (uchar*)vd->sfb;
-	flushpixels = flush2fb;
 	
 	memimageinit();
 	memdefont = getmemdefont();
 	memsetchan(gscreen, XBGR15);
 	back = memwhite;
 	conscol = memblack;
-	memimagedraw(gscreen, gscreen->r, memwhite, ZP, memopaque, ZP, SoverD);
+
 	DPRINT("vd->wid=%d bwid=%d gscreen->width=%ld fb=%p data=%p\n",
 		vd->x, vd->bwid, gscreen->width, vd->fb, xgdata.bdata);
 	graphicscmap(0);
@@ -268,17 +264,6 @@ attachscreen(Rectangle *r, ulong *chan, int* d, int *width, int *softscreen)
 	*width = gscreen->width;
 	*softscreen = (gscreen->data->bdata != (uchar*)vd->fb);
 
-while(0){	/* just to get some video memory timings */
-	int tstart, vstart;
-
-	tstart = m->ticks;
-	vstart = LCDREG->vcount;
-	while(LCDREG->vcount>192);
-	while(LCDREG->vcount<192);
-
-	print("t %d v %d-%d\n", m->ticks-tstart, vstart, LCDREG->vcount);
-}
-
 	return (uchar*)gscreen->data->bdata;
 }
 
@@ -290,13 +275,12 @@ detachscreen(void)
 void
 flushmemscreen(Rectangle r)
 {
-
 	if(rectclip(&r, gscreen->r) == 0)
 		return; 
 	if(r.min.x >= r.max.x || r.min.y >= r.max.y)
-		return; 
-	if(flushpixels != nil)
-		flushpixels(r, (uchar*)gscreen->data->bdata, gscreen->width, (uchar*)vd->fb, vd->bwid >> 2);
+		return;
+
+	flush2fb(r, (uchar*)gscreen->data->bdata, gscreen->width, (uchar*)vd->fb, vd->bwid >> 2);
 	lcd_flush();
 }
 

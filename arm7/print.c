@@ -96,14 +96,24 @@ sprint(char *s, char *fmt, ...)
 	return n;
 }
 
-#define SData ((char*)IPC)
+/* debug print only for desmume/ideas */
+void
+uartputs(char* s, int n)
+{
+	USED(n);
+	UserInfo *pu = UINFOREG;
+	char desmume[]="D\0e\0S\0m\0u\0M\0E";
+
+	if(memcmp(desmume, pu->name, sizeof(desmume)) == 0)
+    		swidebug(s);
+}
 
 int
 print(char *fmt, ...)
 {
 	static int n = 0;
 	va_list ap;
-	char *s = SData;
+	char *s = (char*)IPC;
 
 	if(n)
 		memset((void*)s, '\0', n);
@@ -111,6 +121,7 @@ print(char *fmt, ...)
 	n = vsprint(s, fmt, ap);
 	va_end(ap);
 
-	while(!nbfifoput(F7print, (ulong)s));
+	uartputs(s, n);
+	//while(!nbfifoput(F7print, (ulong)s));
 	return n;
 }

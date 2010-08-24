@@ -83,7 +83,7 @@ fiforecv(ulong vv)
 			}
 		break;
 	case F7mousedown:
-		//print("mdown %lux %lud %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, (v>>16)&0xff, mousemod);
+		DPRINT("mdown %lux %lud %lud %lud %lud\n", v, v&0xff, (v>>8)&0xff, (v>>16)&0xff, mousemod);
 		mousetrack(mousemod, v&0xff, (v>>8)&0xff, 0);
 		m = mousexy();
 		if(om.x != m.x || om.y != m.y)

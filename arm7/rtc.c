@@ -97,8 +97,7 @@ get_nds_seconds(uchar *time)
 	tm.year = time[0] + 2000;	
 	tm.tzoff = -1;
 
-	if(0)
-	print("%d:%d:%d %d/%d/%d [HH:MM:SS YY/MM/DD]\n",
+	if(0)print("%d:%d:%d %d/%d/%d [HH:MM:SS YY/MM/DD]\n",
 			tm.hour, tm.min, tm.sec, tm.year, tm.mon, tm.mday);
 	
 	return tm2sec(&tm);	

@@ -7,6 +7,8 @@
 #include "audio.h"
 #include "wifi.h"
 
+#define DPRINT if(1)print
+
 /* So we can initialize our own data section and bss */
 extern char bdata[];
 extern char edata[];
@@ -54,9 +56,14 @@ fiforecvintr(void*)
 	while(!(FIFOREG->ctl & FifoRempty)) {
 		vv = FIFOREG->recv;
 		v = vv>>Fcmdlen;
+
+		DPRINT("FRX %lux %lux\n", vv & Fcmdtmask, vv & Fcmdsmask);
 		switch(vv&Fcmdtmask) {
+		default:
+			print("F7rx err %lux\n", vv);
+			break;
+
 		case F9TSystem:
-			if(0)print("F9S %lux\n", vv & Fcmdsmask);
 			switch(vv&Fcmdsmask){
 			case F9Sysbright:
 				read_firmware(FWconsoletype, ndstype, sizeof ndstype);
@@ -105,7 +112,6 @@ fiforecvintr(void*)
 			break;
 		
 		case F9TWifi:
-			if(0)print("F9W %lux\n", vv & Fcmdmask);
 			switch(vv&Fcmdsmask){
 			case F9WFrmac:
 				// mac is needed early by the arm9 in archds.c:/^archether
@@ -118,7 +124,6 @@ fiforecvintr(void*)
 			break;
 
 		case F9TAudio:
-			if(0)print("F9A %lux\n", vv & Fcmdsmask);
 			switch(vv&Fcmdsmask){
 				case F9Auplay:
 					audioplay((TxSound*)v, 1);
@@ -133,10 +138,6 @@ fiforecvintr(void*)
 					audiopower(F9Aupowerin, v);
 					break;
 			}
-			break;
-
-		default:
-			print("F7rx err %lux\n", vv);
 			break;
 		}
 	}

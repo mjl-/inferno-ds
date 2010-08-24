@@ -11,12 +11,12 @@ KTZERO7=0x03800000
 OFILES=\
 	l.$O\
 	main.$O\
-	print.$O\
 	trap.$O\
 	spi.$O\
 	rtc.$O\
 	audio.$O\
 	wifi.$O\
+	print.$O\
 #	dma.$O\
 
 HFILES=\
@@ -37,10 +37,11 @@ default:V: i$CONF
 i$CONF: $OFILES
 	$LD -o $target -R4 -T$KTZERO7 -l $OFILES $libs $SYSLIBS
 
+# must be ARM code, even when OBJTYPE=thumb
 trap.t: trap.5
 	cp trap.5 trap.t
-trap.5: trap.c
-	5c $CFLAGS trap.c
+%.5: %.c
+	5c $CFLAGS $stem.c
 
 syms:   $OFILES
 	$CC $CFLAGS -a '-DKERNDATE='$KERNDATE main.c >syms

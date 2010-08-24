@@ -46,7 +46,6 @@ recintr(void *a)
 {	
 	TxSound *snd = a;
 
-	//print("snd7 %lx %lx %lx\n", (ulong)snd, (ulong)snd->d, snd->n);
 	if(snd->inuse && nrs++ < snd->n){
 		switch(snd->flags & (AFlagsigned|AFlag8bit)){
 		case (AFlag8bit):

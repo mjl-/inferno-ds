@@ -207,27 +207,32 @@ archlcdmode(LCDmode *m)
 	return 0;
 }
 
-/* desmume/ideas only debug print */
+/* debug print only for desmume/ideas */
 void
-uartputs(char* s, int n) {
+uartputs(char* s, int n)
+{
 	USED(n);
-	if(0) swidebug(s);
+	UserInfo *pu = UINFOREG;
+	char desmume[]="D\0e\0S\0m\0u\0M\0E";
+
+	if(memcmp(desmume, pu->name, sizeof(desmume)) == 0)
+    		swidebug(s);
 }
 
 /*
- * set ether parameters: the contents should be derived from EEPROM or NVRAM
+ * set ether parameters: see ethernds.c:/w_option
  */
 int
 archether(int ctlno, Ether *ether)
 {
-	static char opt[128];
+	static char opt[]="dbg=1 station=ds power=on channel=6 scan=1 essid=SoftAP";
 
 	if(ctlno > 0)
 		return -1;
 
 	sprint(ether->type, "nds");
+	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 	ether->mem = 0;
-	ether->nopt = 0;
 	ether->port = 0;
 	ether->irq = IPCSYNCbit;
 	ether->itype = 0;
@@ -238,12 +243,6 @@ archether(int ctlno, Ether *ether)
 	
 	memset(ether->ea, 0xff, Eaddrlen);
  	nbfifoput(F9TWifi|F9WFrmac, (ulong)uncached(ether->ea));	/* mac from arm7 */
-
-	if(0)	/* use WFC settings */
-		strcpy(opt, "power=on channel=11 scan=0 station=ds essid=default");
-	else	/* use specific ap */
-		strcpy(opt, "power=on channel=11 scan=0 station=ds essid=cain");
-	ether->nopt = tokenize(opt, (char **)ether->opt, nelem(ether->opt));
 
 	return 1;
 }

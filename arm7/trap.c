@@ -48,8 +48,7 @@ intrs(void)
 static void
 panic(void)
 {
-	/* sauve qui peut! */
-	print("panic: arm7 cpu halted\n");
+	print("panic7!\n");
 	while(1);
 }
 

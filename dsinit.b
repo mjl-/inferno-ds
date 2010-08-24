@@ -44,7 +44,7 @@ init()
 
 	sys->bind("/", "/", Sys->MREPL);
 
-	lightup();
+	lightup(0);
 
 	localok := 0;
 	if(lfs("#L/data") >= 0){
@@ -88,7 +88,7 @@ init()
 			break;	# internal
 		(rc, nil) := sys->stat(rootsource+"/dis/sh.dis");
 		if(rc < 0)
-			err("%s has no shell");
+			err(rootsource+" has no shell\n");
 		else if(sys->bind(rootsource, "/", Sys->MAFTER) < 0)
 			sys->print("can't bind %s on /: %r\n", rootsource);
 		else{
@@ -142,11 +142,11 @@ dobind(f, t: string, flags: int): int
 	return ret;
 }
 
-lightup()
+lightup(level: int)
 {
 	fd := sys->open("#T/ndsctl", Sys->OWRITE);
 	if(fd != nil)
-		sys->fprint(fd, "blight 0");
+		sys->fprint(fd, "blight %d", level);
 }
 
 #

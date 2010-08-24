@@ -72,3 +72,10 @@ TEXT swiDivMod(SB), $-4
 TEXT swiCRC16(SB), $-4
 	SWI	0x0E0000
 	RET
+
+/*
+ *	swidebug: print debug string in R0
+ */
+TEXT	swidebug(SB), $-4
+	SWI	0xFC0000
+	RET
